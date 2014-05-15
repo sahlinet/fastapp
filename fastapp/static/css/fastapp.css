@@ -1,0 +1,85 @@
+div#messages {
+	background-color: black;
+	font-family: "Lucida Console", Monaco, monospace;
+	font-size: 0.8em;
+	margin: 10px;
+	width: 100%;
+}
+div#messages p {
+	line-height: 1em;	
+	margin: 0 0 1px !important;
+}
+div#messages p.debug {
+	color: grey;
+}
+div#messages p.error {
+	color: red;
+}
+div#messages p.info {
+	color: green;
+}
+div#messages p.warn {
+	color: orange;
+}
+li a.active {
+	background-color: darkgrey;
+}
+.CodeMirror {
+	height: inherit !important;
+}
+/*div.container {
+	margin-bottom: 20px;
+}*/
+li.dropdown>ul>li>form {
+	margin: 20px;
+}
+.CodeMirror pre {
+	font-size: 0.8em !important;
+}
+.CodeMirror-linenumber {
+	font-size: 0.8em !important;
+}
+div.rendered {
+	background-color: #F7F2E0;
+	padding: 10px;
+}
+#wrap {
+  min-height: 100%;
+  height: auto;
+  /* Negative indent footer by its height */
+  margin: 0 auto 50px;
+  /* Pad bottom by footer height */
+  padding: 0 0 60px;
+}
+.footer {
+  height: 100px;
+  width: 100%;
+  background-color: #0B0719;
+}
+div.bases {
+	height: 220px;
+	margin: 10px;
+}
+.highlight {
+  /*display: none; /* hidden by default, until >480px */
+  padding: 9px 14px;
+  margin-bottom: 14px;
+  background-color: #f7f7f9;
+  border: 1px solid #e1e1e8;
+  border-radius: 4px;
+}
+.highlight:hover {
+	background-color: #ececf1;
+}
+/* Grid */
+.gridStyle {
+    border: 1px solid rgb(212,212,212);
+    width: 100%; 
+    height: 300px;
+}
+.light {
+	color: #787878;
+}
+.badge-error {
+	background-color: red;
+}

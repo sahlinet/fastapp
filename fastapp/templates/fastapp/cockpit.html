@@ -1,0 +1,74 @@
+{% extends "fastapp/index.html" %}
+
+
+ {% block fastapp_main %}
+ 
+ <div class="container" >
+  	<div class="row">
+ 		<div class="col-md-12">
+		 	<div><h1>Processes</h1></div>
+		 	<table class="table">
+		 		<tr>
+		 			<th>Name</th>
+		 			<th>Running</th>
+		 			<th>Last up</th>
+		 		</tr>
+		 		{% for process in process_list %}
+		 		<tr>
+		 			<td> {{ process.name }} </td>
+		 			<td> {{ process.is_up }} </td>
+		 			<td> {{ process.running | date:"c"}} </td>
+		 		</tr>
+		 		{% endfor %}
+		 	</table>
+		 	<div><h1>Threads</h1></div>
+		 	<table class="table">
+		 		<tr>
+		 			<th>Parent</th>
+		 			<th>Name</th>
+		 			<th>State</th>
+		 		</tr>
+		 		{% for thread in threads %}
+		 		<tr>
+		 			<td> {{ thread.parent.name }}</td>
+		 			<td> {{ thread.name }} </td>
+		 			<td> {{ thread.health }} </td>
+		 		</tr>
+		 		{% endfor %}
+		 	</table>
+	 	</div>
+	 </div>
+ 	<div class="row">
+ 		<div class="col-md-12">
+		 	<div><h1>Executors</h1></div>
+		 	<table class="table">
+		 		<tr>
+		 			<th>Username</th>
+		 			<th>Base name</th>
+		 			<th>Is running</th>
+		 			<th>Marked as started</th>
+		 			<th>PID</th>
+		 			<th>Num instances</th>
+		 			<th>Instances</th>
+		 		</tr>
+		 		{% for executor in executors %}
+		 		<tr>
+		 			<td> {{ executor.base.user.username }} </td>
+		 			<td> {{ executor.base.name }} </td>
+		 			<td> {{ executor.is_running }} </td>
+		 			<td> {{ executor.started }} </td>
+		 			<td> {{ executor.pid }} </td>
+		 			<td> {{ executor.instances.count }} </td>
+		 			<td>
+		 			{% for instance in executor.instances.all %}
+			 			<p> {{ instance.is_alive }} </p>
+			 			<p> {{ instance.last_beat | date:"c"}} </p>
+			 		{% endfor %}
+			 		</td>
+		 		</tr>
+		 		{% endfor %}
+		 	</table>
+	 	</div>
+	 </div>
+ </div>
+ {% endblock %}
