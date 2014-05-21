@@ -5,6 +5,10 @@ import subprocess
 import traceback
 import threading
 import time
+import requests
+import json
+import urllib
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,20 +29,81 @@ def create_vhosts():
 def create_broker_url(username, password, host, port, vhost):
 	return "amqp://%s:%s@%s:%s/%s" % (username, password, host, port, vhost)
 
+RABBITMQ_ADMIN = ["CTL", "HTTP_API"]
+
+class RabbitmqAdmin(object):
+
+    @staticmethod
+    def factory(impl):
+        if impl == "CTL":
+            return RabbitmqAdminCtl()
+        elif impl == "HTTP_API":
+            return RabbitmqHttpApi()
+        else:
+            raise Exception("Set RABBITMQ_ADMIN to one of these values: "+str(RABBITMQ_ADMIN))
+
+class RabbitmqAdminCtl(RabbitmqAdmin):
+
+    def __init__(self):
+        if sys.platform == "darwin":
+            self.rabbitmqctl = "/usr/local/sbin/rabbitmqctl"
+        else:
+            self.rabbitmqctl = "sudo /usr/sbin/rabbitmqctl"
+
+    def add_vhost(self, name):
+        subprocess.Popen("%s add_vhost %s" % (self.rabbitmqctl, name), shell=True)
+    def add_user(self, username, password):
+        subprocess.Popen("%s add_user %s %s" % (self.rabbitmqctl, username, password), shell=True)
+    def set_perms(self, vhost, username):
+        subprocess.Popen("%s set_permissions -p %s %s \"^.*\" \".*\" \".*\" " % (self.rabbitmqctl, vhost, username), shell=True)
+
+class RabbitmqHttpApi(RabbitmqAdmin):
+
+    API_URI = "/api/"
+
+    def _call(self, uri, data=None):
+        logger.info(uri)
+        logger.info(str(data))
+
+        user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
+        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
+
+        host = getattr(settings, "RABBITMQ_HOST", "localhost")
+        port = getattr(settings, "RABBITMQ_HTTP_API_PORT", "15672")
+
+        if data:
+            data=json.dumps(data)
+        url = "http://%s:%s" % (host, port)
+        r = requests.put(url+uri, data=data, headers={'content-type': "application/json"}, auth=(user, password))
+        if r.status_code != 204:
+            logger.error(str((r.url, r.status_code, r.content)))
+            sys.exit(1)
+            raise Exception()
+
+    def add_vhost(self, name):
+        logger.info(name)
+        self._call("/api/vhosts/%s" % urllib.quote_plus(name))
+
+    def add_user(self, name, password):
+        self._call("/api/users/%s" % name, data={'password': password, 'tags': "" })
+
+    def set_perms(self, vhost, username):
+        self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data={"scope":"client","configure":".*","write":".*","read":".*"})
+
 def create_vhost(base):
     # create the vhosts, users and permissions
     vhost = base.executor.vhost
     logger.info("Create vhost configuration: %s" % vhost)
-    if sys.platform == "darwin":
-		rabbitmqctl = "/usr/local/sbin/rabbitmqctl"
-    else:
-		rabbitmqctl = "sudo /usr/sbin/rabbitmqctl"
+
+    #service = RabbitmqAdmin.factory("CTL")
+    service = RabbitmqAdmin.factory("HTTP_API")
     try:
-		logger.info(subprocess.Popen("%s add_vhost %s" % (rabbitmqctl, vhost), shell=True))
-		logger.info(subprocess.Popen("%s add_user %s %s" % (rabbitmqctl, base.name, base.executor.password), shell=True))
-		logger.info(subprocess.Popen("%s set_permissions -p %s %s \"^.*\" \".*\" \".*\" " % (rabbitmqctl, vhost, base.name), shell=True))
+        service.add_vhost(vhost)
+        service.add_user(base.name, base.executor.password)
+        service.set_perms(vhost, base.name)
     except Exception, e:
         logger.exception(e)
+        sys.exit(1)
         raise e
 
 def connect_to_queuemanager(host="localhost", vhost="/", username="guest", password="guest"):

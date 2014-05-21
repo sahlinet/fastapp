@@ -28,7 +28,10 @@ class Command(BaseCommand):
 
         for c in range(0, THREAD_COUNT):
             name = "HeartbeatThread-%s" % c
-            thread = HeartbeatThread(name, "localhost", "/", queues_consume=queues_consume)
+
+            host = getattr(settings, "RABBITMQ_HOST", "localhost")            
+
+            thread = HeartbeatThread(name, host, "/", queues_consume=queues_consume)
             threads.append(thread)
             thread.daemon = True
             thread.start()

@@ -3,6 +3,9 @@ import logging
 import time
 import json
 import sys
+import resource
+import os
+import subprocess
 from datetime import datetime, timedelta
 
 from django.core import serializers
@@ -42,7 +45,15 @@ def update_status(parent_name, thread_count, threads):
         while True:
             time.sleep(0.1)
             alive_thread_count = 0
-            process , created = Process.objects.get_or_create(name=parent_name)
+            
+            pid = os.getpid()
+            proc = subprocess.Popen(["ps", "-p "+str(pid), "-o", "rss"], stdout=subprocess.PIPE)
+            (out, err) = proc.communicate()
+            rss = str(out).rstrip().strip().replace("\n", "").replace("RSS ", "")
+            logger.info("MEM-Usage of '%s': %s" % (parent_name, rss))
+            process, created = Process.objects.get_or_create(name=parent_name)
+            process.rss = int(rss)
+            process.save()
 
             # threads
             for t in threads:

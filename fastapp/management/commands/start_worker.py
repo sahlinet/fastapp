@@ -50,13 +50,15 @@ class Command(BaseCommand):
         #vhost = generate_vhost_configurationate_vhost_configuration(username, base)
         logger.info("vhost: %s" % vhost)
 
+        host = getattr(settings, "RABBITMQ_HOST", "localhost")            
+
         for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
 
             # start threads     
             #thread = ExecutorServerThread(c, "ExecutorServerThread-%s-%s" % (c, base), c, vhost, username, password)
             from fastapp.executors.remote import CONFIGURATION_QUEUE, RPC_QUEUE 
             name = "ExecutorSrvThread-%s-%s" % (c, base)
-            thread = ExecutorServerThread(name, "localhost", vhost, 
+            thread = ExecutorServerThread(name, host, vhost, 
                 queues_consume=[[RPC_QUEUE]], 
                 topic_receiver=[[CONFIGURATION_QUEUE]], 
                 username=username, 
@@ -72,7 +74,7 @@ class Command(BaseCommand):
         update_status_thread.start()        
         
 
-        thread = HeartbeatThread("HeartbeatThread-%s" % c, "localhost", "/", 
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", 
             queues_produce=[[HEARTBEAT_QUEUE]],
             additional_payload={'vhost': vhost}
             )
