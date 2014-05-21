@@ -48,7 +48,7 @@ def update_status(parent_name, thread_count, threads):
             
             pid = os.getpid()
             logger.info("Check Memory usage of PID: %s" % str(pid))
-            args = ["ps", "-p "+str(pid), "-o", "rss"]
+            args = ["ps", "-p", str(pid), "-o", "rss"]
             logger.info(str(args))
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
