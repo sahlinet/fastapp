@@ -47,7 +47,10 @@ def update_status(parent_name, thread_count, threads):
             alive_thread_count = 0
             
             pid = os.getpid()
-            proc = subprocess.Popen(["ps", "-p "+str(pid), "-o", "rss"], stdout=subprocess.PIPE)
+            logger.info("Check Memory usage of PID: %s" % str(pid))
+            args = ["ps", "-p "+str(pid), "-o", "rss"]
+            logger.info(str(args))
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
             rss = str(out).rstrip().strip().replace("\n", "").replace("RSS ", "")
             logger.info("MEM-Usage of '%s': %s" % (parent_name, rss))
