@@ -166,7 +166,7 @@ class DjendExecView(View, DjendMixin):
 #            traceback.print_exc()
 #            status = self.STATE_NOK
 #        return {"status": status, "returned": returned, "exception": exception}
-
+    @never_cache
     def get(self, request, *args, **kwargs):
         # get base
         base = kwargs['base']
