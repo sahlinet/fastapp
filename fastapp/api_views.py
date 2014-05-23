@@ -74,7 +74,7 @@ class BaseViewSet(viewsets.ModelViewSet):
 
     def stop(self, request, pk):
         logger.info("stopping %s" % pk)
-        base = self.get_queryset().get(id=pk)
+        base = self.get_queryset().select_for_update().get(id=pk)
         base.stop()
         return self.retrieve(request, pk=pk)
 

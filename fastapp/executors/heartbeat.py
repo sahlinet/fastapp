@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 from django.core import serializers
 from django.conf import settings
+from django.db import DatabaseError
 from fastapp.executors.remote import distribute
 from fastapp.models import Executor, Instance, Process, Thread
 from fastapp.queue import CommunicationThread
@@ -32,10 +33,13 @@ def inactivate():
                 instance.save()
 
             # start if is_started and not running    
-            for executor in Executor.objects.filter(started=True):
-                if not executor.is_running():
-                    # log start with last beat datetime
-                    executor.start()
+            try:
+                for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
+                    if not executor.is_running():
+                        # log start with last beat datetime
+                        executor.start()
+            except DatabaseError, e:
+                logger.exception(e)
             time.sleep(10)
     except Exception, e:
         logger.exception(e)

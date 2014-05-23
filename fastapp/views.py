@@ -202,6 +202,7 @@ class DjendExecView(View, DjendMixin):
         rpc_request_data.update({'request': 
                 { 
                 'method': request.method,
+                'content_type': request.META.get('Content-Type'),
                 'GET': get_dict.dict(),
                 'POST': post_dict.dict(),
                 #'session': request.session.session_key,
