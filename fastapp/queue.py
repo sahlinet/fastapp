@@ -71,6 +71,12 @@ class RabbitmqHttpApi(RabbitmqAdmin):
         host = getattr(settings, "RABBITMQ_HOST", "localhost")
         port = getattr(settings, "RABBITMQ_HTTP_API_PORT", "15672")
 
+        logger.debug(user)
+        logger.debug(password)
+
+        logger.debug(host)
+        logger.debug(port)
+
         if data:
             data=json.dumps(data)
         url = "http://%s:%s" % (host, port)
@@ -176,7 +182,7 @@ class CommunicationThread(threading.Thread):
             except Exception:
                 self.is_connected = False
                 #logger.warning('cannot connect', exc_info=True)
-                logger.warning('cannot connect')
+                logger.warning('cannot connect to %s' % str(self.parameters))
                 time.sleep(3)
                 continue
 
