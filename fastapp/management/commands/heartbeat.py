@@ -31,7 +31,9 @@ class Command(BaseCommand):
 
             host = getattr(settings, "RABBITMQ_HOST", "localhost")            
 
-            thread = HeartbeatThread(name, host, "/", queues_consume=queues_consume)
+	    username = settings.get('RABBITMQ_ADMIN_USER')
+	    password = settings.get('RABBITMQ_ADMIN_PASSWORD')
+            thread = HeartbeatThread(name, host, "/", queues_consume=queues_consume, username=username, password=password)
             threads.append(thread)
             thread.daemon = True
             thread.start()
