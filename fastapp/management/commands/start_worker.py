@@ -74,10 +74,7 @@ class Command(BaseCommand):
         update_status_thread.start()        
         
 
-        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", 
-            queues_produce=[[HEARTBEAT_QUEUE]],
-            additional_payload={'vhost': vhost}
-            )
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", queues_produce=[[HEARTBEAT_QUEUE]], additional_payload={'vhost': vhost})
         self.stdout.write('Start HeartbeatThread')
         threads.append(thread)
         thread.daemon = True

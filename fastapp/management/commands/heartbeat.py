@@ -27,8 +27,8 @@ class Command(BaseCommand):
         queues_consume = [[HEARTBEAT_QUEUE, True]]
 
         host = getattr(settings, "RABBITMQ_HOST", "localhost")            
-        username = settings.get('RABBITMQ_ADMIN_USER')
-        password = settings.get('RABBITMQ_ADMIN_PASSWORD')
+        username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
+        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
         for c in range(0, THREAD_COUNT):
             name = "HeartbeatThread-%s" % c
