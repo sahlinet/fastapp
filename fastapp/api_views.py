@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from fastapp.models import Base, Apy, Setting
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer
 from fastapp.utils import info, error, warn
+from django.db import transaction
 from rest_framework.decorators import link
 from rest_framework.response import Response
 
@@ -73,9 +74,11 @@ class BaseViewSet(viewsets.ModelViewSet):
         return self.retrieve(request, pk=pk)
 
     def stop(self, request, pk):
+        transaction.set_autocommit(False)
         logger.info("stopping %s" % pk)
         base = self.get_queryset().select_for_update().get(id=pk)
         base.stop()
+        transaction.commit()
         return self.retrieve(request, pk=pk)
 
     @link()

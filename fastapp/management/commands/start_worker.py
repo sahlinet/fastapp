@@ -73,8 +73,14 @@ class Command(BaseCommand):
         update_status_thread.daemon = True
         update_status_thread.start()        
         
+        host = getattr(settings, "RABBITMQ_HOST", "localhost")            
+        username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
+        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
-        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", queues_produce=[[HEARTBEAT_QUEUE]], additional_payload={'vhost': vhost})
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", queues_produce=[[HEARTBEAT_QUEUE]], 
+            username=username,
+            password=password,
+            additional_payload={'vhost': vhost})
         self.stdout.write('Start HeartbeatThread')
         threads.append(thread)
         thread.daemon = True
