@@ -134,6 +134,14 @@ def connect_to_queue(host, queue, vhost, username, password, port):
             logger.error("No consumer on queue %s" % queue)
     except Exception, e:
         logger.exception(e)
+        logger.error(host)
+        logger.error(queue)
+        logger.error(vhost)
+        logger.error(username)
+        logger.error(password)
+        logger.error(str(port))
+        raise e
+
     return channel
 
 class CommunicationThread(threading.Thread):

@@ -70,7 +70,16 @@ class PusherSenderThread(threading.Thread):
         self.in_sync = False
 
     def run(self):
-        self.parameters = pika.ConnectionParameters(host="localhost", heartbeat_interval=3)
+
+        user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
+        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
+
+        host = getattr(settings, "RABBITMQ_HOST", "localhost")
+        port = getattr(settings, "RABBITMQ_PORT", 5672)
+        vhost = "/"
+
+        credentials = pika.PlainCredentials(user, password)
+        self.parameters = pika.ConnectionParameters(host, port, vhost, credentials, heartbeat_interval=3)
 
         while True:
             try:
