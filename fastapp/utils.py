@@ -112,9 +112,13 @@ from queue import connect_to_queue
 def send_client(channel_name, event, data):
     logger.debug("START EVENT_TO_QUEUE %s" % event)
 
-    channel = connect_to_queue('localhost', 'pusher_events')
-    #channel = pusher
+    host = settings.RABBITMQ_HOST
+    port = settings.RABBITMQ_PORT
+    user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
+    password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
+    #channel = pusher
+    channel = connect_to_queue(host, 'pusher_events', "/", username=user, password=password, port=port)
     payload = {
         'channel': channel_name, 
         'event': event, 

@@ -68,9 +68,11 @@ class BaseViewSet(viewsets.ModelViewSet):
         return Base.objects.filter(user=self.request.user)
 
     def start(self, request, pk):
+        transaction.set_autocommit(False)
         logger.info("starting %s" % pk)
         base = self.get_queryset().get(id=pk)
         base.start()
+        transaction.commit()
         return self.retrieve(request, pk=pk)
 
     def stop(self, request, pk):

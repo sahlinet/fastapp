@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from django.core import serializers
 from django.conf import settings
 from django.db import DatabaseError
+from django.db import transaction
 from fastapp.executors.remote import distribute
 from fastapp.models import Executor, Instance, Process, Thread
 from fastapp.queue import CommunicationThread
@@ -23,6 +24,8 @@ SETTING_QUEUE = "setting"
 
 
 def inactivate():
+
+    transaction.set_autocommit(False)
     try:
         while True:
             time.sleep(0.1)
@@ -40,9 +43,12 @@ def inactivate():
                         executor.start()
             except DatabaseError, e:
                 logger.exception(e)
+                transaction.rollback()
+            transaction.commit()
             time.sleep(10)
     except Exception, e:
         logger.exception(e)
+        transaction.rollback()
 
 def update_status(parent_name, thread_count, threads):
     try:
@@ -131,7 +137,6 @@ class HeartbeatThread(CommunicationThread):
                 from fastapp.models import Apy, Setting
                 for instance in Apy.objects.filter(base__name=base):
                     distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]), 
-                        #"philipsahli-aaaa", 
                         vhost,
                         instance.base.name,
                         instance.base.executor.password

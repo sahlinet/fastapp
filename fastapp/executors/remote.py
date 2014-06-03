@@ -8,6 +8,8 @@ import traceback
 from bunch import Bunch
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 RESPONSE_TIMEOUT = 10
@@ -34,9 +36,11 @@ def distribute(event, body, vhost, username, password):
             logger.debug("exchanging message to vhost username: %s" % self.username)
             logger.debug("exchanging message to vhost password: %s" % self.password)
             self.connection = connect_to_queuemanager(
+		host=settings.RABBITMQ_HOST,
                 vhost=vhost,
                 username=username,
-                password=password
+                password=password,
+		port=settings.RABBITMQ_PORT,
                 )
 
             self.channel = self.connection.channel()
@@ -68,9 +72,11 @@ def call_rpc_client(apy, vhost, username, password):
             # get needed stuff
             self.vhost = vhost
             self.connection = connect_to_queuemanager(
+		host=settings.RABBITMQ_HOST,
                 vhost=vhost,
                 username=username,
-                password=password
+                password=password,
+		port=settings.RABBITMQ_PORT
                 )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
@@ -204,6 +210,7 @@ class ExecutorServerThread(CommunicationThread):
                     logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
                     logger.error("invalid event arrived")
+	            logger.warn(props.app_id)	   
     #
             if method.routing_key == RPC_QUEUE:
     #            def on_message(ch, method, props, body):

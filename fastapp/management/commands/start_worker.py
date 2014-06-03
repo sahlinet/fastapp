@@ -73,7 +73,6 @@ class Command(BaseCommand):
         update_status_thread.daemon = True
         update_status_thread.start()        
         
-        host = getattr(settings, "RABBITMQ_HOST", "localhost")            
         username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 

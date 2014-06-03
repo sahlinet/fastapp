@@ -112,21 +112,21 @@ def create_vhost(base):
         sys.exit(1)
         raise e
 
-def connect_to_queuemanager(host="localhost", vhost="/", username="guest", password="guest"):
+def connect_to_queuemanager(host, vhost, username, password, port):
     credentials = pika.PlainCredentials(username, password)
     logger.debug("Trying to connect to: %s, %s, %s, %s" % (host, vhost, username, password))
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, virtual_host=vhost, heartbeat_interval=20, credentials=credentials))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=20, credentials=credentials))
     except Exception, e:
         logger.exception(e)
         raise e
     return connection
 
-def connect_to_queue(host, queue, vhost="/", username="guest", password="guest"):
+def connect_to_queue(host, queue, vhost, username, password, port):
     logger.debug("Connect to %s" % queue)
     try:
         #connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', virtual_host=vhost, heartbeat_interval=20))
-        connection = connect_to_queuemanager(host, vhost, username, password)
+        connection = connect_to_queuemanager(host, vhost, username, password, port)
         channel = connection.channel()
         #d = channel.queue_declare(queue, durable=True)
         d = channel.queue_declare(queue)
@@ -138,7 +138,7 @@ def connect_to_queue(host, queue, vhost="/", username="guest", password="guest")
 
 class CommunicationThread(threading.Thread):
 
-    def __init__(self, name, host, vhost, queues_produce=[], queues_consume=[], topic_receiver=[], username="guest", password="guest", additional_payload={}):
+    def __init__(self, name, host, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}):
         threading.Thread.__init__(self)
         self.name = name
         self.additional_payload=additional_payload
@@ -179,10 +179,11 @@ class CommunicationThread(threading.Thread):
                 self._connection = pika.SelectConnection(self.parameters, self.on_connected, on_close_callback=self.on_close)
                 logger.info("'%s' connected" % self.name)
                 self.is_connected = True 
-            except Exception:
+            except Exception, e:
                 self.is_connected = False
                 #logger.warning('cannot connect', exc_info=True)
                 logger.warning('cannot connect to %s' % str(self.parameters))
+                logger.exception(e)
                 time.sleep(3)
                 continue
 
