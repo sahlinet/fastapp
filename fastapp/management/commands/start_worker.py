@@ -59,7 +59,7 @@ class Command(BaseCommand):
             #thread = ExecutorServerThread(c, "ExecutorServerThread-%s-%s" % (c, base), c, vhost, username, password)
             from fastapp.executors.remote import CONFIGURATION_QUEUE, RPC_QUEUE 
             name = "ExecutorSrvThread-%s-%s" % (c, base)
-            thread = ExecutorServerThread(name, host, vhost, 
+            thread = ExecutorServerThread(name, host, port, vhost, 
                 queues_consume=[[RPC_QUEUE]], 
                 topic_receiver=[[CONFIGURATION_QUEUE]], 
                 username=username, 

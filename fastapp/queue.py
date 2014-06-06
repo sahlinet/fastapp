@@ -114,7 +114,7 @@ def create_vhost(base):
 
 def connect_to_queuemanager(host, vhost, username, password, port):
     credentials = pika.PlainCredentials(username, password)
-    logger.debug("Trying to connect to: %s, %s, %s, %s" % (host, vhost, username, password))
+    logger.debug("Trying to connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=20, credentials=credentials))
     except Exception, e:
