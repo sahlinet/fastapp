@@ -50,7 +50,8 @@ class Command(BaseCommand):
         #vhost = generate_vhost_configurationate_vhost_configuration(username, base)
         logger.info("vhost: %s" % vhost)
 
-        host = getattr(settings, "RABBITMQ_HOST", "localhost")            
+        host = getattr(settings, "RABBITMQ_HOST", "localhost")
+        port = getattr(settings, "RABBITMQ_PORT", 5672)
 
         for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
 
@@ -76,7 +77,7 @@ class Command(BaseCommand):
         username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
-        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, "/", queues_produce=[[HEARTBEAT_QUEUE]], 
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port, "/", queues_produce=[[HEARTBEAT_QUEUE]], 
             username=username,
             password=password,
             additional_payload={'vhost': vhost})

@@ -146,12 +146,13 @@ def connect_to_queue(host, queue, vhost, username, password, port):
 
 class CommunicationThread(threading.Thread):
 
-    def __init__(self, name, host, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}):
+    def __init__(self, name, host, port, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}):
         threading.Thread.__init__(self)
         self.name = name
         self.additional_payload=additional_payload
 
         self.host = host
+        self.port = port
         self.vhost = vhost
 
         self.credentials = pika.PlainCredentials(username, password)
@@ -169,6 +170,7 @@ class CommunicationThread(threading.Thread):
     def run(self):
         self.parameters = pika.ConnectionParameters(
             host=self.host, 
+            port=self.port, 
             virtual_host=self.vhost, 
             heartbeat_interval=3, 
             credentials=self.credentials
