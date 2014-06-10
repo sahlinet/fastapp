@@ -37,7 +37,7 @@ def inactivate():
 
             # start if is_started and not running    
             try:
-                for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
+                for executor in Executor.objects.select_for_update(nowait=False).filter(started=True):
                     if not executor.is_running():
                         # log start with last beat datetime
                         executor.start()
@@ -57,9 +57,7 @@ def update_status(parent_name, thread_count, threads):
             alive_thread_count = 0
             
             pid = os.getpid()
-            logger.info("Check Memory usage of PID: %s" % str(pid))
             args = ["ps", "-p", str(pid), "-o", "rss="]
-            logger.info(str(args))
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
             rss = str(out).rstrip().strip().lstrip()
@@ -87,7 +85,7 @@ def update_status(parent_name, thread_count, threads):
             if thread_count == alive_thread_count:
                 process.up()
                 process.save()
-                logger.info("Process is healthy.")
+                logger.info("Process '%s' is healthy." % parent_name)
             else:
                 logger.error("Process is not healthy. Threads: %s / %s" % (alive_thread_count, thread_count))
             time.sleep(10)
@@ -101,7 +99,7 @@ class HeartbeatThread(CommunicationThread):
 
 
     def send_message(self):
-        logger.info("send message to vhost: %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
+        logger.debug("send message to vhost: %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         payload = {'in_sync': self.in_sync}
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',

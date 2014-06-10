@@ -112,6 +112,8 @@ def create_vhost(base):
         sys.exit(1)
         raise e
 
+#from memory_profiler import profile as memory_profile
+#@memory_profile
 def connect_to_queuemanager(host, vhost, username, password, port):
     credentials = pika.PlainCredentials(username, password)
     logger.debug("Trying to connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
@@ -122,16 +124,14 @@ def connect_to_queuemanager(host, vhost, username, password, port):
         raise e
     return connection
 
+#@memory_profile
 def connect_to_queue(host, queue, vhost, username, password, port):
     logger.debug("Connect to %s" % queue)
     try:
-        #connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', virtual_host=vhost, heartbeat_interval=20))
         connection = connect_to_queuemanager(host, vhost, username, password, port)
         channel = connection.channel()
-        #d = channel.queue_declare(queue, durable=True)
-        d = channel.queue_declare(queue)
-        if d.method.__dict__['consumer_count']:
-            logger.error("No consumer on queue %s" % queue)
+        channel.queue_declare(queue)
+        return channel
     except Exception, e:
         logger.exception(e)
         logger.error(host)
@@ -140,9 +140,9 @@ def connect_to_queue(host, queue, vhost, username, password, port):
         logger.error(username)
         logger.error(password)
         logger.error(str(port))
+        del channel
+        del connection
         raise e
-
-    return channel
 
 class CommunicationThread(threading.Thread):
 

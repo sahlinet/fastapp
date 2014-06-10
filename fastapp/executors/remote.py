@@ -14,8 +14,28 @@ logger = logging.getLogger(__name__)
 
 RESPONSE_TIMEOUT = 10
 CONFIGURATION_QUEUE = "configuration"
-CONFIGURATION_EVENT = "configuration"
+CONFIGURATION_EVENT = CONFIGURATION_QUEUE
 SETTINGS_EVENT = "settings"
+
+class Worker():
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def is_running(self):
+        pass
+
+    def running(self):
+        pass
+
+    def update(self):
+        pass
+
+    def execute(self):
+        pass
 
 def distribute(event, body, vhost, username, password):
     logger.debug("distribute called")
@@ -72,11 +92,11 @@ def call_rpc_client(apy, vhost, username, password):
             # get needed stuff
             self.vhost = vhost
             self.connection = connect_to_queuemanager(
-		host=settings.RABBITMQ_HOST,
-                vhost=vhost,
-                username=username,
-                password=password,
-		port=settings.RABBITMQ_PORT
+    		        host=settings.RABBITMQ_HOST,
+                    vhost=vhost,
+                    username=username,
+                    password=password,
+		            port=settings.RABBITMQ_PORT
                 )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
@@ -89,9 +109,6 @@ def call_rpc_client(apy, vhost, username, password):
             self.channel.basic_consume(self.on_response, no_ack=True,
                                        queue=self.callback_queue)
 
-
-        #def _get_base():
-        #    apys = requests.get("http://localhost:8000/fastapp/api/base/23/apy/")
         def on_timeout(self):
             logger.error("timeout in waiting for response")
             raise Exception("Timeout")
@@ -117,12 +134,23 @@ def call_rpc_client(apy, vhost, username, password):
                 self.connection.process_data_events()
             return self.response
 
+        def end(self):
+            self.channel.close()
+            self.connection.close()
+            del self.channel
+            del self.connection
+            #from guppy import hpy; hp=hpy()
+            #import pdb; pdb.set_trace()
+            #print hp.heap()
+
     executor = ExecutorClient(vhost, username, password)
 
     try:
         response = executor.call(apy)
-    except Exception, e:
+    except Exception:
         response = json.dumps({u'status': u'TIMEOUT', u'exception': None, u'returned': None, 'id': u'cannot_import'})
+    finally:
+        executor.end()
     return response
 
 
@@ -138,50 +166,10 @@ RPC_QUEUE = "rpc_queue"
 
 class ExecutorServerThread(CommunicationThread):
     def __init__(self, *args, **kwargs ):
-        # adds
-        #self.vhost = vhost
-        #self.username = username
-        #self.password = password
-
-        #logger.info("exchanging message to vhost: %s" % self.vhost)
-        #logger.info("exchanging message to vhost username: %s" % self.username)
-        #logger.info("exchanging message to vhost password: %s" % self.password)
-        # container for functions
         self.functions = {}
-        # container for settings
         self.settings = {}
 
         return super(ExecutorServerThread, self).__init__(*args, **kwargs)
-
-    #def run(self):
-    #    print "Starting " + self.name
-    #    self.listen()
-
-    #def listen(self):
-    #    # open connection and channel
-    #    try:
-    #        connection = connect_to_queuemanager(
-    #                vhost=self.vhost,
-    #                username=self.username,
-    #                password=self.password
-    #                )
-    #        channel = connection.channel()
-#
-#
-#            # configuration
-#            channel.exchange_declare(exchange=CONFIGURATION_QUEUE, type='fanout')
-#            result = channel.queue_declare(exclusive=True)
-#            self.queue_name = result.method.queue
-#            channel.queue_bind(exchange=CONFIGURATION_QUEUE, queue=self.queue_name)
-#
-#            # setting
-#            channel.exchange_declare(exchange=SETTING_QUEUE, type='fanout')
-#            result = channel.queue_declare(exclusive=True)
-#            self.setting_queue_name = result.method.queue
-#            channel.queue_bind(exchange=SETTING_QUEUE, queue=self.setting_queue_name)
-#
-#            # listen for rpc events
-#            channel.queue_declare(queue=RPC_QUEUE)
 
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
@@ -213,7 +201,6 @@ class ExecutorServerThread(CommunicationThread):
 	            logger.warn(props.app_id)	   
     #
             if method.routing_key == RPC_QUEUE:
-    #            def on_message(ch, method, props, body):
                 logger.info("Request received in %s" % self.name)
                 try:
                     response_data = {}
@@ -233,21 +220,6 @@ class ExecutorServerThread(CommunicationThread):
         except Exception, e:
             logger.exception(e)
 
-#
-#            channel.basic_qos(prefetch_count=3)
-#            channel.basic_consume(on_message, queue=RPC_QUEUE)
-#            channel.basic_consume(on_configuration_request, queue=self.queue_name, no_ack=True)
-#            channel.basic_consume(on_setting_request, queue=self.setting_queue_name, no_ack=True)
-#
-#            logger.info("Waiting for events")
-#            channel.start_consuming()
-#        except Exception, e:
-#            logger.error("Connection closed")
-#            logger.exception(e)
-
-
-
-
 class ApyNotFound(Exception):
     pass
 
@@ -257,6 +229,9 @@ class ApyError(Exception):
 def _do(data, functions=None, settings=None):
         exception = None;  returned = None
         status = STATE_OK
+
+        logger.info("DATA")
+        logger.info(data)
 
         request = Bunch(data['request'])
         logger.info("REQUEST")

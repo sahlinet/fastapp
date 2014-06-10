@@ -6,11 +6,11 @@ import StringIO
 import hashlib
 import pika
 import sys
-import pusher
 from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 
+from queue import connect_to_queue
 
 
 class UnAuthorized(Exception):
@@ -107,8 +107,6 @@ def channel_name_for_user_by_user(user):
 
 
 
-
-from queue import connect_to_queue
 def send_client(channel_name, event, data):
     logger.debug("START EVENT_TO_QUEUE %s" % event)
 
@@ -133,9 +131,10 @@ def send_client(channel_name, event, data):
                          ),
                         )
     logger.debug("END EVENT_TO_QUEUE %s" % event)
-
-
-
+    channel.close()
+    channel.connection.close()
+    del channel.connection 
+    del channel
 
 def user_message(level, channel_name, message):
 
@@ -169,20 +168,6 @@ def warn(username, gmessage):
         return user_message(logging.WARN, username, gmessage)
 
 
-
-from console import PusherSenderThread
-if any(arg.startswith('run') for arg in sys.argv):
-
-    threads = []
-    # create connection to pusher_queue
-    logger.info("Start sending events to pusher")
-    for c in range(1, 3):
-        name = "PusherSenderThread-%s" % c
-        thread = PusherSenderThread(c, name, c, "/")
-        logger.info("Start '%s'" % name)
-        threads.append(thread)
-        thread.daemon = True
-        thread.start()
 
 # autostart
 #from fastapp.models import 

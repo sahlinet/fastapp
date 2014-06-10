@@ -13,6 +13,7 @@
 		 			<th>Running</th>
 		 			<th>Last up</th>
 		 			<th>RSS</th>
+		 			<th>Threads</th>
 		 		</tr>
 		 		{% for process in process_list %}
 		 		<tr>
@@ -20,21 +21,10 @@
 		 			<td> {{ process.is_up }} </td>
 		 			<td> {{ process.running | date:"c"}} </td>
 		 			<td> {{ process.rss }} </td>
-		 		</tr>
-		 		{% endfor %}
-		 	</table>
-		 	<div><h1>Threads</h1></div>
-		 	<table class="table">
-		 		<tr>
-		 			<th>Parent</th>
-		 			<th>Name</th>
-		 			<th>State</th>
-		 		</tr>
-		 		{% for thread in threads %}
-		 		<tr>
-		 			<td> {{ thread.parent.name }}</td>
-		 			<td> {{ thread.name }} </td>
-		 			<td> {{ thread.health }} </td>
+		 			<td class="small"> {% for thread in process.threads.all %} 
+		 				{{ thread.name }} [{{ thread.health}}]</br>
+		 				{% endfor %}
+		 			</td>
 		 		</tr>
 		 		{% endfor %}
 		 	</table>

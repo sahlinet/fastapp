@@ -12,3 +12,4 @@ djangorestframework==2.3.12
 pika==0.9.13
 shortuuid==0.4
 sh==1.09
+gunicorn==18.0

@@ -9,52 +9,17 @@ from datetime import datetime
 
 from django.conf import settings
 
-from queue import connect_to_queue
 
 logger = logging.getLogger(__name__)
 
 def get_pusher():
-    pusher_instance = None
-    if pusher_instance is None:
-        logger.info("get_pusher")
-        pusher_instance = pusher.Pusher(
-          app_id=settings.PUSHER_APP_ID,
-          key=settings.PUSHER_KEY,
-          secret=settings.PUSHER_SECRET
-        )
-    #p = pusher.Pusher(
-    #  app_id=settings.PUSHER_APP_ID,
-    #  key=settings.PUSHER_KEY,
-    #  secret=settings.PUSHER_SECRET
-    #)
+    pusher_instance = pusher.Pusher(
+        app_id=settings.PUSHER_APP_ID,
+        key=settings.PUSHER_KEY,
+        secret=settings.PUSHER_SECRET
+    )
     logger.debug(pusher_instance)
     return pusher_instance
-
-def send_to_pusher(ch, method, props, body):
-    logger.debug(sys._getframe().f_code.co_name)
-    p = get_pusher()    
-    body = json.loads(body)
-
-    event = body['event']
-    channel = body['channel']
-    data = body['data']
-
-    p[channel].trigger(event, data)
-    ch.basic_ack(delivery_tag = method.delivery_tag)
-
-def consume(channel):
-    logger.info("Start consuming on pusher_events")
-    channel.basic_consume(send_to_pusher, queue='pusher_events')
-    channel.start_consuming()
-
-def start_sender():
-    channel = connect_to_queue('localhost', 'pusher_events')
-    from threading import Thread
-    logger.debug("Start thread for consume")
-    t = Thread(target=consume, args=(channel,))
-    t.daemon = True
-    t.start()
-    return t
 
 class PusherSenderThread(threading.Thread):
     PUBLISH_INTERVAL = 20
@@ -118,10 +83,8 @@ class PusherSenderThread(threading.Thread):
 
         self.channel = channel
 
-
     def on_beat(self, ch, method, props, body):
-        logger.info(self.name+": "+sys._getframe().f_code.co_name)
-        #ch.basic_ack(delivery_tag=method.delivery_tag)
+        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
 
         p = get_pusher()    
         body = json.loads(body)
@@ -138,7 +101,7 @@ class PusherSenderThread(threading.Thread):
             p[channel].trigger(event, data = {'datetime': str(now), 'message': str(e), 'class': "error"})
             logger.error("Cannot send data to pusher")
             logger.exception(e)
+
         logger.debug("pusher event sent")
-        #logger.info("ack start")
-        #ch.basic_ack(delivery_tag = method.delivery_tag)
-        #logger.info("ack done")
+
+        p = None
