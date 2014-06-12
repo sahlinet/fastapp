@@ -34,7 +34,7 @@ class Command(BaseCommand):
         for c in range(0, THREAD_COUNT):
             name = "HeartbeatThread-%s" % c
 
-            thread = HeartbeatThread(name, host, port, "/", username, password, queues_consume=queues_consume)
+            thread = HeartbeatThread(name, host, port, "/", username, password, queues_consume=queues_consume, ttl=3000)
             threads.append(thread)
             thread.daemon = True
             thread.start()

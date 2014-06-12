@@ -179,7 +179,6 @@ class ExecutorServerThread(CommunicationThread):
         logger.debug(body)
         try:
             if method.exchange == "configuration":
-                print "EVENT ARRIVED"
                 if props.app_id == "configuration":
                     fields = json.loads(body)[0]['fields']
                     try:
@@ -197,7 +196,7 @@ class ExecutorServerThread(CommunicationThread):
                     self.settings.update(json_body)
                     logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
-                    logger.error("invalid event arrived")
+                    logger.error("invalid event arrived (%s)" % props.app_id)
 	            logger.warn(props.app_id)	   
     #
             if method.routing_key == RPC_QUEUE:

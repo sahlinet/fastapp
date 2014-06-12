@@ -2,7 +2,10 @@ import json
 class Response(object):
 
 	def __init__(self, content):
-		self.content_type = self.CONTENT_TYPE
+		if hasattr(self, "CONTENT_TYPE"):
+			self.content_type = self.CONTENT_TYPE
+		else:
+			self.content_type = None
 		self.content = content
 
 	def serialize(self):
@@ -22,3 +25,6 @@ class HTMLResponse(Response):
 
 class JSONResponse(Response):
 	CONTENT_TYPE = "application/json"
+
+class RedirectResponse(Response):
+	pass

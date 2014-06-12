@@ -80,7 +80,7 @@ class Command(BaseCommand):
         thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port, "/", queues_produce=[[HEARTBEAT_QUEUE]], 
             username=username,
             password=password,
-            additional_payload={'vhost': vhost})
+            additional_payload={'vhost': vhost}, ttl=3000)
         self.stdout.write('Start HeartbeatThread')
         threads.append(thread)
         thread.daemon = True

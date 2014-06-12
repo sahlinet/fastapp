@@ -146,7 +146,7 @@ def connect_to_queue(host, queue, vhost, username, password, port):
 
 class CommunicationThread(threading.Thread):
 
-    def __init__(self, name, host, port, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}):
+    def __init__(self, name, host, port, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}, ttl=None):
         threading.Thread.__init__(self)
         self.name = name
         self.additional_payload=additional_payload
@@ -167,6 +167,8 @@ class CommunicationThread(threading.Thread):
 
         self.exchange_count = len(self.topic_receiver)
 
+        self.ttl = ttl
+
     def run(self):
         self.parameters = pika.ConnectionParameters(
             host=self.host, 
@@ -177,12 +179,6 @@ class CommunicationThread(threading.Thread):
             )
         logger.info("Starting " + self.name)
 
-        #if self.receiver:
-        #    self.on_queue_declared = self.consume_on_queue_declared
-        #else:
-        #    self.on_queue_declared = self.produce_on_queue_declared
-        #print self.on_queue_declared
-
         self._run = True
         while self._run:
             try:
@@ -191,7 +187,6 @@ class CommunicationThread(threading.Thread):
                 self.is_connected = True 
             except Exception, e:
                 self.is_connected = False
-                #logger.warning('cannot connect', exc_info=True)
                 logger.warning('cannot connect to %s' % str(self.parameters))
                 logger.exception(e)
                 time.sleep(3)
@@ -230,7 +225,6 @@ class CommunicationThread(threading.Thread):
         logger.debug(frame)
 
         for queue in self.queues_consume:
-            #self.channel.basic_consume(self.on_message, queue=queue[0], no_ack=True)
             ack = False
             if len(queue) == 2:
                 ack = queue[1]
@@ -266,7 +260,12 @@ class CommunicationThread(threading.Thread):
 
         # queue consumer
         for queue in self.queues_consume:
-            channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared)
+            #jjlogger.info("TTL: "+str(self.ttl))
+            channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared, 
+                    #arguments={
+                    #  'x-message-ttl' : self.ttl
+                    #  }
+                )
 
         # queue producer
         for queue in self.queues_produce:
@@ -275,10 +274,7 @@ class CommunicationThread(threading.Thread):
         # topic receiver
         for topic in self.topic_receiver:
             logger.info("Topic: "+str(topic[0]))
-            #channel.exchange_declare(exchange=topic[0], type='fanout')
             channel.exchange_declare(exchange="configuration", type='fanout', callback=self.on_exchange_declare)
-            #result = channel.queue_declare(exclusive=True)
-            #channel.queue_bind(exchange="configuration", queue=result.method.queue)
 
         self.channel = channel
 

@@ -164,7 +164,8 @@ class DjendExecView(View, DjendMixin):
         response_status_code = 200
 
         # respond with json
-        if request.GET.has_key('json') or request.GET.has_key('callback'):
+        print request.GET.has_key('json')
+        if request.GET.has_key(u'json') or request.GET.has_key('callback'):
 
             user = channel_name_for_user(request)
 
@@ -199,11 +200,10 @@ class DjendExecView(View, DjendMixin):
             #    location = data['returned']['Location']
             #    #info(user, "(%s) Redirect to: %s" % (exec_model.id, location))
             #    return HttpResponse(json.dumps({'redirect': data['returned']['Location']}), content_type="application/json", status=response_status_code)
-            #else:
-            #    if request.GET.has_key('callback'):
-            #        data = '%s(%s);' % (request.REQUEST['callback'], json.dumps(data))
-            #        return HttpResponse(data, "application/javascript")
-            #    return HttpResponse(json.dumps(data), content_type="application/json", status=response_status_code)
+            if request.GET.has_key('callback'):
+                data = '%s(%s);' % (request.REQUEST['callback'], json.dumps(data))
+                return HttpResponse(data, "application/javascript")
+            return HttpResponse(json.dumps(data), content_type="application/json", status=response_status_code)
 
         # real response
         elif response_class:
@@ -216,13 +216,17 @@ class DjendExecView(View, DjendMixin):
             elif response_class == u''+responses.JSONResponse.__name__:
                 content_type = json.loads(data['returned'])['content_type']
                 content = json.loads(data['returned'])['content']
+            elif response_class == u''+responses.RedirectResponse.__name__:
+                location = json.loads(data['returned'])['content']
+                return HttpResponseRedirect(location)
             else:
                 logger.error("Wrong response")
                 return HttpResponseServerError("You're apy did not return any allowed response-class or is not called with 'json' or 'callback' as querystring.")
             return HttpResponse(content, content_type, status=response_status_code)
 
-        logger.error("Not received json or callback query string nor response_class from response.")
-        return HttpResponseServerError()
+        else:
+            logger.error("Not received json or callback query string nor response_class from response.")
+            return HttpResponseServerError()
 
     #@profile
     @never_cache

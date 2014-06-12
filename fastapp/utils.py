@@ -166,8 +166,3 @@ def error(username, gmessage):
         return user_message(logging.ERROR, username, gmessage)
 def warn(username, gmessage): 
         return user_message(logging.WARN, username, gmessage)
-
-
-
-# autostart
-#from fastapp.models import 
