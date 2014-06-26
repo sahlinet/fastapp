@@ -1,13 +1,12 @@
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
 from rest_framework import permissions, viewsets
-from rest_framework import generics
 
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from fastapp.models import Base, Apy, Setting
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer
-from fastapp.utils import info, error, warn
+from fastapp.utils import info
 from django.db import transaction
 from rest_framework.decorators import link
 from rest_framework.response import Response
@@ -65,7 +64,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        return Base.objects.filter(user=self.request.user)
+        return Base.objects.all()._clone().filter(user=self.request.user)
 
     def start(self, request, pk):
         transaction.set_autocommit(False)
