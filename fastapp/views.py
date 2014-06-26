@@ -85,6 +85,8 @@ class DjendStaticView(View):
             mimetype = "image/jpeg"
         elif static_path.lower().endswith('.ico'):
             mimetype = "image/x-icon"
+        elif static_path.lower().endswith('.html'):
+            mimetype = "text/html"
         else:
             logger.error("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")

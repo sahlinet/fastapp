@@ -1,4 +1,4 @@
-function add_client_message(message) {
+  function add_client_message(message) {
     data = {};
     data.message = message;
     var now = NDateTime.Now();
