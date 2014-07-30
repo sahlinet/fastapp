@@ -118,7 +118,7 @@ def connect_to_queuemanager(host, vhost, username, password, port):
     credentials = pika.PlainCredentials(username, password)
     logger.debug("Trying to connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=20, credentials=credentials))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=40, credentials=credentials))
     except Exception, e:
         logger.exception(e)
         raise e
@@ -174,7 +174,7 @@ class CommunicationThread(threading.Thread):
             host=self.host, 
             port=self.port, 
             virtual_host=self.vhost, 
-            heartbeat_interval=3, 
+            heartbeat_interval=40, 
             credentials=self.credentials
             )
         logger.info("Starting " + self.name)

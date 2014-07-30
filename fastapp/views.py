@@ -166,7 +166,6 @@ class DjendExecView(View, DjendMixin):
         response_status_code = 200
 
         # respond with json
-        print request.GET.has_key('json')
         if request.GET.has_key(u'json') or request.GET.has_key('callback'):
 
             user = channel_name_for_user(request)

@@ -12,10 +12,10 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-RESPONSE_TIMEOUT = 10
+RESPONSE_TIMEOUT = 30
 CONFIGURATION_QUEUE = "configuration"
 CONFIGURATION_EVENT = CONFIGURATION_QUEUE
-SETTINGS_EVENT = "settings"
+SETTINGS_EVENT = "setting"
 
 class Worker():
 
@@ -122,12 +122,15 @@ def call_rpc_client(apy, vhost, username, password):
             self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
+            expire = 5000
+            logger.debug("Message expiration set to %s ms" % str(expire))
             self.channel.basic_publish(exchange='',
                                        routing_key='rpc_queue',
                                        properties=pika.BasicProperties(
                                              reply_to = self.callback_queue,
                                              delivery_mode=1,
                                              correlation_id = self.corr_id,
+                                             expiration=str(expire)
                                              ),
                                        body=str(n))
             while self.response is None:
@@ -139,9 +142,6 @@ def call_rpc_client(apy, vhost, username, password):
             self.connection.close()
             del self.channel
             del self.connection
-            #from guppy import hpy; hp=hpy()
-            #import pdb; pdb.set_trace()
-            #print hp.heap()
 
     executor = ExecutorClient(vhost, username, password)
 
@@ -173,8 +173,6 @@ class ExecutorServerThread(CommunicationThread):
 
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
-        logger.debug(ch)
-        logger.debug(method)
         logger.debug(props.app_id)
         logger.debug(body)
         try:
@@ -196,8 +194,7 @@ class ExecutorServerThread(CommunicationThread):
                     self.settings.update(json_body)
                     logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
-                    logger.error("invalid event arrived (%s)" % props.app_id)
-	            logger.warn(props.app_id)	   
+                    logger.error("Invalid event arrived (%s)" % props.app_id)
     #
             if method.routing_key == RPC_QUEUE:
                 logger.info("Request received in %s" % self.name)
@@ -215,6 +212,7 @@ class ExecutorServerThread(CommunicationThread):
                                         delivery_mode=1,
                                         ),
                                      body=json.dumps(response_data))
+                    logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
             logger.exception(e)
@@ -226,15 +224,14 @@ class ApyError(Exception):
     pass
 
 def _do(data, functions=None, settings=None):
-        exception = None;  returned = None
+        exception = None;  exception_message = None; returned = None
         status = STATE_OK
 
         logger.info("DATA")
         logger.info(data)
 
         request = Bunch(data['request'])
-        logger.info("REQUEST")
-        logger.info(request)
+        logger.info("REQUEST: "+ str(request))
         base_name = data['base_name']
         model = json.loads(data['model'])
 
@@ -243,6 +240,7 @@ def _do(data, functions=None, settings=None):
         # worker does not know apy
         if not functions.has_key(model['fields']['name']):
             status = STATE_NOT_FOUND
+            logger.warn("method %s not found in functions, known: %s" % (model['fields']['name'], str(functions.keys())))
         # go ahead
         else:
             func = functions[model['fields']['name']]
@@ -297,10 +295,13 @@ def _do(data, functions=None, settings=None):
 
 
             except Exception, e:
-                exception = "%s: %s" % (type(e).__name__, e.message)
+                exception = "%s" % type(e).__name__
+                exception_message = e.message
                 traceback.print_exc()
                 logger.exception(e)
                 status = STATE_NOK
             logger.debug("END DO")
         return_data = {"status": status, "returned": returned, "exception": exception, "response_class": response_class}
+        if exception_message:
+            return_data['exception_message'] = exception_message
         return return_data
