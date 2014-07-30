@@ -122,12 +122,15 @@ def call_rpc_client(apy, vhost, username, password):
             self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
+            expire = 5000
+            logger.debug("Message expiration set to %s ms" % str(expire))
             self.channel.basic_publish(exchange='',
                                        routing_key='rpc_queue',
                                        properties=pika.BasicProperties(
                                              reply_to = self.callback_queue,
                                              delivery_mode=1,
                                              correlation_id = self.corr_id,
+                                             expiration=str(expire)
                                              ),
                                        body=str(n))
             while self.response is None:
