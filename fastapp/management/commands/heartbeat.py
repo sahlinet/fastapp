@@ -4,7 +4,7 @@ import threading
 
 from django.core.management.base import BaseCommand
 
-from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE
+from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE, AsyncResponseThread
 
 from django.conf import settings
 
@@ -17,7 +17,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         THREAD_COUNT = settings.FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT
+        ASYNC_THREAD_COUNT = THREAD_COUNT
         threads = []
+        async_threads = []
 
         inactivate_thread = threading.Thread(target=inactivate)
         inactivate_thread.daemon = True
@@ -43,7 +45,18 @@ class Command(BaseCommand):
         update_status_thread.daemon = True
         update_status_thread.start()
 
-        for t in threads:
+
+        # async response thread
+        queues_consume_async = [["async_callback", True]]
+        for c in range(0, ASYNC_THREAD_COUNT):
+            name = "AsyncResponseThread-%s" % c
+
+            thread = AsyncResponseThread(name, host, port, "/", username, password, queues_consume=queues_consume_async, ttl=3000)
+            async_threads.append(thread)
+            thread.daemon = True
+            thread.start()
+
+        for t in threads+async_threads:
             #print "join %s " % t
             try:
                 logger.info("%s Thread started" % THREAD_COUNT)

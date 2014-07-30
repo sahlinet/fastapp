@@ -4,6 +4,7 @@ import json
 import dropbox
 import time
 import copy
+from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -14,7 +15,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic import View, TemplateView
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError
+from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError, HttpResponsePermanentRedirect
 from django.views.generic.base import ContextMixin
 from django.conf import settings
 from django.views.decorators.cache import never_cache
@@ -26,7 +27,8 @@ from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, error, warn, channel_name_for_user, debug, send_client
 
 from fastapp.queue import generate_vhost_configuration
-from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread
+from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread, Transaction
+from fastapp.models import RUNNING, TIMEOUT, FINISHED, TRANSACTION_STATE_CHOICES
 from fastapp import responses
 from fastapp.executors.remote import call_rpc_client
 
@@ -160,6 +162,23 @@ class DjendExecView(View, DjendMixin):
             raise HttpResponseServerError(e)
         return data
 
+    def _execute_async(self, request, request_data, base_model, rid):
+        try:
+            # _do on remote
+            request_data.update({'rid': rid})
+            call_rpc_client(json.dumps(request_data), 
+                generate_vhost_configuration(
+                    base_model.user.username, 
+                    base_model.name), 
+                    base_model.name, 
+                    base_model.executor.password,
+                    async=True
+                    )
+        except Exception, e:
+            logger.exception(e)
+            raise HttpResponseServerError(e)
+        return True
+
     #@memory_profile
     def _handle_response(self, request, data, exec_model):
         response_class = data.get("response_class", None)
@@ -171,10 +190,10 @@ class DjendExecView(View, DjendMixin):
             user = channel_name_for_user(request)
 
             if data["status"] == "OK":
-                info(user, str(data))
+                #info(user, str(data))
                 exec_model.mark_executed()
             else:
-                error(user, str(data))
+                #error(user, str(data))
                 exec_model.mark_failed()
 
             if data["status"] in [self.STATE_NOK]:
@@ -196,11 +215,6 @@ class DjendExecView(View, DjendMixin):
             user = channel_name_for_user(request)
             send_client(user, "counter", cdata)
 
-            # the exec can return an HttpResponseRedirect object, where we redirect
-            #if isinstance(data['returned'], HttpResponseRedirect):
-            #    location = data['returned']['Location']
-            #    #info(user, "(%s) Redirect to: %s" % (exec_model.id, location))
-            #    return HttpResponse(json.dumps({'redirect': data['returned']['Location']}), content_type="application/json", status=response_status_code)
             if request.GET.has_key('callback'):
                 data = '%s(%s);' % (request.REQUEST['callback'], json.dumps(data))
                 return HttpResponse(data, "application/javascript")
@@ -242,19 +256,44 @@ class DjendExecView(View, DjendMixin):
             warn(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
             return HttpResponseNotFound("404 on %s"     % request.META['PATH_INFO'])
 
-        # log info to ui
-        user = channel_name_for_user(request)
-        debug(user, "%s-Request received, URI %s" % (request.method, request.path))
+        rid = request.GET.get('rid', None)
+        if rid:
+            # look for transaction
+            transaction = Transaction.objects.get(pk=rid)
+            if transaction.tout:
+                data = json.loads(transaction.tout)
+            else:
+                data = {'status': transaction.get_status_display()}
+                redirect_to = request.get_full_path()
+                data.update({'url': redirect_to})
+        else:
+            transaction = Transaction(apy=exec_model)
+            transaction.save()
+            #user = channel_name_for_user(request)
+            #debug(user, "%s-Request received, URI %s, RID %s" % (request.method, request.path, transaction.rid))
+            request_data = self._prepare_request(request, exec_model)
 
-        # prepare request
-        request_data = self._prepare_request(request, exec_model)
-
-        # execute
-        data = self._execute(request, request_data, base_model)
+            if request.GET.has_key('async') or request.POST.has_key('async'):
+                # execute async
+                transaction.tin = json.dumps(request_data)
+                transaction.status = RUNNING
+                transaction.async = True 
+                transaction.save()
+                data = self._execute_async(request, request_data, base_model, transaction.rid)
+                redirect_to = request.get_full_path()+"&rid=%s" % transaction.rid
+                return HttpResponsePermanentRedirect(redirect_to)
+            else:
+                # execute
+                transaction.tin = json.dumps(request_data)
+                data = self._execute(request, request_data, base_model)
+                transaction.tout = json.dumps(data)
+                transaction.status = FINISHED
+                transaction.save()
 
         # add exec's id to the response dict
         data.update({
             "id": kwargs['id'],
+            "rid": transaction.rid
             })
 
         # response
@@ -375,9 +414,10 @@ class DjendExecDeleteView(View):
         e = base.apys.get(name=kwargs['id'])
         try:
             e.delete()
-            info(request.user.username, "Exec '%s' deleted" % e.exec_name)
+            #info(request.user.username, "Exec '%s' deleted" % e.exec_name)
         except Exception, e:
-            error(request.user.username, "Error deleting(%s)" % e)
+            pass
+            #error(request.user.username, "Error deleting(%s)" % e)
         return HttpResponse('{"redirect": %s}' % request.META['HTTP_REFERER'])
 
     @csrf_exempt
@@ -414,7 +454,8 @@ class DjendBaseSaveView(View):
             # save in database
             e = base.apys.get(name=exec_name)
             if len(content) > 8200:
-                error(channel_name_for_user(request), "Exec '%s' is to big." % exec_name)
+                pass
+                #error(channel_name_for_user(request), "Exec '%s' is to big." % exec_name)
             else:    
                 e.module = content
                 e.description = request.POST.get('exec_description')
@@ -425,7 +466,7 @@ class DjendBaseSaveView(View):
             base.content = content
             base.save()
             # save in database
-            info(channel_name_for_user(request), "Base index '%s' saved" % base.name)
+            #info(channel_name_for_user(request), "Base index '%s' saved" % base.name)
 
         return HttpResponse()
 
@@ -484,6 +525,7 @@ class DjendBaseView(View, ContextMixin):
                 context['active_base'] = base_model
                 context['username'] = request.user.username
                 context['LAST_EXEC'] = request.GET.get('done')
+                context['transaction_list'] = Transaction.objects.filter(apy__base__name=base).filter(created__gte=datetime.now()-timedelta(minutes=30)).order_by('created')
                 rs = base_model.template(context)
 
             except ErrorResponse, e:
@@ -558,7 +600,7 @@ def dropbox_auth_finish(request):
 @csrf_exempt
 def login_or_sharedkey(function):
     def wrapper(request, *args, **kwargs):
-        logger.info("authenticate %s" % request.user)
+        logger.debug("authenticate %s" % request.user)
         user=request.user
         # if logged in
         if user.is_authenticated():

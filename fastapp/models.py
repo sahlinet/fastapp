@@ -9,7 +9,9 @@ import StringIO
 import gevent
 import json
 import pytz
+import random
 from datetime import datetime, timedelta
+from jsonfield import JSONField
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -53,7 +55,7 @@ class Base(models.Model):
 
     @property
     def shared(self):
-        print self.uuid
+        #print self.uuid
         return "/fastapp/%s/index/?shared_key=%s" % (self.name, urllib.quote(self.uuid))
 
     @property
@@ -172,6 +174,35 @@ class Counter(models.Model):
     apy= models.OneToOneField(Apy, related_name="counter")
     executed = models.IntegerField(default=0)
     failed = models.IntegerField(default=0)
+
+RUNNING = "R"
+FINISHED = "F"
+TIMEOUT = "T"
+
+TRANSACTION_STATE_CHOICES = (
+    ('R', 'RUNNING'),
+    ('F', 'FINISHED'),
+    ('T', 'TIMEOUT'),
+)
+
+def create_random():
+    rand=random.SystemRandom().randint(10000000,99999999)
+    return rand
+
+class Transaction(models.Model):
+    rid = models.IntegerField(primary_key=True, default=create_random)
+    apy= models.ForeignKey(Apy, related_name="transactions")
+    status = models.CharField(max_length=1, choices=TRANSACTION_STATE_CHOICES, default=RUNNING)
+    created = models.DateTimeField(auto_now_add=True, null=True)
+    modified = models.DateTimeField(auto_now=True, null=True)
+    tin = JSONField(blank=True, null=True)
+    tout = JSONField(blank=True, null=True)
+    async = models.BooleanField(default=False)
+
+    @property
+    def duration(self):
+        td = self.modified - self.created
+        return td.days*86400000 + td.seconds*1000 + td.microseconds/1000
 
 
 class Setting(models.Model):
@@ -305,6 +336,8 @@ class Executor(models.Model):
     def __str__(self):
         return "Executor %s-%s" % (self.base.user.username, self.base.name)
 
+
+
 @receiver(post_save, sender=Base)
 def initialize_on_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
@@ -354,9 +387,9 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
 
     # create executor instance if none
     try:
-        print instance.executor
+        instance.executor
     except Executor.DoesNotExist, e:
-        logger.info("create executor")
+        logger.debug("create executor for base %s" % instance)
         executor = Executor(base=instance)
         executor.save()
                 
