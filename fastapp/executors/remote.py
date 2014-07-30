@@ -12,10 +12,10 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-RESPONSE_TIMEOUT = 10
+RESPONSE_TIMEOUT = 30
 CONFIGURATION_QUEUE = "configuration"
 CONFIGURATION_EVENT = CONFIGURATION_QUEUE
-SETTINGS_EVENT = "settings"
+SETTINGS_EVENT = "setting"
 
 class Worker():
 
