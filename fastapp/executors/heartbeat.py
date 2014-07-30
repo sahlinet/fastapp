@@ -108,6 +108,7 @@ class HeartbeatThread(CommunicationThread):
                     #delivery_mode=1,
                     #reply_to = self.callback_queue,
                     #correlation_id = self.corr_id,
+                    expiration = str(2000)
                 ),
                 body=json.dumps(payload)
             )
