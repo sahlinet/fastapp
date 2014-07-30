@@ -61,7 +61,7 @@ def update_status(parent_name, thread_count, threads):
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
             rss = str(out).rstrip().strip().lstrip()
-            logger.info("MEM-Usage of '%s': %s" % (parent_name, rss))
+            logger.debug("MEM-Usage of '%s': %s" % (parent_name, rss))
             process, created = Process.objects.get_or_create(name=parent_name)
             process.rss = int(rss)
             process.save()
@@ -73,7 +73,7 @@ def update_status(parent_name, thread_count, threads):
                 # store in db
                 thread_model, created = Thread.objects.get_or_create(name=t.name, parent=process)
                 if t.isAlive() and t.health():
-                    logger.info("Thread '%s' is healthy." % t.name)
+                    logger.debug("Thread '%s' is healthy." % t.name)
                     thread_model.started()
                     alive_thread_count=alive_thread_count+1
                 else:
@@ -85,7 +85,7 @@ def update_status(parent_name, thread_count, threads):
             if thread_count == alive_thread_count:
                 process.up()
                 process.save()
-                logger.info("Process '%s' is healthy." % parent_name)
+                logger.debug("Process '%s' is healthy." % parent_name)
             else:
                 logger.error("Process is not healthy. Threads: %s / %s" % (alive_thread_count, thread_count))
             time.sleep(10)
