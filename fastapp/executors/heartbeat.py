@@ -3,10 +3,10 @@ import logging
 import time
 import json
 import sys
-import resource
 import os
 import subprocess
 from datetime import datetime, timedelta
+
 
 from django.core import serializers
 from django.conf import settings
@@ -105,9 +105,6 @@ class HeartbeatThread(CommunicationThread):
         self.channel.basic_publish(exchange='',
                 routing_key=HEARTBEAT_QUEUE,
                 properties=pika.BasicProperties(
-                    #delivery_mode=1,
-                    #reply_to = self.callback_queue,
-                    #correlation_id = self.corr_id,
                     expiration = str(2000)
                 ),
                 body=json.dumps(payload)
