@@ -26,9 +26,7 @@ class Migration(SchemaMigration):
                 #print "create executor"
                 #executor = orm.Executor(base=instance)
                 #print executor.save()
-            print "create executor"
             executor = orm.Executor(base=base)
-            print executor.save()
               
 
     def backwards(self, orm):
