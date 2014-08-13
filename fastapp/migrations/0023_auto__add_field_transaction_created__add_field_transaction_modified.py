@@ -8,34 +8,24 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding field 'Executor.num_instances'
-        db.add_column(u'fastapp_executor', 'num_instances',
-                      self.gf('django.db.models.fields.IntegerField')(default=1),
+        # Adding field 'Transaction.created'
+        db.add_column(u'fastapp_transaction', 'created',
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, null=True, blank=True),
+                      keep_default=False)
+
+        # Adding field 'Transaction.modified'
+        db.add_column(u'fastapp_transaction', 'modified',
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, null=True, blank=True),
                       keep_default=False)
 
 
-        # Changing field 'Executor.pid'
-        db.alter_column(u'fastapp_executor', 'pid', self.gf('django.db.models.fields.CharField')(max_length=10, null=True))
-
-        for base in orm.Base.objects.all():
-            #import pdb; pdb.set_trace()
-            #try:
-            #    print base.executor
-            #    base.executor
-            #except orm.Executor.DoesNotExist, e:
-                #print "create executor"
-                #executor = orm.Executor(base=instance)
-                #print executor.save()
-            executor = orm.Executor(base=base)
-              
-
     def backwards(self, orm):
-        # Deleting field 'Executor.num_instances'
-        db.delete_column(u'fastapp_executor', 'num_instances')
+        # Deleting field 'Transaction.created'
+        db.delete_column(u'fastapp_transaction', 'created')
 
+        # Deleting field 'Transaction.modified'
+        db.delete_column(u'fastapp_transaction', 'modified')
 
-        # Changing field 'Executor.pid'
-        db.alter_column(u'fastapp_executor', 'pid', self.gf('django.db.models.fields.CharField')(default=None, max_length=10, null=True))
 
     models = {
         u'auth.group': {
@@ -79,7 +69,7 @@ class Migration(SchemaMigration):
             'base': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'apys'", 'null': 'True', 'to': u"orm['fastapp.Base']"}),
             'description': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'module': ('django.db.models.fields.CharField', [], {'default': "'def func(self):\\n    pass'", 'max_length': '8192'}),
+            'module': ('django.db.models.fields.CharField', [], {'default': "'def func(self):\\n    pass'", 'max_length': '16384'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'})
         },
         u'fastapp.authprofile': {
@@ -90,11 +80,12 @@ class Migration(SchemaMigration):
         },
         u'fastapp.base': {
             'Meta': {'object_name': 'Base'},
-            'content': ('django.db.models.fields.CharField', [], {'default': '\'{% extends "fastapp/index.html" %}\\n{% block content %}\\n{% endblock %}\\n\'', 'max_length': '8192', 'blank': 'True'}),
+            'content': ('django.db.models.fields.CharField', [], {'default': '\'{% extends "fastapp/index.html" %}\\n{% block content %}\\n{% endblock %}\\n\'', 'max_length': '16384', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'default': '0', 'related_name': "'+'", 'blank': 'True', 'to': u"orm['auth.User']"})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'default': '0', 'related_name': "'+'", 'blank': 'True', 'to': u"orm['auth.User']"}),
+            'uuid': ('django.db.models.fields.CharField', [], {'max_length': '36', 'blank': 'True'})
         },
         u'fastapp.counter': {
             'Meta': {'object_name': 'Counter'},
@@ -105,10 +96,12 @@ class Migration(SchemaMigration):
         },
         u'fastapp.executor': {
             'Meta': {'object_name': 'Executor'},
-            'base': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'executor'", 'to': u"orm['fastapp.Base']"}),
+            'base': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'executor'", 'unique': 'True', 'to': u"orm['fastapp.Base']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'num_instances': ('django.db.models.fields.IntegerField', [], {'default': '1'}),
-            'pid': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'})
+            'password': ('django.db.models.fields.CharField', [], {'default': "u'vNcpPq2u5W'", 'max_length': '20'}),
+            'pid': ('django.db.models.fields.CharField', [], {'max_length': '10', 'null': 'True'}),
+            'started': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         u'fastapp.host': {
             'Meta': {'object_name': 'Host'},
@@ -120,8 +113,15 @@ class Migration(SchemaMigration):
             'executor': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'instances'", 'to': u"orm['fastapp.Executor']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'is_alive': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_beat': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'last_beat': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'uuid': ('django.db.models.fields.CharField', [], {'max_length': '36', 'blank': 'True'})
+        },
+        u'fastapp.process': {
+            'Meta': {'object_name': 'Process'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
+            'rss': ('django.db.models.fields.IntegerField', [], {'default': '0', 'max_length': '7'}),
+            'running': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
         u'fastapp.setting': {
             'Meta': {'object_name': 'Setting'},
@@ -129,6 +129,24 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'key': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'value': ('django.db.models.fields.CharField', [], {'max_length': '8192'})
+        },
+        u'fastapp.thread': {
+            'Meta': {'object_name': 'Thread'},
+            'health': ('django.db.models.fields.CharField', [], {'default': "'SO'", 'max_length': '2'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
+            'parent': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'threads'", 'null': 'True', 'to': u"orm['fastapp.Process']"})
+        },
+        u'fastapp.transaction': {
+            'Meta': {'object_name': 'Transaction'},
+            'apy': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transactions'", 'to': u"orm['fastapp.Apy']"}),
+            'async': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'null': 'True', 'blank': 'True'}),
+            'rid': ('django.db.models.fields.IntegerField', [], {'default': '49553064', 'primary_key': 'True'}),
+            'status': ('django.db.models.fields.CharField', [], {'default': "'R'", 'max_length': '1'}),
+            'tin': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'tout': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'})
         }
     }
 

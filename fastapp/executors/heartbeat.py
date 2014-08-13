@@ -5,6 +5,7 @@ import json
 import sys
 import os
 import subprocess
+import pytz
 from datetime import datetime, timedelta
 
 
@@ -13,8 +14,10 @@ from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 from fastapp.executors.remote import distribute
-from fastapp.models import Executor, Instance, Process, Thread
+from fastapp.models import Executor, Instance, Process, Thread, Transaction
 from fastapp.queue import CommunicationThread
+
+from fastapp.models import FINISHED
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +32,20 @@ def inactivate():
     try:
         while True:
             time.sleep(0.1)
-            now=datetime.now()
+            now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
-                logger.info("inactive instance '%s' detected" % instance)
+                logger.warn("inactive instance '%s' detected" % instance)
                 instance.mark_down()
                 instance.save()
 
             # start if is_started and not running    
             try:
-                for executor in Executor.objects.select_for_update(nowait=False).filter(started=True):
+                for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
                     if not executor.is_running():
                         # log start with last beat datetime
                         executor.start()
             except DatabaseError, e:
+                logger.error("Executor was locked with select_for_update")
                 logger.exception(e)
                 transaction.rollback()
             transaction.commit()
@@ -87,7 +91,7 @@ def update_status(parent_name, thread_count, threads):
                 process.save()
                 logger.debug("Process '%s' is healthy." % parent_name)
             else:
-                logger.error("Process is not healthy. Threads: %s / %s" % (alive_thread_count, thread_count))
+                logger.error("Process '%s' is not healthy. Threads: %s / %s" % (parent_name, alive_thread_count, thread_count))
             time.sleep(10)
 
     except Exception, e:
@@ -119,13 +123,13 @@ class HeartbeatThread(CommunicationThread):
             vhost = data['vhost']
             base = vhost.split("-")[1]
 
-            logger.info("Heartbeat received from '%s'" % vhost)
+            logger.debug("Heartbeat received from '%s'" % vhost)
 
             # store timestamp in DB
             from fastapp.models import Instance
             instance = Instance.objects.get(executor__base__name=base)
             instance.is_alive = True
-            instance.last_beat = datetime.now()
+            instance.last_beat = datetime.now().replace(tzinfo=pytz.UTC)
             instance.save()
 
             if not data['in_sync']:
@@ -157,3 +161,25 @@ class HeartbeatThread(CommunicationThread):
                     #self.PUBLISH_INTERVAL)
         self._connection.add_timeout(settings.FASTAPP_PUBLISH_INTERVAL,
                                      self.send_message)
+
+
+class AsyncResponseThread(CommunicationThread):
+
+    def on_message(self, ch, method, props, body):
+        try:
+            logger.debug(self.name+": "+sys._getframe().f_code.co_name)
+            data = json.loads(body)
+
+            logger.info("Async response received for rid '%s'" % data['rid'])
+            logger.info(data)
+
+            transaction = Transaction.objects.get(pk=data['rid'])
+            transaction.tout = json.dumps(data)
+            transaction.status = FINISHED
+            transaction.save()
+            logger.info("tout saved")
+
+
+        except Exception, e:
+            logger.exception(e)
+        time.sleep(0.1)        

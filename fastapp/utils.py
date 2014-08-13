@@ -105,8 +105,6 @@ def channel_name_for_user_by_user(user):
     logger.debug("channel_name: %s" % channel_name)
     return channel_name
 
-
-
 def send_client(channel_name, event, data):
     logger.debug("START EVENT_TO_QUEUE %s" % event)
 

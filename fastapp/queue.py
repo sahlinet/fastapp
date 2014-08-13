@@ -183,7 +183,7 @@ class CommunicationThread(threading.Thread):
         while self._run:
             try:
                 self._connection = pika.SelectConnection(self.parameters, self.on_connected, on_close_callback=self.on_close)
-                logger.info("'%s' connected" % self.name)
+                logger.debug("'%s' connected" % self.name)
                 self.is_connected = True 
             except Exception, e:
                 self.is_connected = False
@@ -208,7 +208,7 @@ class CommunicationThread(threading.Thread):
     def stop(self):
         logger.info(self.name+": "+sys._getframe().f_code.co_name)
         self._run = False
-        logger.info('Stopping')
+        logger.debug('Stopping')
         self._stopping = True
         self._connection.ioloop.start()
         logger.info('Stopped')
@@ -273,7 +273,6 @@ class CommunicationThread(threading.Thread):
 
         # topic receiver
         for topic in self.topic_receiver:
-            logger.info("Topic: "+str(topic[0]))
             channel.exchange_declare(exchange="configuration", type='fanout', callback=self.on_exchange_declare)
 
         self.channel = channel

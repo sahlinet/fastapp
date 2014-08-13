@@ -1,7 +1,8 @@
 def start_executors():
     from fastapp.models import Base, Executor
     for base in Base.objects.all():
-        print base
+	pass
+        #print base
     #    if len(base.executor.all()) == 0:
     #        executor = Executor(base=base)
     #        executor.save()
