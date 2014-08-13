@@ -80,7 +80,7 @@ def distribute(event, body, vhost, username, password):
 
     return  True
 
-def call_rpc_client(apy, vhost, username, password):
+def call_rpc_client(apy, vhost, username, password, async=False):
 
     class ExecutorClient(object):
         """
@@ -88,7 +88,7 @@ def call_rpc_client(apy, vhost, username, password):
         Then the client is ready to response for execution requests.
 
         """
-        def __init__(self, vhost, username, password):
+        def __init__(self, vhost, username, password, async=False):
             # get needed stuff
             self.vhost = vhost
             self.connection = connect_to_queuemanager(
@@ -97,14 +97,19 @@ def call_rpc_client(apy, vhost, username, password):
                     username=username,
                     password=password,
 		            port=settings.RABBITMQ_PORT
-                )
+                ) 
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
 
             self.channel = self.connection.channel()
 
             result = self.channel.queue_declare(exclusive=True)
-            self.callback_queue = result.method.queue
+
+            if not async:
+                self.callback_queue = result.method.queue
+            else:
+                self.callback_queue = "/async_callback"
+                result = self.channel.queue_declare(queue=self.callback_queue)
 
             self.channel.basic_consume(self.on_response, no_ack=True,
                                        queue=self.callback_queue)
@@ -119,7 +124,9 @@ def call_rpc_client(apy, vhost, username, password):
                 logger.debug("from rpc queue: "+body)
 
         def call(self, n):
-            self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
+            if self.callback_queue != "/async_callback":
+                async = False
+                self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
             expire = 5000
@@ -133,7 +140,7 @@ def call_rpc_client(apy, vhost, username, password):
                                              expiration=str(expire)
                                              ),
                                        body=str(n))
-            while self.response is None:
+            while self.response is None and not async:
                 self.connection.process_data_events()
             return self.response
 
@@ -143,7 +150,7 @@ def call_rpc_client(apy, vhost, username, password):
             del self.channel
             del self.connection
 
-    executor = ExecutorClient(vhost, username, password)
+    executor = ExecutorClient(vhost, username, password, async=async)
 
     try:
         response = executor.call(apy)
@@ -186,7 +193,9 @@ class ExecutorServerThread(CommunicationThread):
                             })
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
                     except Exception, e:
-                        logger.exception(e)
+                        #logger.exception()
+                        print e
+                        print 1
 
                 elif props.app_id == "setting":
                     json_body = json.loads(body)
@@ -203,19 +212,44 @@ class ExecutorServerThread(CommunicationThread):
                     response_data = _do(json.loads(body), self.functions, self.settings)
 
                 except Exception, e:
-                    logger.exception(e)
+                    #logger.exception()
+                    print e
+                    print 2
                 finally:
-                    ch.basic_publish(exchange='',
-                                     routing_key=props.reply_to,
-                                     properties=pika.BasicProperties(
-                                        correlation_id = props.correlation_id,
-                                        delivery_mode=1,
-                                        ),
-                                     body=json.dumps(response_data))
+                    logger.info(props.reply_to)
+                    if props.reply_to == "/async_callback":
+                        connection = connect_to_queuemanager(
+                                "localhost", 
+                                "/", 
+                                "guest", 
+                                "guest", 
+                                5672
+                            )
+                        channel = connection.channel()
+                        response_data.update({'rid': json.loads(body)['rid']})
+                        channel.basic_publish(exchange='',
+                            routing_key="async_callback",
+                            properties=pika.BasicProperties(
+                                #expiration = str(2000)
+                            ),
+                            body=json.dumps(response_data)
+                        )
+                        connection.close()
+
+                    else:
+                        ch.basic_publish(exchange='',
+                                         routing_key=props.reply_to,
+                                         properties=pika.BasicProperties(
+                                            correlation_id = props.correlation_id,
+                                            delivery_mode=1,
+                                            ),
+                                         body=json.dumps(response_data))
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
-            logger.exception(e)
+            print e
+            print 3
+            #logger.exception()
 
 class ApyNotFound(Exception):
     pass
@@ -227,11 +261,9 @@ def _do(data, functions=None, settings=None):
         exception = None;  exception_message = None; returned = None
         status = STATE_OK
 
-        logger.info("DATA")
-        logger.info(data)
+        logger.info("DATA: "+str(data))
 
         request = Bunch(data['request'])
-        logger.info("REQUEST: "+ str(request))
         base_name = data['base_name']
         model = json.loads(data['model'])
 
@@ -244,7 +276,6 @@ def _do(data, functions=None, settings=None):
         # go ahead
         else:
             func = functions[model['fields']['name']]
-            #print "REQUEST ARRIVED"
             logger.debug("do %s" % request)
             username = copy.copy(request['user']['username'])
 
@@ -257,10 +288,8 @@ def _do(data, functions=None, settings=None):
             logger.debug("START DO")
             try:
 
-                #exec model['fields']['module']
                 func.username=username
                 func.request=request
-                #func.session=session
 
                 func.name = model['fields']['name']
 
@@ -273,10 +302,6 @@ def _do(data, functions=None, settings=None):
                 func.responses = responses
 
                 # attach log functions
-                #func.info=info
-                #func.debug=debug
-                #func.warn=warn
-                #func.error=error
 
                 # attatch settings
                 setting_dict = settings
@@ -293,15 +318,14 @@ def _do(data, functions=None, settings=None):
                     response_class = returned.__class__.__name__
                     returned = str(returned)
 
-
             except Exception, e:
                 exception = "%s" % type(e).__name__
                 exception_message = e.message
                 traceback.print_exc()
-                logger.exception(e)
+                #logger.exception()
                 status = STATE_NOK
             logger.debug("END DO")
-        return_data = {"status": status, "returned": returned, "exception": exception, "response_class": response_class}
+        return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
         if exception_message:
             return_data['exception_message'] = exception_message
         return return_data

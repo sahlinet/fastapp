@@ -17,7 +17,6 @@ class Loader(BaseLoader):
                 f = connection.get_file(template_name)
                 return f, template_name
             except ErrorResponse, e:
-                print e.__dict__
                 if e.__dict__['status'] == 404:
                     raise TemplateDoesNotExist(template_name)
             except Exception, e:

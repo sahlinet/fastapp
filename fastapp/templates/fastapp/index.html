@@ -283,6 +283,35 @@
                             {% endverbatim %}
                         </div>
                         {% endif %}
+                        <h3>Transactions (last 30 minutes)</h3>
+                        <div>
+                            <table class="table">
+                                <tr>
+                                    <th>RID</th>
+                                    <th>Async</th>
+                                    <th>State</th>
+                                    <th>APY</th>
+                                    <th>Duration (ms)</th>
+                                    <th>Created</th>
+                                    <th>Modified</th>
+                                    <th>In</th>
+                                    <th>Out</th>
+                                </tr>
+                                {% for transaction in transaction_list %}
+                                <tr>
+                                    <td class="small"> {{ transaction.rid}} </td>
+                                    <td class="small"> {{ transaction.async }} </td>
+                                    <td class="small"> {{ transaction.status }} </td>
+                                    <td class="small"> {{ transaction.apy.name }} </td>
+                                    <td class="small"> {{ transaction.duration}} </td>
+                                    <td class="small"> {{ transaction.created | date:"c" }} </td>
+                                    <td class="small"> {{ transaction.modified | date:"c" }} </td>
+                                    <td class="small"> {{ transaction.tin }} </td>
+                                    <td class="small"> {{ transaction.tout }} </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

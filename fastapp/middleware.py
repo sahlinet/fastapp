@@ -20,10 +20,7 @@ class LoginRequiredOrSharedkeyMiddleware:
  'django.core.context_processors.auth'."
         if not request.user.is_authenticated():
             path = request.path_info.lstrip('/')
-            print path
             if not any(m.match(path) for m in EXEMPT_URLS):
-                print request.GET
-                print request.GET.__contains__('shared_key')
                 assert request.GET.__contains__('shared_key'), "missing shared_key"
                 shared_key = request.GET.get('shared_key')
                 return
