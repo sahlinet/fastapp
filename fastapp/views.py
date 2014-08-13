@@ -4,6 +4,7 @@ import json
 import dropbox
 import time
 import copy
+import os, sys
 from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -54,18 +55,26 @@ class DjendStaticView(View):
 
         f = cache.get(static_path)
         if not f:
-            logger.info("not in cache: %s" % static_path)
-            base_model = Base.objects.get(name=kwargs['base'])
-            auth_token = base_model.user.authprofile.access_token
-            client = dropbox.client.DropboxClient(auth_token)
-            # TODO: check if in cache?
             try:
-                f = client.get_file(static_path).read()
-            except ErrorResponse, e:
+                logger.info("not in cache: %s" % static_path)
+                if "runserver" in sys.argv:
+                    logger.info("load %s from local filesystem" % static_path)
+                    # for debugging with local runserver not loading from central storage
+                    # but from local filesystem
+                    HOME = os.path.expanduser("~")
+                    PREFIX = "Dropbox/Apps/sahli_net_fastapp_local"
+                    f = open(os.path.join(HOME, PREFIX, static_path), 'r')
+                else:
+                    base_model = Base.objects.get(name=kwargs['base'])
+                    auth_token = base_model.user.authprofile.access_token
+                    client = dropbox.client.DropboxClient(auth_token)
+                    f = client.get_file(static_path).read()
+                    cache.set(static_path, f, 60)
+                    logger.info("cache it: '%s'" % static_path)
+            except (ErrorResponse, IOError), e:
                 logger.error("not found: '%s'" % static_path)
+                logger.exception(e)
                 return HttpResponseNotFound("Not found: "+static_path)
-            cache.set(static_path, f, 60)
-            logger.info("cache it: '%s'" % static_path)
         else:
             logger.info("found in cache: '%s'" % static_path)
 
@@ -89,6 +98,10 @@ class DjendStaticView(View):
             mimetype = "image/x-icon"
         elif static_path.lower().endswith('.html'):
             mimetype = "text/html"
+        elif static_path.lower().endswith('.map'):
+            mimetype = "application/json"
+        elif static_path.lower().endswith('.gif'):
+            mimetype = "image/gif"
         else:
             logger.error("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
