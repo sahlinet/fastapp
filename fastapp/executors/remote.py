@@ -216,7 +216,6 @@ class ExecutorServerThread(CommunicationThread):
                     print e
                     print 2
                 finally:
-                    logger.info(props.reply_to)
                     if props.reply_to == "/async_callback":
                         connection = connect_to_queuemanager(
                                 "localhost", 

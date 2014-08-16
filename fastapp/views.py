@@ -102,6 +102,8 @@ class DjendStaticView(View):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):
             mimetype = "image/gif"
+        elif static_path.lower().endswith('.swf'):
+            mimetype = "application/x-shockwave-flash"
         else:
             logger.error("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
