@@ -366,20 +366,22 @@ def synchronize_to_storage(sender, *args, **kwargs):
         counter = Counter(apy=instance)
         counter.save()
 
-    distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]), 
-        generate_vhost_configuration(instance.base.user.username, instance.base.name), 
-        instance.base.name, 
-        instance.base.executor.password
-    )
+    if instance.base.state:
+        distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]), 
+            generate_vhost_configuration(instance.base.user.username, instance.base.name), 
+            instance.base.name, 
+            instance.base.executor.password
+        )
 
 @receiver(post_save, sender=Setting)
 def send_to_workers(sender, *args, **kwargs):
     instance = kwargs['instance']
-    distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}), 
-        generate_vhost_configuration(instance.base.user.username, instance.base.name),
-        instance.base.name, 
-        instance.base.executor.password
-    )
+    if instance.base.state:
+        distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}), 
+            generate_vhost_configuration(instance.base.user.username, instance.base.name),
+            instance.base.name, 
+            instance.base.executor.password
+        )
 
 @receiver(post_save, sender=Base)
 def synchronize_base_to_storage(sender, *args, **kwargs):
