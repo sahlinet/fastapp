@@ -13,8 +13,8 @@ class Loader(BaseLoader):
             username, template_name = template_name.split(":")
             connection = Connection(username)
             try:
-                logging.debug("get_file %s" % template_name)
-                f = connection.get_file(template_name)
+                logging.debug("get_file_content %s" % template_name)
+                f = connection.get_file_content(template_name)
                 return f, template_name
             except ErrorResponse, e:
                 if e.__dict__['status'] == 404:
