@@ -1,25 +1,36 @@
 {% extends "fastapp/index.html" %}
-
- {% block fastapp_main %}
- <div class="container" ng-controller="BasesCtrl" ng-init="init()" ng-model="bases">
- 	<div class="row">
- 		<div class="col-md-12">
-		 	<div><h1>My bases</h1></div>
-		 	{% verbatim %}
-		 	<div class="highlight bases col-md-3" ng-repeat="one_base in bases | orderBy:'name':false">
-		 		<h4>
-		 			<a href="/fastapp/{{ one_base.name }}/index/">{{ one_base.name }}</a>
-		 			<button type="button" class="btn btn-default btn-xs" ng-click="cycle_state(one_base)">
-		 				<span ng-show="one_base.state == false">Stopped</span>
-		 				<span ng-show="one_base.state == true">Started (PID's: {{ one_base.pids }})</span>
-		 			</button>
-		 		</h4>
-		 		<div ng-repeat="apy in one_base.apy_models | orderBy:'name':false">
-		 				<button type="button" class="btn btn-default btn-xs"> {{ apy.name }} </button>
-		 		</div>
-		 	</div>
-		 	{% endverbatim %}
-	 	</div>
+{% block extra_header %}
+{% endblock %}
+{% block fastapp_main %}
+<div class="container" ng-controller="BasesCtrl" ng-init="init()" ng-model="bases">
+	<div class="row">
+		<div class="col-md-12">
+			<div><h1>My bases</h1></div>
+			<div class="row">
+				<div class="col-md-4"><h2>Import</h2>
+					<input type="text" class="form-control" ng-model="name" placeholder="New name"/>
+				</br>
+				<span class="btn btn-default btn-file">
+					Browse <input type="file" ng-file-select="onFileSelect($files)">
+				</span>
+				<!--<input type="file" ng-file-select="onFileSelect($files)">-->
+			</div>
+		</div>
+		{% verbatim %}
+		<div class="highlight bases col-md-3" ng-repeat="one_base in bases | orderBy:'name':false">
+			<h4>
+				<a href="/fastapp/{{ one_base.name }}/index/">{{ one_base.name }}</a>
+				<button type="button" class="btn btn-default btn-xs" ng-click="cycle_state(one_base)">
+					<span ng-show="one_base.state == false">Stopped</span>
+					<span ng-show="one_base.state == true">Started (PID's: {{ one_base.pids }})</span>
+				</button>
+			</h4>
+			<div ng-repeat="apy in one_base.apy_models | orderBy:'name':false">
+				<button type="button" class="btn btn-default btn-xs"> {{ apy.name }} </button>
+			</div>
+		</div>
+		{% endverbatim %}
+	</div>
 	 	<!--<div class="col-md-4">
 		 	<div><h1>Public bases</h1></div>
 		 	{% for base in public_bases %}
@@ -31,8 +42,8 @@
 		 		</p>
 		 	</div>
 	 		{% endfor %}
-	 	</div>
+	 	</div> 
 	 -->
-	 </div>
- </div>
- {% endblock %}
+	</div>
+</div>
+{% endblock %}

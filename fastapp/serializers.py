@@ -12,7 +12,7 @@ class ApySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Apy
-        fields = ('id', 'name', 'module', 'counter')
+        fields = ('id', 'name', 'module', 'counter', 'description')
         #fields = ('id', 'name', 'module' )
 
     #def get_counter(self, obj):

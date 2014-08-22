@@ -193,9 +193,7 @@ class ExecutorServerThread(CommunicationThread):
                             })
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
                     except Exception, e:
-                        #logger.exception()
-                        print e
-                        print 1
+                        logger.exception()
 
                 elif props.app_id == "setting":
                     json_body = json.loads(body)
@@ -212,9 +210,7 @@ class ExecutorServerThread(CommunicationThread):
                     response_data = _do(json.loads(body), self.functions, self.settings)
 
                 except Exception, e:
-                    #logger.exception()
-                    print e
-                    print 2
+                    logger.exception()
                 finally:
                     logger.info(props.reply_to)
                     if props.reply_to == "/async_callback":
@@ -247,9 +243,7 @@ class ExecutorServerThread(CommunicationThread):
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
-            print e
-            print 3
-            #logger.exception()
+            logger.exception()
 
 class ApyNotFound(Exception):
     pass

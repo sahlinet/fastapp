@@ -45,6 +45,8 @@
          <!-- Grid  -->
         <link href="{{ STATIC_URL }}grid/ng-grid.css" rel="stylesheet"/>
         <script type="text/javascript" src="{{ STATIC_URL }}grid/angular-1.2.10.min.js"></script>
+        <!--<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular/angular.js"></script>-->
+
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular-cookies.js"></script>
 
         <script type="text/javascript" src="{{ STATIC_URL }}grid/ng-grid-2.0.7.min.js"></script>
@@ -55,6 +57,8 @@
 
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.min.js"></script>
         <script src="{{ STATIC_URL }}js/app/controllers.js"></script>
+
+        <script src="{{ STATIC_URL }}/bower_components/ng-file-upload/angular-file-upload.js"></script>
 
         <!--<script src="{{ STATIC_URL }}js/app/directives.js"></script>-->
 
@@ -170,6 +174,9 @@
                         <button id="rename_base_{{ FASTAPP_NAME }}" type="button" class="btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-pencil"></span> Rename</button>
 
+                        <a id="export" class="btn btn-default btn-xs" href="{% url 'base-export' active_base.id %}">
+                        <span class="glyphicon glyphicon-download-alt"></span> Export</a>
+
                         {% endif %}
                     </h1>
                 </div>
@@ -269,16 +276,18 @@
                             </div>
                             <div ng-show="showApyEditor">
                             <p>
+                                <form id="edit_execs_description_{{ apy.name}}" class="code">
+                                    <textarea ng-model="apy.description" ng-blur="blur(apy)" class="form-control" id="exec_description_for_{{ apy.name }}" name="exec_description_for_{{ apy.name }}">{{ exec.description }}</textarea>
+                                </form>
+ 
+                            <p>
                                 <form id="edit_exec_{{ apy.name }}" class="code">
                                     <textarea id="exec_code" codemirror="apy"></textarea>
                                 </form>
                             </p>
+                           </p>
+
                             </div>
-                            <p>
-                                <form id="edit_execs_description_{{ apy.name}}" class="code">
-                                    <textarea class="form-control" id="exec_description_for_{{ apy.name }}" name="exec_description_for_{{ apy.name }}">{{ exec.description }}</textarea>
-                                </form>
-                            </p>
                             </div>                            
                             {% endverbatim %}
                         </div>
