@@ -1,3 +1,9 @@
+import json
+import os
+import logging
+import StringIO
+import zipfile
+from mock import patch
 from django.test import TransactionTestCase, Client
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -5,12 +11,9 @@ from fastapp.models import AuthProfile
 from django.db.models.signals import post_save
 
 from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage, initialize_on_storage, Transaction
-import json
-import os
-from mock import patch
-import logging
-import StringIO
-import zipfile
+from fastapp.utils import check_code
+from pyflakes.messages import UnusedImport, Message
+
 
 class BaseTestCase(TransactionTestCase):
 
@@ -286,6 +289,7 @@ class ImportTestCase(BaseTestCase):
 		self.assertEqual(self.base1_apy1.module, zf.read(files[0]))
 
 
+
 	@patch("fastapp.utils.Connection.metadata")
 	@patch("fastapp.utils.Connection.get_file")
 	@patch("fastapp.utils.Connection.delete_file")
@@ -311,7 +315,6 @@ class ImportTestCase(BaseTestCase):
 		tf.write(zf.getvalue())
 		tf.flush()
 		tf.close()
-
 		# delete
 		self.base1.delete()
 
@@ -330,3 +333,66 @@ class ImportTestCase(BaseTestCase):
 
 		tf.close()
 		os.remove(tempfile_name)
+
+
+
+class SyntaxCheckerTestCase(BaseTestCase):
+
+	#def setUp(self):
+
+	@patch("fastapp.models.distribute")
+	def setUp(self, distribute_mock):
+		super(SyntaxCheckerTestCase, self).setUp()
+
+	def test_module_syntax_ok(self):
+		self.assertEqual((True, [], []), check_code(self.base1_apy1.module, self.base1_apy1.name))
+
+	def test_module_unused_import(self):
+		# unused import
+		self.base1_apy1.module = "import asdf"
+		ok, warnings, errors = check_code(self.base1_apy1.module, self.base1_apy1.name)
+		self.assertFalse(ok)
+		self.assertEqual(UnusedImport, warnings[0].__class__)
+
+	def test_module_intendation_error(self):
+		# intendation error
+		self.base1_apy1.module = """
+		def func(self):
+    print "a"
+import asdf
+    print "b"
+		"""
+		ok, warnings, errors = check_code(self.base1_apy1.module, self.base1_apy1.name)
+		self.assertFalse(ok)
+		self.assertEqual(Message, errors[0].__class__)
+
+
+	def test_save_invalid_module(self):
+		self.base1_apy1.module = "import asdf, blublub"
+
+		self.client1.login(username='user1', password='pass')
+		response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id), 
+				data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
+			)
+		self.assertEqual(500, response.status_code)
+		self.assertTrue(json.loads(response.content)['detail'].has_key('warnings'))
+
+	def test_save_valid_module(self):
+		self.base1_apy1.module = """import django
+print django"""
+
+		self.client1.login(username='user1', password='pass')
+		response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id), 
+				data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
+			)
+		self.assertEqual(200, response.status_code)
+
+	def test_save_unparsebla_module(self):
+		self.base1_apy1.module = "def blu()"
+
+		self.client1.login(username='user1', password='pass')
+		response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id), 
+				data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
+			)
+		self.assertEqual(500, response.status_code)
+		self.assertTrue(json.loads(response.content)['detail'].has_key('warnings'))

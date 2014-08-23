@@ -7,16 +7,17 @@ from rest_framework import permissions, viewsets
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from rest_framework import renderers
+from rest_framework import status
 
 
 from fastapp.utils import Connection
 from fastapp.models import Base, Apy, Setting
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer
-from fastapp.utils import info
+from fastapp.utils import info, check_code
 from django.db import transaction
 from rest_framework.decorators import link
 from rest_framework.response import Response
-
+from rest_framework.exceptions import APIException
 import logging
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,36 @@ class ApyViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.base = Base.objects.get(id=self.kwargs['base_pk'], user=self.request.user)
+        logger.info("Check code syntax")
+        result, warnings, errors = check_code(obj.module, obj.name)
+        logger.info(str(result))
+        warnings_prep = []
+        errors_prep = []
+        for warning in warnings:
+            warnings_prep.append(
+                {
+                'filename': warning.filename,
+                'lineno': warning.lineno,
+                'col': warning.col,
+                'msg': warning.message % warning.message_args,
+                })
+
+        for error in errors:
+            errors_prep.append(
+                {
+                'filename': error.filename,
+                'lineno': error.lineno,
+                'col': error.col,
+                'msg': error.message,
+                })
+        if not result:
+            logger.info(str(warnings))
+            logger.info(str(errors))
+            response_data = {
+                'warnings' : warnings_prep,
+                'errors' : errors_prep
+            }
+            raise APIException(response_data)
 
     def post_save(self, obj, created=False):
         info(self.request.user.username, "Apy saved")

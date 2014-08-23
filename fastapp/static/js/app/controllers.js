@@ -14,7 +14,7 @@
   }
 
 
-  window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource', 'baseServices', 'doowb.angular-pusher', 'angularFileUpload', 'ngCookies']).
+  window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource', 'baseServices', 'doowb.angular-pusher', 'angularFileUpload', 'ngCookies', 'ui.bootstrap']).
   config(['PusherServiceProvider',
     function(PusherServiceProvider) {
       PusherServiceProvider
@@ -93,6 +93,13 @@
     $scope.new_exec_name = "";
     $scope.apys = [];
 
+    $scope.alerts = [];
+
+    $scope.closeAlert = function(index) {
+      $scope.alerts.splice(index, 1);
+    };
+
+
     $scope.init = function() {
       var apys= Apy.all({'baseId': window.active_base_id}, function() {
         $scope.apys = apys;
@@ -140,7 +147,20 @@
   };
 
   $scope.save= function(apy) {
-    Apy1.update({'baseId': window.active_base_id, 'id': apy.id}, apy);
+    Apy1.update({'baseId': window.active_base_id, 'id': apy.id}, apy).$promise.then(function(data) {
+      console.log("saved");
+      $scope.alerts.push({ type: 'success', msg: "Exec '"+apy.name+"' saved" } );
+    }, function(data) {
+      $scope.alerts.push({ type: 'danger', msg: "Exec '"+apy.name+"' not saved" } );
+      console.error("error");
+      console.error(data);
+      angular.forEach(data.data.detail.errors, function(value, key) {
+        $scope.alerts.push({ type: 'danger', msg: value.filename+":"+value.lineno+":"+value.col+": "+value.msg} );
+      });
+      angular.forEach(data.data.detail.warnings, function(value, key) {
+        $scope.alerts.push({ type: 'warning', msg: value.filename+":"+value.lineno+":"+value.col+": "+value.msg} );
+      });
+    });
   };
 
   $scope.delete= function(apy) {

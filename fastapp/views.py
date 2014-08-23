@@ -163,7 +163,7 @@ class DjendExecView(View, DjendMixin):
             end = int(round(time.time() * 1000))
             ms=str(end-start)
 
-            logger.info("RESPONSE-time: %sms" %  str(ms))
+            logger.debug("RESPONSE-time: %sms" %  str(ms))
             logger.debug("RESPONSE-data: %s" % response_data[:120])
             data = json.loads(response_data)
             data.update({
@@ -409,7 +409,7 @@ class DjendBaseSettingsView(View):
                 setting_obj.value = setting['value']
                 setting_obj.save()
         except Exception:
-            traceback.print_exc()
+            logger.exception()
         return HttpResponse({}, content_type="application/json")
 
     @csrf_exempt

@@ -58,7 +58,6 @@ class Base(models.Model):
 
     @property
     def shared(self):
-        #print self.uuid
         return "/fastapp/%s/index/?shared_key=%s" % (self.name, urllib.quote(self.uuid))
 
     @property

@@ -12,6 +12,12 @@ from dropbox.rest import ErrorResponse
 
 from queue import connect_to_queue
 
+import sys
+import _ast
+from pyflakes import checker
+from pyflakes import reporter as modReporter
+from pyflakes.messages import Message
+
 
 class UnAuthorized(Exception):
     pass
@@ -199,3 +205,61 @@ def error(username, gmessage):
         return user_message(logging.ERROR, username, gmessage)
 def warn(username, gmessage): 
         return user_message(logging.WARN, username, gmessage)
+
+
+def check_code(code, name):
+    errors = []
+
+    class CustomMessage(object):
+        pass
+
+    reporter = modReporter._makeDefaultReporter()
+    try:
+        tree = compile(code, name, "exec", _ast.PyCF_ONLY_AST)
+    except SyntaxError:
+        value = sys.exc_info()[1]
+        msg = value.args[0]
+
+        (lineno, offset, text) = value.lineno, value.offset, value.text
+
+        # If there's an encoding problem with the file, the text is None.
+        if text is None:
+            # Avoid using msg, since for the only known case, it contains a
+            # bogus message that claims the encoding the file declared was
+            # unknown.
+            reporter.unexpectedError(name, 'problem decoding source')
+        else:
+            reporter.syntaxError(name, msg, lineno, offset, text)
+
+        loc = CustomMessage()
+        loc.lineno = lineno
+        loc.offset = offset
+        msg = Message(name, loc)
+        msg.message = "SyntaxError"
+        errors.append(msg)
+    except Exception, e:
+        loc = CustomMessage()
+        loc.lineno = lineno
+        loc.offset = offset
+        msg = Message(name, loc)
+        msg.message = "Problem decoding source"
+        errors.append(msg)
+
+        reporter.unexpectedError(name, 'problem decoding source')
+        logger.error("problem decoding source")
+        logger.exception()
+
+    #if len(errors) > 0:
+    #    return errors
+
+    r = []
+    try:
+        w = checker.Checker(tree, name)
+        logger.info(name)
+        r = w.messages
+        for message in w.messages:
+            logger.info(str(message))
+        #    r.append(str(message).split(":"))
+    except UnboundLocalError, e:
+        pass
+    return not (len(r) > 0 or len(errors) > 0), r, errors
