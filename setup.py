@@ -17,7 +17,7 @@ setup(name='django-fastapp',
 		'bunch==1.0.1',
 		'gevent==1.0',
 		'pika==0.9.13',
-		'jsonfield==0.9.22'
+		'jsonfield==0.9.22',
 		'pyflakes==0.8.1'
 	],
     packages = find_packages(),
