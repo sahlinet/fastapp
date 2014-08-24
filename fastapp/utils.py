@@ -5,12 +5,18 @@ import json
 import StringIO
 import hashlib
 import pika
-import sys
+import os
 from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 
 from queue import connect_to_queue
+
+import sys
+import _ast
+from pyflakes import checker
+from pyflakes import reporter as modReporter
+from pyflakes.messages import Message
 
 
 class UnAuthorized(Exception):
@@ -47,7 +53,11 @@ class Connection(object):
 
     def get_file(self, path):
         logger.debug("get file %s" % path)
-        return self._call('get_file', path).read()
+        return self._call('get_file', path)
+
+    def get_file_content(self, path):
+        logger.debug("return content %s" % path)
+        return self.get_file(path).read()
 
     def put_file(self, path, content):
         f = StringIO.StringIO(content)
@@ -71,6 +81,37 @@ class Connection(object):
             raise e
         except Exception, e:
             raise e
+
+    def metadata(self, path):
+        return self._call('metadata', path)
+
+    def directory_zip(self, path, zf):
+
+        logger.info("download "+path)
+        try:
+            f_metadata = self.metadata(path)
+
+            if f_metadata['is_dir']:
+                for content in f_metadata['contents']:
+                    import time; time.sleep(0.1)
+                    logger.info("download "+content['path'])
+
+                    if content['is_dir'] == True:
+                        self.directory_zip(content['path'], zf)
+                    else:
+                        # get the file
+                        filepath = content['path']
+                        try:
+                            file = self.get_file(filepath)
+                            zf.writestr(os.path.relpath(filepath, "/"), file.read())
+                            file.close()
+                        except ErrorResponse, e:
+                            logger.error(e)
+
+        except ErrorResponse, e:
+            logger.error(e)
+
+        return zf
 
 
 def message(request, level, message):
@@ -106,7 +147,7 @@ def channel_name_for_user_by_user(user):
     return channel_name
 
 def send_client(channel_name, event, data):
-    logger.debug("START EVENT_TO_QUEUE %s" % event)
+    logger.debug("START EVENT_TO_QUEUE %s"   % event)
 
     host = settings.RABBITMQ_HOST
     port = settings.RABBITMQ_PORT
@@ -164,3 +205,61 @@ def error(username, gmessage):
         return user_message(logging.ERROR, username, gmessage)
 def warn(username, gmessage): 
         return user_message(logging.WARN, username, gmessage)
+
+
+def check_code(code, name):
+    errors = []
+
+    class CustomMessage(object):
+        pass
+
+    reporter = modReporter._makeDefaultReporter()
+    try:
+        tree = compile(code, name, "exec", _ast.PyCF_ONLY_AST)
+    except SyntaxError:
+        value = sys.exc_info()[1]
+        msg = value.args[0]
+
+        (lineno, offset, text) = value.lineno, value.offset, value.text
+
+        # If there's an encoding problem with the file, the text is None.
+        if text is None:
+            # Avoid using msg, since for the only known case, it contains a
+            # bogus message that claims the encoding the file declared was
+            # unknown.
+            reporter.unexpectedError(name, 'problem decoding source')
+        else:
+            reporter.syntaxError(name, msg, lineno, offset, text)
+
+        loc = CustomMessage()
+        loc.lineno = lineno
+        loc.offset = offset
+        msg = Message(name, loc)
+        msg.message = "SyntaxError"
+        errors.append(msg)
+    except Exception, e:
+        loc = CustomMessage()
+        loc.lineno = lineno
+        loc.offset = offset
+        msg = Message(name, loc)
+        msg.message = "Problem decoding source"
+        errors.append(msg)
+
+        reporter.unexpectedError(name, 'problem decoding source')
+        logger.error("problem decoding source")
+        logger.exception()
+
+    #if len(errors) > 0:
+    #    return errors
+
+    r = []
+    try:
+        w = checker.Checker(tree, name)
+        logger.info(name)
+        r = w.messages
+        for message in w.messages:
+            logger.info(str(message))
+        #    r.append(str(message).split(":"))
+    except UnboundLocalError, e:
+        pass
+    return not (len(r) > 0 or len(errors) > 0), r, errors

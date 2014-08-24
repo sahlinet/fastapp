@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import urllib
 import ConfigParser
 import io
@@ -10,6 +12,7 @@ import gevent
 import json
 import pytz
 import random
+import zipfile
 from datetime import datetime, timedelta
 from jsonfield import JSONField
 
@@ -55,8 +58,11 @@ class Base(models.Model):
 
     @property
     def shared(self):
-        #print self.uuid
         return "/fastapp/%s/index/?shared_key=%s" % (self.name, urllib.quote(self.uuid))
+
+    @property
+    def auth_token(self):
+        return self.user.authprofile.access_token
 
     @property
     def config(self):
@@ -77,9 +83,9 @@ class Base(models.Model):
         #if put:
         #    template_content = connection.put_file(template_name, self.content)
         #else:
-        #    template_content = connection.get_file(template_name)
+        #    template_content = connection.get_file_content(template_name)
         #    self.content = template_content
-        template_content = connection.get_file(template_name)
+        template_content = connection.get_file_content(template_name)
         self.content = template_content
 
     def refresh_execs(self, exec_name=None, put=False):
@@ -88,7 +94,7 @@ class Base(models.Model):
         connection = Connection(self.user.authprofile.access_token)
         app_config = "%s/app.config" % self.name
         config = ConfigParser.RawConfigParser()
-        config.readfp(io.BytesIO(connection.get_file(app_config)))
+        config.readfp(io.BytesIO(connection.get_file_content(app_config)))
         if put:
             if exec_name:
                 connection.put_file("%s/%s.py" % (self.name, exec_name), self.execs.get(name=exec_name).module)
@@ -99,7 +105,7 @@ class Base(models.Model):
             for name in config.sections():
                 module_name = config.get(name, "module")
                 try:
-                    module_content = connection.get_file("%s/%s" % (self.name, module_name))
+                    module_content = connection.get_file_content("%s/%s" % (self.name, module_name))
                 except NotFound:
                     try:
                         Exec.objects.get(name=module_name, base=self).delete()                    
@@ -118,6 +124,31 @@ class Base(models.Model):
                 else:
                     Apy.objects.get(base=self, name=local_exec['name']).delete()
 
+    def export(self):
+        # create in-memory zipfile
+        buffer = StringIO.StringIO()
+        zf = zipfile.ZipFile(buffer, mode='w')
+
+        # add modules
+        for apy in self.apys.all():
+            logger.info("add %s to zip" % apy.name)
+            zf.writestr("%s/%s.py" % (self.name, apy.name), apy.module.encode("utf-8"))
+
+        # add static files
+        dropbox_connection = Connection(self.auth_token)
+
+        try:
+            zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
+        except Exception, e:
+            logger.warn(e)
+
+        # add config
+        zf.writestr("%s/app.config" % self.name, self.config.encode("utf-8"))
+
+        # close zip
+        zf.close()
+
+        return buffer
 
     def template(self, context):
         t = Template(self.content)
@@ -127,7 +158,7 @@ class Base(models.Model):
     def state(self):
         try:
             return self.executor.is_running()
-        except IndexError, e:
+        except IndexError:
             return False
 
     @property
@@ -136,7 +167,7 @@ class Base(models.Model):
             if self.executor.pid is None:
                 return []
             return [self.executor.pid]
-        except Exception, e:
+        except Exception:
             return []
 
     def start(self):
@@ -366,20 +397,22 @@ def synchronize_to_storage(sender, *args, **kwargs):
         counter = Counter(apy=instance)
         counter.save()
 
-    distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]), 
-        generate_vhost_configuration(instance.base.user.username, instance.base.name), 
-        instance.base.name, 
-        instance.base.executor.password
-    )
+    if instance.base.state:
+        distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]), 
+            generate_vhost_configuration(instance.base.user.username, instance.base.name), 
+            instance.base.name, 
+            instance.base.executor.password
+        )
 
 @receiver(post_save, sender=Setting)
 def send_to_workers(sender, *args, **kwargs):
     instance = kwargs['instance']
-    distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}), 
-        generate_vhost_configuration(instance.base.user.username, instance.base.name),
-        instance.base.name, 
-        instance.base.executor.password
-    )
+    if instance.base.state:
+        distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}), 
+            generate_vhost_configuration(instance.base.user.username, instance.base.name),
+            instance.base.name, 
+            instance.base.executor.password
+        )
 
 @receiver(post_save, sender=Base)
 def synchronize_base_to_storage(sender, *args, **kwargs):

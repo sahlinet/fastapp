@@ -14,3 +14,4 @@ pika==0.9.13
 shortuuid==0.4
 sh==1.09
 jsonfield==0.9.22
+pyflakes==0.8.1

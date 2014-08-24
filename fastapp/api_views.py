@@ -1,16 +1,23 @@
+# -*- coding: utf-8 -*-
+import zipfile
+import re
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
 from rest_framework import permissions, viewsets
 
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from rest_framework import renderers
+from rest_framework import status
 
+
+from fastapp.utils import Connection
 from fastapp.models import Base, Apy, Setting
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer
-from fastapp.utils import info
+from fastapp.utils import info, check_code
 from django.db import transaction
 from rest_framework.decorators import link
 from rest_framework.response import Response
-
+from rest_framework.exceptions import APIException
 import logging
 logger = logging.getLogger(__name__)
 
@@ -38,6 +45,36 @@ class ApyViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.base = Base.objects.get(id=self.kwargs['base_pk'], user=self.request.user)
+        logger.info("Check code syntax")
+        result, warnings, errors = check_code(obj.module, obj.name)
+        logger.info(str(result))
+        warnings_prep = []
+        errors_prep = []
+        for warning in warnings:
+            warnings_prep.append(
+                {
+                'filename': warning.filename,
+                'lineno': warning.lineno,
+                'col': warning.col,
+                'msg': warning.message % warning.message_args,
+                })
+
+        for error in errors:
+            errors_prep.append(
+                {
+                'filename': error.filename,
+                'lineno': error.lineno,
+                'col': error.col,
+                'msg': error.message,
+                })
+        if not result:
+            logger.info(str(warnings))
+            logger.info(str(errors))
+            response_data = {
+                'warnings' : warnings_prep,
+                'errors' : errors_prep
+            }
+            raise APIException(response_data)
 
     def post_save(self, obj, created=False):
         info(self.request.user.username, "Apy saved")
@@ -89,24 +126,69 @@ class BaseViewSet(viewsets.ModelViewSet):
                 context={'request': request}, many=True)
         return Response(serializer.data)
 
+class ZipFileRenderer(renderers.BaseRenderer):
+    media_type = 'application/zip'
+    format = 'zip'
 
-#class BaseListView(generics.GenericAPIView):
-#    serializer_class = BaseSerializer
-#    permission_classes = (permissions.IsAuthenticated,)
-#
-#    def get_queryset(self):
-#        return Base.objects.filter(user=self.request.user)
+    def render(self, data, media_type=None, renderer_context=None):
+        return data
 
-#class BaseListView(generics.GenericAPIView):
-#    serializer_class = BaseSerializer
-#    permission_classes = (permissions.IsAuthenticated,)
-#
-#    def get_queryset(self):
-#        return Base.objects.filter(user=self.request.user)
+class BaseExportViewSet(viewsets.ModelViewSet):
+    model = Base
+    permission_classes = (permissions.IsAuthenticated,)
+    renderer_classes = [ZipFileRenderer]
 
-    #@link()
-    #def apy(self, request, pk=None):
-    #    queryset = Apy.objects.filter(base__pk=pk)
-    #    serializer = ApySerializer(queryset, 
-    #            context={'request': request}, many=True)
-    #    return Response(serializer.data)
+    def get_queryset(self):
+        return Base.objects.all()._clone().filter(user=self.request.user)
+
+    def export(self, request, pk):
+        base = self.get_queryset().get(id=pk)
+        f = base.export()
+        logger.info(f)
+
+        response = Response(f.getvalue(), headers={
+            'Content-Disposition': 'attachment; filename=%s.zip' % base.name
+            }, content_type='application/zip')
+        return response
+
+class BaseImportViewSet(viewsets.ModelViewSet):
+    model = Base
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return Base.objects.all()._clone().filter(user=self.request.user)
+
+    def imp(self, request):
+        # Base
+        name = request.POST['name']
+        base, created = Base.objects.get_or_create(user=request.user, name=name)
+        if not created:
+            raise Exception("Base '%s' does already exist" % name)
+        base.save()
+        f = request.FILES['file'] 
+        zf = zipfile.ZipFile(f)
+
+        # Dropbox connection
+        dropbox_connection = Connection(base.auth_token)
+
+        filelist = zf.namelist()
+        for file in filelist:
+            # static
+            content = zf.open(file).read()
+            file = re.sub(r"(.+?)(\/.*)", r"%s\2" % name, file)
+            if "static" in file:
+                dropbox_connection.put_file(file, content)
+
+            # Apy
+            if "py" in file:
+                apy = Apy(base=base)
+                apy.name = file.replace(".py", "").replace("%s/" % base.name, "")
+                apy.module = content
+                apy.save()
+
+        #response = self.retrieve(request, pk=base.id)
+        base_queryset = base
+        serializer = BaseSerializer(base_queryset, 
+                context={'request': request}, many=False)
+        response = Response(serializer.data, status=201)
+        return response

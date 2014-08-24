@@ -193,9 +193,8 @@ class ExecutorServerThread(CommunicationThread):
                             })
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
                     except Exception, e:
-                        #logger.exception()
-                        print e
-                        print 1
+                        #logger.error()
+                        traceback.print_exc()
 
                 elif props.app_id == "setting":
                     json_body = json.loads(body)
@@ -212,9 +211,7 @@ class ExecutorServerThread(CommunicationThread):
                     response_data = _do(json.loads(body), self.functions, self.settings)
 
                 except Exception, e:
-                    #logger.exception()
-                    print e
-                    print 2
+                    logger.exception()
                 finally:
                     if props.reply_to == "/async_callback":
                         connection = connect_to_queuemanager(
@@ -246,9 +243,7 @@ class ExecutorServerThread(CommunicationThread):
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
-            print e
-            print 3
-            #logger.exception()
+            logger.error(e)
 
 class ApyNotFound(Exception):
     pass
@@ -321,7 +316,6 @@ def _do(data, functions=None, settings=None):
                 exception = "%s" % type(e).__name__
                 exception_message = e.message
                 traceback.print_exc()
-                #logger.exception()
                 status = STATE_NOK
             logger.debug("END DO")
         return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
