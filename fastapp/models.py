@@ -2,6 +2,7 @@
 
 import urllib
 import ConfigParser
+from configobj import ConfigObj
 import io
 import subprocess
 import os
@@ -66,12 +67,27 @@ class Base(models.Model):
 
     @property
     def config(self):
-        config = ConfigParser.RawConfigParser()
-        for texec in self.apys.all():
-            config.add_section(texec.name)
-            config.set(texec.name, 'module', texec.name+".py")
-            config.set(texec.name, 'description', "\"%s\"" % texec.description)
         config_string = StringIO.StringIO()
+        config = ConfigObj()
+        #config.file = config_string
+        config['modules'] = {}
+        for texec in self.apys.all():
+            config['modules'][texec.name] = {}
+            config['modules'][texec.name]['module'] = texec.name+".py"
+            config['modules'][texec.name]['description'] = "\"%s\"" % texec.description
+
+        config['settings'] = {}
+        for setting in self.setting.all():
+            if setting.public:
+                config['settings'][setting.key] = {
+                    'value': setting.value,
+                    'public': setting.public
+                }
+            else:
+                config['settings'][setting.key] = {
+                    'value': "",
+                    'public': setting.public
+                }
         config.write(config_string)
         return config_string.getvalue()
 
@@ -132,7 +148,7 @@ class Base(models.Model):
         # add modules
         for apy in self.apys.all():
             logger.info("add %s to zip" % apy.name)
-            zf.writestr("%s/%s.py" % (self.name, apy.name), apy.module.encode("utf-8"))
+            zf.writestr("%s.py" % apy.name, apy.module.encode("utf-8"))
 
         # add static files
         dropbox_connection = Connection(self.auth_token)
@@ -143,7 +159,7 @@ class Base(models.Model):
             logger.warn(e)
 
         # add config
-        zf.writestr("%s/app.config" % self.name, self.config.encode("utf-8"))
+        zf.writestr("app.config", self.config.encode("utf-8"))
 
         # close zip
         zf.close()
@@ -240,6 +256,7 @@ class Setting(models.Model):
     base = models.ForeignKey(Base, related_name="setting")
     key = models.CharField(max_length=128)
     value = models.CharField(max_length=8192)
+    public = models.BooleanField(default=False, null=False, blank=False)
 
 class Instance(models.Model):
     is_alive = models.BooleanField(default=False)

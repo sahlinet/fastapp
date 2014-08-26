@@ -6,6 +6,7 @@ import StringIO
 import hashlib
 import pika
 import os
+import re
 from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
@@ -93,7 +94,6 @@ class Connection(object):
 
             if f_metadata['is_dir']:
                 for content in f_metadata['contents']:
-                    import time; time.sleep(0.1)
                     logger.info("download "+content['path'])
 
                     if content['is_dir'] == True:
@@ -103,6 +103,7 @@ class Connection(object):
                         filepath = content['path']
                         try:
                             file = self.get_file(filepath)
+                            filepath = re.sub(r"(.+?)(\/.*)", r"\2", filepath)
                             zf.writestr(os.path.relpath(filepath, "/"), file.read())
                             file.close()
                         except ErrorResponse, e:

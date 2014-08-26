@@ -214,16 +214,21 @@
   var removeTemplate = '<button type="button" class="btn btn-default btn-xs" ng-click="delete()"><span class="glyphicon glyphicon-remove"></span> Delete</button>';
   window.app.controller('SettingsCtrl', ['$scope', '$http', '$base64', 'Settings', 'Setting', function($scope, $http, $base64, Settings, Setting) {
     $scope.myData = [];
+    //$scope.publicSelectEditableTemplate = '<select ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" ng-options="id as name for (id, name) in statuses" ng-blur="updateEntity(row)" />';
+    //$scope.publicSelectEditableTemplate = '<input type="checkbox" ng-model="row.entity.public" ng-true-value="\'true\'" ng-false-value="\'false\'">';
+    $scope.publicSelectEditableTemplate = '<input type="checkbox" ng-model="row.entity.public">';
     $scope.gridOptions = {
       data: 'myData',
       selectedItems: [],
       enableSorting: true,
-      sortInfo: {fields: ['key', 'value'], directions: ['asc']},
+      //sortInfo: {fields: ['key', 'value'], directions: ['asc']},
         //enableCellSelection: true,
         enableRowSelection: false,
-        enableCellEditOnFocus: false,
-        columnDefs: [{field: 'key', displayName: 'Key', enableCellEdit: true, width: 120},
+        //enableCellEditOnFocus: false,
+        columnDefs: [
+        {field: 'key', displayName: 'Key', enableCellEdit: true, width: 120},
         {field: 'value', displayName:'Value', enableCellEdit: true, editableCellTemplate: '<textarea row="1"  ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" />'},
+        {field: 'public', displayName:'Public', cellTemplate: $scope.publicSelectEditableTemplate},
         {field: 'actions', displayName:'', enableCellEdit: false, cellTemplate: removeTemplate}
         ]
       };

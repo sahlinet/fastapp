@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse
 from fastapp.models import AuthProfile
 from django.db.models.signals import post_save
 
-from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage, initialize_on_storage, Transaction
+from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage, initialize_on_storage, Transaction, Setting
 from fastapp.utils import check_code
 from pyflakes.messages import UnusedImport, Message
 
@@ -50,19 +50,17 @@ class BaseTestCase(TransactionTestCase):
 		counter = Counter(apy=self.base1_apy1)
 		counter.save()
 
+		# add setting to base1
+		setting = Setting(base=self.base1)
+		setting.key = "setting1_key"
+		setting.value = "setting2_value"
+		setting.save()
+
 		self.client1 = Client()  # logged in with objects
 		self.client2 = Client()  # logged in without objects
 		self.client3 = Client()  # not logged in 
 		self.client_csrf = Client(enforce_csrf_checks=True)  # not logged in 
 
-	#def tearDown(self):
-	#	try:
-	#		self.base1_apy1.delete()
-	#		self.base1.delete()
-	#		self.user1.delete()
-	#		self.user2.delete()
-	#	except Exception:
-	#		pass
 
 class ApiTestCase(BaseTestCase):
 
@@ -230,7 +228,7 @@ class SettingTestCase(BaseTestCase):
 		json_data = {u'key': u'key', 'value': 'value'}
 		response = self.client1.post("/fastapp/api/base/%s/setting/" % self.base1.id, json_data)
 		self.assertEqual(201, response.status_code)
-		json_data_response = {"id": 1, "key": "key", "value": "value"}
+		json_data_response = {"id": 2, "key": "key", "public": False, "value": "value"}
 		self.assertJSONEqual(response.content, json_data_response)
 		distribute_mock.assert_called
 
@@ -247,15 +245,13 @@ class SettingTestCase(BaseTestCase):
 		response = self.client1.delete("/fastapp/api/base/%s/setting/%s/" % (self.base1.id, setting_id), content_type="application/json")
 		self.assertEqual(204, response.status_code)
 
-#class CounterTestCase(BaseTestCase):
-#	def test_create_counter_on_apy_save(self):
-#		#counter = Counter(apy=self.base1_apy1)
-#		#counter.save()
-#		self.assertEqual(Apy.objects.get(id=self.base1_apy1.id).counter.executed, 0)
-#		self.base1_apy1.mark_executed()
-#		self.assertEqual(Apy.objects.get(id=self.base1_apy1.id).counter.executed, 1)
-#		self.base1_apy1.mark_failed()
-#		self.assertEqual(Apy.objects.get(id=self.base1_apy1.id).counter.failed, 1)
+class AppConfigGenerationTestCase(BaseTestCase):
+
+	def test_generate_appconfig(self):
+		self.assertTrue("base1_apy1" in self.base1.config)
+
+		self.assertTrue("setting1_key" in self.base1.config)
+
 
 class ImportTestCase(BaseTestCase):
 
@@ -267,10 +263,10 @@ class ImportTestCase(BaseTestCase):
 		u'thumb_exists': False, 
 		u'rev': u'd0226669b01', 
 		u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', 
-		u'path': u'/transport/static', 
+		u'path': u'/base1/static', 
 		u'is_dir': True, u'size': u'0 bytes', 
 		u'root': u'app_folder', 
-		u'contents': [{u'revision': 3331, u'bytes': 70, u'thumb_exists': False, u'rev': u'd0326669b01', u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', u'mime_type': u'text/html', u'path': u'/transport/static/index.html', u'is_dir': False, u'size': u'70 bytes', u'root': 'app_folder', u'client_mtime': u'Mon, 18 Aug 2014 16:42:47 +0000', u'icon': u'page_whitecode'}], u'icon': u'folder'}
+		u'contents': [{u'revision': 3331, u'bytes': 70, u'thumb_exists': False, u'rev': u'd0326669b01', u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', u'mime_type': u'text/html', u'path': u'/base1/static/index.html', u'is_dir': False, u'size': u'70 bytes', u'root': 'app_folder', u'client_mtime': u'Mon, 18 Aug 2014 16:42:47 +0000', u'icon': u'page_whitecode'}], u'icon': u'folder'}
 		mock_metadata.return_value = metadata
 		
 		self.client1.login(username='user1', password='pass')
@@ -283,9 +279,9 @@ class ImportTestCase(BaseTestCase):
 		zf = zipfile.ZipFile(f)
 		self.assertEqual(None, zf.testzip())
 
-		files = ['base1_apy1', 'base1_apy_xml']
-		files = ['base1/base1_apy1.py', 'base1/base1_apy_xml.py', 'transport/static/index.html', 'base1/app.config']
-		self.assertEqual(files, zf.namelist())
+		files = ['base1_apy1.py', 'base1_apy_xml.py', 'static/index.html', 'app.config']
+		for file in files:
+			self.assertTrue(file in zf.namelist())
 		self.assertEqual(self.base1_apy1.module, zf.read(files[0]))
 
 
@@ -300,10 +296,10 @@ class ImportTestCase(BaseTestCase):
 		u'thumb_exists': False, 
 		u'rev': u'd0226669b01', 
 		u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', 
-		u'path': u'/transport/static', 
+		u'path': u'/base1/static', 
 		u'is_dir': True, u'size': u'0 bytes', 
 		u'root': u'app_folder', 
-		u'contents': [{u'revision': 3331, u'bytes': 70, u'thumb_exists': False, u'rev': u'd0326669b01', u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', u'mime_type': u'text/html', u'path': u'/transport/static/index.html', u'is_dir': False, u'size': u'70 bytes', u'root': 'app_folder', u'client_mtime': u'Mon, 18 Aug 2014 16:42:47 +0000', u'icon': u'page_whitecode'}], u'icon': u'folder'}
+		u'contents': [{u'revision': 3331, u'bytes': 70, u'thumb_exists': False, u'rev': u'd0326669b01', u'modified': u'Mon, 18 Aug 2014 16:46:50 +0000', u'mime_type': u'text/html', u'path': u'/base1/static/index.html', u'is_dir': False, u'size': u'70 bytes', u'root': 'app_folder', u'client_mtime': u'Mon, 18 Aug 2014 16:42:47 +0000', u'icon': u'page_whitecode'}], u'icon': u'folder'}
 		mock_metadata.return_value = metadata
 
 		# export
@@ -330,6 +326,9 @@ class ImportTestCase(BaseTestCase):
 		responsed_name = json.loads(response.content)['name']
 		self.assertEqual(responsed_name, new_base_name)
 		self.assertTrue(mock_put_file.call_count > 0)
+
+		# check if setting is saved
+		self.assertEqual(1, Setting.objects.filter(base__name=new_base_name).count())
 
 		tf.close()
 		os.remove(tempfile_name)
