@@ -6,11 +6,13 @@ import StringIO
 import hashlib
 import pika
 import os
+import re
 from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 
-from queue import connect_to_queue
+from fastapp.queue import connect_to_queue
+
 
 import sys
 import _ast
@@ -93,7 +95,6 @@ class Connection(object):
 
             if f_metadata['is_dir']:
                 for content in f_metadata['contents']:
-                    import time; time.sleep(0.1)
                     logger.info("download "+content['path'])
 
                     if content['is_dir'] == True:
@@ -103,6 +104,7 @@ class Connection(object):
                         filepath = content['path']
                         try:
                             file = self.get_file(filepath)
+                            filepath = re.sub(r"(.+?)(\/.*)", r"\2", filepath)
                             zf.writestr(os.path.relpath(filepath, "/"), file.read())
                             file.close()
                         except ErrorResponse, e:
@@ -263,3 +265,7 @@ def check_code(code, name):
     except UnboundLocalError, e:
         pass
     return not (len(r) > 0 or len(errors) > 0), r, errors
+
+
+
+

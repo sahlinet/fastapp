@@ -21,7 +21,7 @@ class ApySerializer(serializers.ModelSerializer):
 class SettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Setting
-        fields = ('id', 'key', 'value')
+        fields = ('id', 'key', 'value', 'public')
 
 class BaseSerializer(serializers.ModelSerializer):
     apy = serializers.PrimaryKeyRelatedField(many=True, read_only=True)

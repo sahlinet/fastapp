@@ -102,3 +102,16 @@ div.bases {
     cursor: inherit;
     display: block;
 }
+.ngGrid input[type="checkbox"] {
+    margin-top: 7px !important;
+    margin-left: 10px !important; 
+}
+div.ngCell > div > button {
+  margin-left: 7px !important;
+  margin-top: 4px !important;
+}
+
+tr.small > td {
+  line-height: 1.1 !important;
+  height: 10px;
+}

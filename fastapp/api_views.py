@@ -171,22 +171,32 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         # Dropbox connection
         dropbox_connection = Connection(base.auth_token)
 
+        # read app.config
+        from configobj import ConfigObj
+        appconfig = ConfigObj(zf.open("app.config"))
+
+        # get settings
+        for k, v in appconfig['settings'].items():
+            setting_obj = Setting(base=base)
+            setting_obj.key = k
+            setting_obj.value = v
+            setting_obj.save()
+
         filelist = zf.namelist()
         for file in filelist:
             # static
             content = zf.open(file).read()
-            file = re.sub(r"(.+?)(\/.*)", r"%s\2" % name, file)
             if "static" in file:
+                file = "/%s/%s" % (base.name, file)
                 dropbox_connection.put_file(file, content)
 
             # Apy
             if "py" in file:
                 apy = Apy(base=base)
-                apy.name = file.replace(".py", "").replace("%s/" % base.name, "")
+                apy.name = file.replace(".py", "")
                 apy.module = content
                 apy.save()
 
-        #response = self.retrieve(request, pk=base.id)
         base_queryset = base
         serializer = BaseSerializer(base_queryset, 
                 context={'request': request}, many=False)

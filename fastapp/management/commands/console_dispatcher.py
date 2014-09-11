@@ -1,12 +1,11 @@
 import logging
 import sys
-import threading
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
 
 from fastapp.console import PusherSenderThread
-from fastapp.executors.heartbeat import update_status
+from fastapp.utils import LogReceiverThread
 
 
 logger = logging.getLogger("fastapp.executors.console")
@@ -29,6 +28,7 @@ class Command(BaseCommand):
             threads.append(thread)
             thread.daemon = True
             thread.start()
+
 
         #update_status_thread = threading.Thread(target=update_status, args=["Heartbeat", THREAD_COUNT, threads])
         #update_status_thread.daemon = True
