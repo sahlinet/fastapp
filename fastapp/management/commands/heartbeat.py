@@ -5,7 +5,7 @@ import threading
 from django.core.management.base import BaseCommand
 
 from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE, AsyncResponseThread
-
+from fastapp.log import LogReceiverThread
 from django.conf import settings
 
 logger = logging.getLogger("fastapp.executors.remote")
@@ -56,7 +56,20 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-        for t in threads+async_threads:
+
+        # log receiver
+        queues_consume_async = [["logentries", True]]
+        log_threads = []
+        for c in range(0, ASYNC_THREAD_COUNT):
+            name = "LogReceiverThread-%s" % c
+
+            thread = LogReceiverThread(name, host, port, "/", username, password, queues_consume=queues_consume_async, ttl=3000)
+            log_threads.append(thread)
+            thread.daemon = True
+            thread.start()
+
+
+        for t in threads+async_threads+log_threads:
             #print "join %s " % t
             try:
                 logger.info("%s Thread started" % THREAD_COUNT)

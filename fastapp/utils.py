@@ -11,7 +11,8 @@ from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 
-from queue import connect_to_queue
+from fastapp.queue import connect_to_queue
+
 
 import sys
 import _ast
@@ -264,3 +265,7 @@ def check_code(code, name):
     except UnboundLocalError, e:
         pass
     return not (len(r) > 0 or len(errors) > 0), r, errors
+
+
+
+

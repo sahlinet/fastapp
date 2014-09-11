@@ -151,10 +151,11 @@ class DjendExecView(View, DjendMixin):
         logger.debug("REQUEST-data: %s" % request_data)
         return request_data
 
-    def _execute(self, request, request_data, base_model):
+    def _execute(self, request, request_data, base_model, rid):
         try:
             # _do on remote
             start = int(round(time.time() * 1000))
+            request_data.update({'rid': rid})
             response_data = call_rpc_client(json.dumps(request_data), 
                 generate_vhost_configuration(
                     base_model.user.username, 
@@ -277,6 +278,9 @@ class DjendExecView(View, DjendMixin):
             transaction = Transaction.objects.get(pk=rid)
             if transaction.tout:
                 data = json.loads(transaction.tout)
+                #data.update({'logs':
+                #        json.loads(serializers.serialize("json", transaction.logs.all()))
+                #    })
             else:
                 data = {'status': transaction.get_status_display()}
                 redirect_to = request.get_full_path()
@@ -300,7 +304,7 @@ class DjendExecView(View, DjendMixin):
             else:
                 # execute
                 transaction.tin = json.dumps(request_data)
-                data = self._execute(request, request_data, base_model)
+                data = self._execute(request, request_data, base_model, transaction.rid)
                 transaction.tout = json.dumps(data)
                 transaction.status = FINISHED
                 transaction.save()

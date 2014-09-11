@@ -110,3 +110,8 @@ div.ngCell > div > button {
   margin-left: 7px !important;
   margin-top: 4px !important;
 }
+
+tr.small > td {
+  line-height: 1.1 !important;
+  height: 10px;
+}

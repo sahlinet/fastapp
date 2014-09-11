@@ -327,6 +327,12 @@
                                     <td class="small"> {{ transaction.tin }} </td>
                                     <td class="small"> {{ transaction.tout }} </td>
                                 </tr>
+                                    {% for log in transaction.logs.all %}
+                                    <tr class="small">
+                                        <td class="small" colspan="5">&nbsp;</td>
+                                        <td class="small" colspan="8"> {{log.level_verbose}} {{log.msg}} </td>
+                                    </tr>
+                                    {% endfor %}
                                 {% endfor %}
                             </table>
                         </div>

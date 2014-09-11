@@ -211,7 +211,7 @@ class ExecutorServerThread(CommunicationThread):
                     response_data = _do(json.loads(body), self.functions, self.settings)
 
                 except Exception, e:
-                    logger.exception()
+                    logger.exception(e)
                 finally:
                     if props.reply_to == "/async_callback":
                         connection = connect_to_queuemanager(
@@ -243,7 +243,7 @@ class ExecutorServerThread(CommunicationThread):
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
-            logger.error(e)
+            logger.exception(e)
 
 class ApyNotFound(Exception):
     pass
@@ -251,11 +251,53 @@ class ApyNotFound(Exception):
 class ApyError(Exception):
     pass
 
+from fastapp.queue import connect_to_queue
+def log_to_queue(tid, level, msg):
+    host = settings.RABBITMQ_HOST
+    port = settings.RABBITMQ_PORT
+    user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
+    password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
+
+    #channel = pusher
+    channel = connect_to_queue(host, 'pusher_events', "/", username=user, password=password, port=port)
+    payload = {
+        #'channel': "logentries", 
+        'rid': tid, 
+        'level': level, 
+        'msg': msg, 
+    }
+
+    channel.basic_publish(exchange='',
+                          routing_key='logentries',
+                          body=json.dumps(payload),
+                          properties=pika.BasicProperties(
+                            delivery_mode=1,
+                         ),
+                        )
+    channel.close()
+    channel.connection.close()
+    del channel.connection 
+    del channel
+
+def info(tid, msg):
+    log_to_queue(tid, logging.INFO, msg)
+
+def warning(tid, msg):
+    log_to_queue(tid, logging.WARNING, msg)
+
+def debug(tid, msg):
+    log_to_queue(tid, logging.DEBUG, msg)
+
+def error(tid, msg):
+    log_to_queue(tid, logging.ERROR, msg)
+
+
 def _do(data, functions=None, settings=None):
         exception = None;  exception_message = None; returned = None
         status = STATE_OK
 
         logger.info("DATA: "+str(data))
+        #logger.info("RID: "+str(data)['rid'])
 
         request = Bunch(data['request'])
         base_name = data['base_name']
@@ -285,6 +327,8 @@ def _do(data, functions=None, settings=None):
                 func.username=username
                 func.request=request
 
+                func.rid=data['rid']
+
                 func.name = model['fields']['name']
 
                 # attach GET and POST data
@@ -296,6 +340,9 @@ def _do(data, functions=None, settings=None):
                 func.responses = responses
 
                 # attach log functions
+                func.info = info 
+                func.debug = debug 
+                func.warn = warning 
 
                 # attatch settings
                 setting_dict = settings

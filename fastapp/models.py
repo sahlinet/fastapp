@@ -238,7 +238,7 @@ def create_random():
 
 class Transaction(models.Model):
     rid = models.IntegerField(primary_key=True, default=create_random)
-    apy= models.ForeignKey(Apy, related_name="transactions")
+    apy = models.ForeignKey(Apy, related_name="transactions")
     status = models.CharField(max_length=1, choices=TRANSACTION_STATE_CHOICES, default=RUNNING)
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
@@ -251,6 +251,28 @@ class Transaction(models.Model):
         td = self.modified - self.created
         return td.days*86400000 + td.seconds*1000 + td.microseconds/1000
 
+    def log(self, level, msg):
+        logentry = LogEntry(transaction=self)
+        logentry.msg = msg
+        logentry.level = str(level)
+        logentry.save()
+
+LOG_LEVELS = (
+    ("10", 'DEBUG'),
+    ("20", 'INFO'),
+    ("30", 'WARNING'),
+    ("40", 'ERROR'),
+    ("50", 'CRITICAL')
+)
+
+class LogEntry(models.Model):
+    transaction = models.ForeignKey(Transaction, related_name="logs")
+    created = models.DateTimeField(auto_now_add=True, null=True)
+    level = models.CharField(max_length=2, choices=LOG_LEVELS)
+    msg = models.TextField()
+
+    def level_verbose(self):
+        return dict(LOG_LEVELS)[self.level]
 
 class Setting(models.Model):
     base = models.ForeignKey(Base, related_name="setting")
