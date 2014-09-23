@@ -2,17 +2,18 @@ var baseServices = angular.module('baseServices', ['ngResource', 'ngCookies']);
  
 // bases
 baseServices.factory('Bases', ['$resource', function($resource){
-    return $resource('api/base/', {}, {
+    return $resource('/fastapp/api/base/', {}, {
       all: {method:'GET', isArray:true},
       create: {method:'POST', params:{baseId: 'baseId'}, isArray:false}
    });
  }]);
 baseServices.factory('Base', ['$resource', '$cookies', function($resource, $cookies){
-    return $resource('api/base/:baseId/', {}, {
-      get: {method:'GET', params:{baseId: 'baseId'}, isArray:true},
+    return $resource('/fastapp/api/base/:baseId/', {}, {
+      get: {method:'GET', params:{baseId: 'baseId'}, isArray:false},
       update: {method:'PUT', params:{baseId: 'baseId'}, isArray:false},
-      start: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'api/base/:baseId/start\\/'},
-      stop: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'api/base/:baseId/stop\\/'},
+      start: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/start\\/'},
+      stop: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/stop\\/'},
+      transport: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/transport'},
    });
  }]);
 
@@ -60,3 +61,10 @@ baseServices.factory('Settings', ['$resource', function($resource){
    });
 }]);
 */
+
+baseServices.factory('TransportEndpoints', ['$resource', function($resource){
+    return $resource('/fastapp/api/transportendpoints/:id/', null,
+      {
+        'update': { method: 'PUT'}
+      });
+ }]);

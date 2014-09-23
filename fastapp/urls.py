@@ -7,7 +7,7 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView,
                 DjendBaseSettingsView, DjendBaseRenameView, CockpitView
 from rest_framework import routers
 
-from fastapp.api_views import BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet
+from fastapp.api_views import BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
 
 
 from django.views.decorators.cache import never_cache
@@ -50,17 +50,23 @@ urlpatterns = patterns('',
     url(r'(?P<base>[\w-]+)/static/(?P<name>.+)$', \
                                             login_or_sharedkey(DjendStaticView.as_view())),
     # api
+    url(r'^api/transportendpoints/$', TransportEndpointViewSet.as_view({'get': 'list', 'post': 'create'}), name='transportendpoint-list'),
+    url(r'^api/transportendpoints/(?P<pk>\d+)/$', TransportEndpointViewSet.as_view({'put': 'update'}), name='transportendpoint-list'),
     url(r'^api/base/$', BaseViewSet.as_view({'get': 'list', 'post': 'create'}), name='base-list'),
     url(r'^api/base/(?P<pk>\d+)/$', BaseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='base-detail'),
     url(r'^api/base/(?P<pk>\d+)/start/$', BaseViewSet.as_view({'post': 'start'}), name='base-stop'),
     url(r'^api/base/(?P<pk>\d+)/stop/$', BaseViewSet.as_view({'post': 'stop'}), name='base-start'),
     url(r'^api/base/(?P<pk>\d+)/export/$', BaseExportViewSet.as_view({'get': 'export'}), name='base-export'),
-    url(r'^api/base/import/$', BaseImportViewSet.as_view({'post': 'imp'}), name='base-import'),
+    url(r'^api/base/(?P<pk>\d+)/transport/$', BaseViewSet.as_view({'post': 'transport'}), name='base-transport'),
+    url(r'^api/base/import/$', csrf_exempt(BaseImportViewSet.as_view({'post': 'imp'})), name='base-import'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/$', ApyViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/(?P<pk>\d+)/$', ApyViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='apy-detail'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/(?P<pk>\d+)/clone/$', ApyViewSet.as_view({'post': 'clone'}), name='apy-clone'),
     url(r'^api/base/(?P<base_pk>\d+)/setting/$', SettingViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),
     url(r'^api/base/(?P<base_pk>\d+)/setting/(?P<pk>\d+)/$', SettingViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='apy-detail'),
+
+    # api-authtoken
+    url(r'^api-token-auth/', 'rest_framework.authtoken.views.obtain_auth_token'),
 
     # home
     url(r'^$', DjendView.as_view()),

@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 import zipfile
-import re
+import requests
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
 from rest_framework import permissions, viewsets
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from rest_framework import renderers
-from rest_framework import status
-
 
 from fastapp.utils import Connection
-from fastapp.models import Base, Apy, Setting
-from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from fastapp.models import Base, Apy, Setting, TransportEndpoint
+from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
 from fastapp.utils import info, check_code
 from django.db import transaction
 from rest_framework.decorators import link
@@ -32,6 +34,18 @@ class SettingViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.base = Base.objects.get(id=self.kwargs['base_pk'])
+
+class TransportEndpointViewSet(viewsets.ModelViewSet):
+    model = TransportEndpoint
+    serializer_class = TransportEndpointSerializer
+    authentication_classes = (SessionAuthentication,)
+
+    def get_queryset(self):
+        print self
+        return TransportEndpoint.objects.filter(user=self.request.user)
+
+    def pre_save(self, obj):
+        obj.user = self.request.user
 
 class ApyViewSet(viewsets.ModelViewSet):
     model = Apy
@@ -119,6 +133,36 @@ class BaseViewSet(viewsets.ModelViewSet):
         transaction.commit()
         return self.retrieve(request, pk=pk)
 
+        
+    def transport(self, request, pk):
+        base = self.get_queryset().get(pk=pk)
+        transport_url = self.request.DATA['url']
+        transport_token = self.request.DATA['token']
+        #transport_url = "http://requestb.in/16abkvv1"
+        zf = base.export()
+        zf.seek(0)
+        r = requests.post(transport_url, headers={
+            'Authorization': 'Token '+transport_token
+            }, data={
+            'name': base.name
+            }, files={
+            #'file': ("%s.zip" % base.name, zf)
+            'file': zf
+            })
+        logger.info(transport_url)
+        logger.info(r.request.headers)
+        logger.info((r.status_code))
+        logger.info((r.text))
+
+        s = "transport %s" % transport_url
+        if r.status_code == 201:
+            logger.info("%s success" % s)
+            return self.retrieve(request, pk=pk)
+        else:
+            logger.error("%s failed" % s)
+            raise Exception("%s failed" % s)
+
+
     @link()
     def apy(self, request, pk=None):
         queryset = Apy.objects.filter(base__pk=pk)
@@ -151,21 +195,31 @@ class BaseExportViewSet(viewsets.ModelViewSet):
             }, content_type='application/zip')
         return response
 
+
 class BaseImportViewSet(viewsets.ModelViewSet):
     model = Base
+    authentication_classes = (TokenAuthentication, SessionAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
+
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super(BaseImportViewSet, self).dispatch(*args, **kwargs)
 
     def get_queryset(self):
         return Base.objects.all()._clone().filter(user=self.request.user)
 
     def imp(self, request):
+        logger.info("start import")
         # Base
         name = request.POST['name']
         base, created = Base.objects.get_or_create(user=request.user, name=name)
         if not created:
-            raise Exception("Base '%s' does already exist" % name)
+            logger.warn("base '%s' did already exist" % name)
+            #raise Exception("Base '%s' does already exist" % name)
         base.save()
         f = request.FILES['file'] 
+        logger.info(request.FILES)
+        logger.info(f)
         zf = zipfile.ZipFile(f)
 
         # Dropbox connection
@@ -192,8 +246,8 @@ class BaseImportViewSet(viewsets.ModelViewSet):
 
             # Apy
             if "py" in file:
-                apy = Apy(base=base)
-                apy.name = file.replace(".py", "")
+                name = file.replace(".py", "")
+                apy, created = Apy.objects.get_or_create(base=base, name=name)
                 apy.module = content
                 apy.save()
 

@@ -14,7 +14,7 @@
   }
 
 
-  window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource', 'baseServices', 'doowb.angular-pusher', 'angularFileUpload', 'ngCookies', 'ui.bootstrap']).
+  window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource', 'baseServices', 'doowb.angular-pusher', 'angularFileUpload', 'ngCookies', 'ui.bootstrap', 'xeditable']).
   config(['PusherServiceProvider',
     function(PusherServiceProvider) {
       PusherServiceProvider
@@ -23,8 +23,36 @@
     }
     ]);
 
+  window.app.run(function(editableOptions) {
+    editableOptions.theme = 'bs3';
+  });
+
+
+  window.app.directive('focusMe', function($timeout, $parse) {
+    return {
+    //scope: true,   // optionally create a child scope
+    link: function(scope, element, attrs) {
+      var model = $parse(attrs.focusMe);
+      scope.$watch(model, function(value) {
+        if(value === true) { 
+          $timeout(function() {
+            element[0].focus(); 
+          });
+        }
+      });
+      // to address @blesh's comment, set attribute value to 'false'
+      // on blur event:
+      element.bind('blur', function() {
+       scope.$apply(model.assign(scope, false));
+     });
+    }
+  };
+});
+
   window.app.controller('BasesCtrl', ['$scope', 'Bases', 'Base', 'Apy', '$upload', '$cookies', '$window', function($scope, Bases, Base, Apy, $upload, $cookies, $window) {
+    console.warn("BasesCtrl");
     $scope.init = function() {
+      console.warn("init");
       var bases = Bases.all(function() {
         angular.forEach(bases, function(base) {
           base.apy_models = Apy.all({'baseId': base.id});
@@ -33,21 +61,26 @@
       });
     };
 
+    //if (!angular.isUndefined(window.active_base_id)) {
+    if (window.active_base_id.length !== 0 ) {
+      $scope.base = Base.get({'baseId': window.active_base_id});
+    }
+
+
+
     $scope.cycle_state = function(base) {
       console.log(base);
       if (base.state) {
         Base.stop({baseId: base.id}, base, function(data) {
-          console.log(data);
           base.state = false;
         });
       }
       if (! base.state) {
         Base.start({baseId: base.id}, base, function(data) {
-          console.log(data);
           base.state = true;
           base.pids = data['pids'];
         });
-      }
+      };
     };
 
     $scope.onFileSelect = function($files) {
@@ -55,7 +88,7 @@
     for (var i = 0; i < $files.length; i++) {
       var file = $files[i];
       $scope.upload = $upload.upload({
-        url: '/fastapp/api/base/import/', //upload.php script, node.js route, or servlet url
+        url: '/fastapp/api/base/import', //upload.php script, node.js route, or servlet url
         //method: 'POST' or 'PUT',
         //headers: {'header-key': 'header-value'},
         //withCredentials: true,
@@ -89,7 +122,7 @@
 }]);
 
 
-  window.app.controller('ExecCtrl', ['$scope', '$http', '$base64', 'Apy', 'Apy1', 'Pusher', function($scope, $http, $base64, Apy, Apy1, Pusher) {
+  window.app.controller('ExecCtrl', ['$rootScope', '$scope', '$http', '$base64', 'Apy', 'Apy1', 'Pusher', function($rootScope, $scope, $http, $base64, Apy, Apy1, Pusher) {
     $scope.new_exec_name = "";
     $scope.apys = [];
 
@@ -302,3 +335,140 @@
     }
   };
 });
+
+window.app.controller('TransportEndpointCtrl', ['$scope', '$filter', '$q', '$http', '$timeout', 'TransportEndpoints', 'Base', function($scope, $filter, $q, $http, $timeout, TransportEndpoints, Base) {
+ 
+ var itemsPendingSave = [];
+ 
+ /*$scope.users = [
+    {id: 1, name: 'awesome user1', status: 2, group: 4, groupName: 'admin'},
+    {id: 2, name: 'awesome user2', status: undefined, group: 3, groupName: 'vip'},
+    {id: 3, name: 'awesome user3', status: 2, group: null}
+  ];
+  */
+
+  $scope.transport = function(transport, base) {
+    console.log(transport);
+    console.log(base);
+    Base.transport({baseId: base.id}, transport);
+
+  };
+
+  $scope.statuses = [
+    {value: 1, text: 'status1'},
+    {value: 2, text: 'status2'},
+    {value: 3, text: 'status3'},
+    {value: 4, text: 'status4'}
+  ];
+
+  /*$scope.groups = [];
+  $scope.loadGroups = function() {
+    return $scope.groups.length ? null : $http.get('/groups').success(function(data) {
+      $scope.groups = data;
+    });
+  };*/
+
+  $scope.endpoints = TransportEndpoints.query();
+
+  $scope.showGroup = function(user) {if(user.group && $scope.groups.length) {var selected = $filter('filter')($scope.groups, {id: user.group}); return selected.length ? selected[0].text : 'Not set'; } else {return user.groupName || 'Not set';
+    }
+  };
+
+  /*$scope.showStatus = function(user) {
+    var selected = [];
+    if(user.status) {
+      selected = $filter('filter')($scope.statuses, {value: user.status});
+    }
+    return selected.length ? selected[0].text : 'Not set';
+  };*/
+
+/*  $scope.checkName = function(data) {
+    console.log("user.name.onbeforesave:", data);
+    if (data !== 'awesome') {
+      return "Username should be `awesome`";
+    }
+  };*/
+    
+  $scope.cancelChanges = function(){
+    /*angular.forEach(itemsPendingSave, function(user){
+      var index = $scope.users.indexOf(user);
+      $scope.removeUser(index);
+    });
+    itemsPendingSave = [];
+    $scope.tableform.$cancel();
+    */
+  };
+  
+/*  $scope.removeUser = function(index) {
+    $scope.users.splice(index, 1);
+  };*/
+
+  $scope.saveTable = function() {
+    //$scope.users already updated
+      
+    console.log("tableform.onaftersave");
+    var results = [];
+    itemsPendingSave = [];
+    angular.forEach($scope.endpoints, function(endpoint) {
+      console.log(endpoint);
+      console.log(endpoint.id);
+      if (angular.isUndefined(endpoint.id)) {
+        console.log("create");
+        te = TransportEndpoints.save(endpoint);
+        console.log(te);
+        endpoint.id = te.id;
+
+      } else {
+        console.log("update");
+
+        //Setting.update({'baseId': window.active_base_id, 'id': item.id}, item);
+        TransportEndpoints.update({'id': endpoint.id}, endpoint);
+      }
+      //results.push($http.post('/saveUser', user));
+    });
+    return $q.all(results);
+  };
+    
+  // add user
+  $scope.addEndpoint = function() {
+    var newEndpoint = {
+      //id: $scope.users.length,
+      url: '',
+      override_settings_priv: false,
+      override_settings_pub: true,
+    };
+    $scope.endpoints.push(newEndpoint);
+    itemsPendingSave.push(newEndpoint);
+    
+    if (!$scope.tableform.$visible) {
+      $scope.tableform.$show();
+    }
+    // Hack to be able to add a record and have focus set to the new row
+    $timeout(function(){
+       newEndpoint.isFocused = true;
+    }, 0);
+  };
+}]);
+
+/*    window.app.config(function($resourceProvider) {
+      console.log($resourceProvider);
+    $resourceProvider.defaults.stripTrailingSlashes = false;
+  });
+*/
+
+window.app.config(['$httpProvider', '$cookiesProvider', function ($httpProvider, $cookiesProvider) {
+         $httpProvider.interceptors.push(function ($q, $cookies) {
+             return {
+                 'request': function (config) {
+                     //config.url = config.url + '?id=123';
+                     if (config.method == "POST" || config.method == "PUT")  {
+                       config.url = config.url + "/";
+                       config.headers['X-CSRFToken'] = $cookies.csrftoken;
+                     }
+                     return config || $q.when(config);
+
+                 }
+
+             }
+         });
+     }]);
