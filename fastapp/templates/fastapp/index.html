@@ -44,8 +44,11 @@
 
          <!-- Grid  -->
         <link href="{{ STATIC_URL }}grid/ng-grid.css" rel="stylesheet"/>
-        <script type="text/javascript" src="{{ STATIC_URL }}grid/angular-1.2.10.min.js"></script>
+        <!--<script type="text/javascript" src="{{ STATIC_URL }}grid/angular-1.2.10.min.js"></script>-->
+        <script type="text/javascript" src="{{ STATIC_URL }}bower_components/angularjs/angular.js"></script>
         <!--<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular/angular.js"></script>-->
+
+        <script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular-xeditable/dist/js/xeditable.js"></script>
 
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular-cookies.js"></script>
 
@@ -94,7 +97,7 @@
 
     <body ng-app="execApp">
         {% block fastapp_nav %}
-        <div id="wrap"  >
+        <div id="wrap" ng-controller="BasesCtrl">
             <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                 <a href="https://github.com/fatrix/django-fastapp"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
                 <div class="container">
@@ -190,6 +193,16 @@
                     </div>
                 <div class="row">
                     <div class="col-md-6">
+                        <div ng-controller="TransportEndpointCtrl">
+                            <h3>Transport</h3>
+                            {% verbatim %}
+                            <div ng-repeat="endpoint in endpoints">
+
+                                    <button ng-click="transport(endpoint, base)" id="transport" type="button" class="btn btn-default btn-xs">
+                                    <span class="glyphicon glyphicon-share"></span> Transport to {{ endpoint.url }}</button>
+                            </div>
+                            {% endverbatim %}
+                        </div>
                         <h3>User Agent</h3>
                         <h4>index
                             <button id="edit_html" type="button" class="btn btn-default btn-xs">
