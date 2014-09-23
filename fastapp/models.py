@@ -406,7 +406,12 @@ class Executor(models.Model):
     def __str__(self):
         return "Executor %s-%s" % (self.base.user.username, self.base.name)
 
-
+class TransportEndpoint(models.Model):
+    user = models.ForeignKey(User)
+    url = models.CharField(max_length=200, blank=False, null=False)
+    token = models.CharField(max_length=200, blank=False, null=False)
+    override_settings_priv= models.BooleanField(default=False)
+    override_settings_pub= models.BooleanField(default=True)
 
 @receiver(post_save, sender=Base)
 def initialize_on_storage(sender, *args, **kwargs):

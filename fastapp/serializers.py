@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from fastapp.models import Base, Apy, Setting, Counter
+from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint
 
 class CounterSerializer(serializers.ModelSerializer):
 
@@ -22,6 +22,11 @@ class SettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Setting
         fields = ('id', 'key', 'value', 'public')
+
+class TransportEndpointSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransportEndpoint
+        fields = ('id', 'url', 'override_settings_priv', 'override_settings_pub', 'token')
 
 class BaseSerializer(serializers.ModelSerializer):
     apy = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
