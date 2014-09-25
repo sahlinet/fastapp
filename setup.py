@@ -20,7 +20,7 @@ setup(name='django-fastapp',
 		'pika==0.9.13',
 		'jsonfield==0.9.22',
 		'pyflakes==0.8.1',
-		'configobj==5.0.5'
+		'configobj==5.0.5',
 		'pyOpenSSL==0.14',
 		'ndg-httpsclient==0.3.2',
 		'pyasn1==0.1.7'
