@@ -141,6 +141,8 @@ class BaseViewSet(viewsets.ModelViewSet):
         #transport_url = "http://requestb.in/16abkvv1"
         zf = base.export()
         zf.seek(0)
+        logger.info("Calling "+transport_url)
+        logger.info("Token "+transport_token)
         r = requests.post(transport_url, headers={
             'Authorization': 'Token '+transport_token
             }, data={
@@ -148,8 +150,7 @@ class BaseViewSet(viewsets.ModelViewSet):
             }, files={
             #'file': ("%s.zip" % base.name, zf)
             'file': zf
-            })
-        logger.info(transport_url)
+            }, verify=False)
         logger.info(r.request.headers)
         logger.info((r.status_code))
         logger.info((r.text))
@@ -198,6 +199,7 @@ class BaseExportViewSet(viewsets.ModelViewSet):
 
 class BaseImportViewSet(viewsets.ModelViewSet):
     model = Base
+    #authentication_classes = (TokenAuthentication, SessionAuthentication, )
     authentication_classes = (TokenAuthentication, SessionAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -231,9 +233,8 @@ class BaseImportViewSet(viewsets.ModelViewSet):
 
         # get settings
         for k, v in appconfig['settings'].items():
-            setting_obj = Setting(base=base)
-            setting_obj.key = k
-            setting_obj.value = v
+            setting_obj, created = Setting.objects.get_or_create(base=base, key=k)
+            setting_obj.value = v['value']
             setting_obj.save()
 
         filelist = zf.namelist()
