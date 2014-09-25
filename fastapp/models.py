@@ -26,6 +26,10 @@ from django.dispatch import receiver
 from django.db.models import F
 from django.db.transaction import commit_on_success
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
+from rest_framework.authtoken.models import Token
+
 from fastapp.queue import generate_vhost_configuration
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
 
@@ -500,3 +504,7 @@ def synchronize_to_storage_on_delete(sender, *args, **kwargs):
         # if post_delete is triggered from base.delete()
         pass
 
+@receiver(post_save, sender=get_user_model())
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
