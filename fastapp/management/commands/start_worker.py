@@ -5,7 +5,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 
-from fastapp.executors.remote import ExecutorServerThread
+from fastapp.executors.remote import ExecutorServerThread, StaticServerThread
 from fastapp.executors.heartbeat import HeartbeatThread, HEARTBEAT_QUEUE, update_status
 from django.conf import settings
 
@@ -41,6 +41,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         threads = []
+        threads_static = []
 
         base = options['base']
         vhost = options['vhost']
@@ -67,6 +68,22 @@ class Command(BaseCommand):
             threads.append(thread)
             thread.daemon = True
             thread.start()
+
+        for c in range(0, 10):
+
+            # start threads     
+            #thread = ExecutorServerThread(c, "ExecutorServerThread-%s-%s" % (c, base), c, vhost, username, password)
+            from fastapp.executors.remote import STATIC_QUEUE
+            name = "StaticServerThread-%s-%s" % (c, base)
+            thread = StaticServerThread(name, host, port, vhost, 
+                queues_consume=[[STATIC_QUEUE]], 
+                topic_receiver=[], 
+                username=username, 
+                password=password)
+            threads_static.append(thread)
+            thread.daemon = True
+            thread.start()
+
 
         # increase thread_count by one because of HeartbeatThread
         thread_count = settings.FASTAPP_WORKER_THREADCOUNT+1

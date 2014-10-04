@@ -121,13 +121,17 @@ class HeartbeatThread(CommunicationThread):
             logger.debug(self.name+": "+sys._getframe().f_code.co_name)
             data = json.loads(body)
             vhost = data['vhost']
-            base = vhost.split("-")[1]
+            base = vhost.split("-", 1)[1]
 
-            logger.debug("Heartbeat received from '%s'" % vhost)
+            logger.info("Heartbeat received from '%s'" % vhost)
 
             # store timestamp in DB
             from fastapp.models import Instance
-            instance = Instance.objects.get(executor__base__name=base)
+            try:
+                instance = Instance.objects.get(executor__base__name=base)
+            except Instance.DoesNotExist, e:
+                logger.error("instance does not exist")
+                raise Exception()
             instance.is_alive = True
             instance.last_beat = datetime.now().replace(tzinfo=pytz.UTC)
             instance.save()

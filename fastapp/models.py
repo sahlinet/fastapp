@@ -78,6 +78,7 @@ class Base(models.Model):
         for texec in self.apys.all():
             config['modules'][texec.name] = {}
             config['modules'][texec.name]['module'] = texec.name+".py"
+            logger.info(texec.description)
             config['modules'][texec.name]['description'] = "\"%s\"" % texec.description
 
         config['settings'] = {}
@@ -97,7 +98,6 @@ class Base(models.Model):
 
 
     def refresh(self, put=False):
-        from fastapp.utils import Connection, NotFound
         connection = Connection(self.user.authprofile.access_token)
         template_name = "%s/index.html" % self.name
         #if put:
@@ -360,10 +360,12 @@ class Executor(models.Model):
         create_vhost(self.base)
 
         try:
-            Instance.objects.get(executor=self)
+            instance = Instance.objects.get(executor=self)
+            logger.info("Instance found with id %s" % instance.id)
         except Instance.DoesNotExist, e:
             instance = Instance(executor=self)
             instance.save()
+            logger.info("Instance created with id %s" % instance.id)
         
         python_path = sys.executable
         try:
