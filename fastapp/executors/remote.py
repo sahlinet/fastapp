@@ -495,7 +495,7 @@ class StaticServerThread(CommunicationThread):
                             try:
                                 f = open(full_path, 'r')
                             except Exception, e:
-                                logger.exception()
+                                logger.exception(e)
                                 logger.error("could not open file")
                             rc="OK"
                             response_data.update({

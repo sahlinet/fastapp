@@ -63,15 +63,20 @@ class DjendStaticView(View):
                     # but from local filesystem
                     try:
                         REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH")
-                        logger.info("load %s from local filesystem" % static_path)
-                        f = open(os.path.join(REPOSITORIES_PATH, static_path), 'r')
+                        logger.info("load %s from local filesystem (repositories)" % static_path)
+                        full_path = os.path.join(REPOSITORIES_PATH, static_path)
+                        logger.info(full_path)
+                        f = open(full_path, 'r')
                     except IOError, e:
-                        pass
-                    try:
-                        DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
-                        f = open(os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path), 'r')
-                    except IOError, e:
-                        return HttpResponseNotFound(static_path + " not found")
+                        logger.exception(e)
+                    if not f:
+                        try:
+                            DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
+                            logger.info("load %s from local filesystem (dropbox app)" % static_path)
+                            f = open(os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path), 'r')
+                        except IOError, e:
+                            logger.error(e)
+                            return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
                     logger.info("load %s from module in worker" % static_path)
