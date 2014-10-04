@@ -1,5 +1,4 @@
 import os
-from os.path import expanduser
 import base64
 import logging
 import json
@@ -72,7 +71,7 @@ class DjendStaticView(View):
                         DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
                         f = open(os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path), 'r')
                     except IOError, e:
-                        pass
+                        return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
                     logger.info("load %s from module in worker" % static_path)
@@ -87,16 +86,22 @@ class DjendStaticView(View):
                         )
                     data = json.loads(response_data)
                     if json.loads(response_data)['status'] == "ERROR":
+                        logger.error("ERROR response from worker")
                         raise Exception(response_data)
                     if json.loads(response_data)['status'] == "OK":
+                        logger.info("File received from worker")
                         f = base64.b64decode(data['file'])
-
                     # get from dropbox
                     if data['status'] == "NOT_FOUND":
+                        logger.info("File not found from worker")
                         # get file from dropbox
                         auth_token = base_model.user.authprofile.access_token
                         client = dropbox.client.DropboxClient(auth_token)
-                        f = client.get_file(static_path).read()
+                        try:
+                            f = client.get_file(static_path).read()
+                        except Exception, e:
+                            logger.error("File not found on dropbox")
+                            raise e
                     cache.set(static_path, f, 60)
                     logger.info("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:

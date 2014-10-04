@@ -1,3 +1,4 @@
+import os
 import pika
 import uuid
 import json
@@ -5,6 +6,7 @@ import copy
 import logging
 import sys
 import traceback
+import base64
 from bunch import Bunch
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
 
@@ -420,7 +422,7 @@ def get_static(path, vhost, username, password, async=False):
                 self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
-            expire = 5000
+            expire = 3000
             logger.debug("Message expiration set to %s ms" % str(expire))
             self.channel.basic_publish(exchange='',
                                        routing_key='static_queue',
@@ -466,7 +468,7 @@ class StaticServerThread(CommunicationThread):
         logger.debug(props.app_id)
         logger.debug(body)
         body = json.loads(body)
-        logger.debug(body)
+        logger.info(body)
 
         def find_file(p1, p2):
             for root, dirs, files in os.walk(p):
@@ -481,54 +483,35 @@ class StaticServerThread(CommunicationThread):
                 logger.info("Static-Request %s received in %s" % (body['path'], self.name))
                 try:
                     path = body['path']
-                    import os
                     response_data = {}
                     base_name = body['base_name']
                     f=None
                     for p in sys.path:
                         if base_name in p:
-                            logger.debug(p+" found")
+                            logger.info(p+" found")
                             full_path = os.path.join(p, path.replace(base_name+"/", ""))
+                            logger.info("Static-Request %s received in %s" % (body['path'], self.name))
                             logger.info(full_path)
-                            f = open(full_path, 'r')
+                            try:
+                                f = open(full_path, 'r')
+                            except Exception, e:
+                                logger.exception()
+                                logger.error("could not open file")
                             rc="OK"
-                            import base64
                             response_data.update({
                                 'file': base64.b64encode(f.read())
                                 })
                     if not f:
+                        logger.error("not found")
                         rc="NOT_FOUND"
-
-                    from app import cloud
-                    import os
-
-                    #response_data = _do(json.loads(body), self.functions, self.settings)
 
                 except Exception, e:
                     rc="NOT_FOUND"
                     logger.exception(e)
                 finally:
                     response_data.update({'status': rc})
-                    logger.debug(props.reply_to)
-                    #if props.reply_to == "/static_callback":
-                    #    connection = connect_to_queuemanager(
-                    #            "localhost", 
-                    #            "/", 
-                    #            "guest", 
-                    #            "guest", 
-                    #            5672
-                    #        )
-                    #    channel = connection.channel()
-                    #    response_data.update({'rid': json.loads(body)['rid']})
-                    #    channel.basic_publish(exchange='',
-                    #        routing_key="async_callback",
-                    #        properties=pika.BasicProperties(
-                    #            #expiration = str(2000)
-                    #        ),
-                    #        body=json.dumps(response_data)
-                    #    )
-                    #    connection.close()
-                    #else:
+                    logger.info(response_data)
+                    logger.info(props.reply_to)
                     ch.basic_publish(exchange='',
                                      routing_key=props.reply_to,
                                      properties=pika.BasicProperties(
@@ -536,7 +519,7 @@ class StaticServerThread(CommunicationThread):
                                         delivery_mode=1,
                                         ),
                                      body=json.dumps(response_data))
-                    logger.debug("ack message")
+                    logger.info("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
             logger.exception(e) 
