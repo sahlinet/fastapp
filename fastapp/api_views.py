@@ -138,17 +138,18 @@ class BaseViewSet(viewsets.ModelViewSet):
         base = self.get_queryset().get(pk=pk)
         transport_url = self.request.DATA['url']
         transport_token = self.request.DATA['token']
-        #transport_url = "http://requestb.in/16abkvv1"
         zf = base.export()
         zf.seek(0)
         logger.info("Calling "+transport_url)
         logger.info("Token "+transport_token)
+        transport = TransportEndpoint.objects.get(user=request.user, url=transport_url)
         r = requests.post(transport_url, headers={
             'Authorization': 'Token '+transport_token
             }, data={
-            'name': base.name
+            'name': base.name,
+            'override_private': transport.override_settings_priv,
+            'override_public': transport.override_settings_pub,
             }, files={
-            #'file': ("%s.zip" % base.name, zf)
             'file': zf
             }, verify=False)
         logger.info(r.request.headers)
@@ -199,7 +200,6 @@ class BaseExportViewSet(viewsets.ModelViewSet):
 
 class BaseImportViewSet(viewsets.ModelViewSet):
     model = Base
-    #authentication_classes = (TokenAuthentication, SessionAuthentication, )
     authentication_classes = (TokenAuthentication, SessionAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -214,14 +214,14 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         logger.info("start import")
         # Base
         name = request.POST['name']
+        override_public = bool(request.GET.get('override_public', False))
+        override_private = bool(request.GET.get('override_private', False))
         base, created = Base.objects.get_or_create(user=request.user, name=name)
         if not created:
             logger.warn("base '%s' did already exist" % name)
             #raise Exception("Base '%s' does already exist" % name)
         base.save()
         f = request.FILES['file'] 
-        logger.info(request.FILES)
-        logger.info(f)
         zf = zipfile.ZipFile(f)
 
         # Dropbox connection
@@ -234,7 +234,15 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         # get settings
         for k, v in appconfig['settings'].items():
             setting_obj, created = Setting.objects.get_or_create(base=base, key=k)
-            setting_obj.value = v['value']
+            # set if empty
+            if not setting_obj.value:
+                setting_obj.value = v['value']
+            # override_public
+            if setting_obj.public and override_public:
+                setting_obj.value = v['value']
+            # override_private
+            if not setting_obj.public and override_private:
+                setting_obj.value = v['value']
             setting_obj.save()
 
         filelist = zf.namelist()
@@ -250,6 +258,8 @@ class BaseImportViewSet(viewsets.ModelViewSet):
                 name = file.replace(".py", "")
                 apy, created = Apy.objects.get_or_create(base=base, name=name)
                 apy.module = content
+                apy.module = content
+                apy.description = appconfig['modules'][name]['description']
                 apy.save()
 
         base_queryset = base

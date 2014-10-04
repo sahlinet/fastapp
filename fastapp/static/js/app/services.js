@@ -11,15 +11,15 @@ baseServices.factory('Base', ['$resource', '$cookies', function($resource, $cook
     return $resource('/fastapp/api/base/:baseId/', {}, {
       get: {method:'GET', params:{baseId: 'baseId'}, isArray:false},
       update: {method:'PUT', params:{baseId: 'baseId'}, isArray:false},
-      start: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/start\\/'},
-      stop: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/stop\\/'},
+      start: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/start'},
+      stop: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/stop'},
       transport: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/transport'},
    });
  }]);
 
 // apy
 baseServices.factory('Apy', ['$resource', '$cookies', function($resource, $cookies){
-    return $resource('/fastapp/api/base/:baseId/apy\\/', {}, {
+    return $resource('/fastapp/api/base/:baseId/apy', {}, {
       all: {method:'GET', params:{baseId: 'id'}, isArray:true},
       create: {method:'POST', params:{baseId: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}},
    });
@@ -31,8 +31,8 @@ baseServices.factory('Apy1', ['$resource', '$cookies', function($resource, $cook
       update: {method:'PUT', params:{baseId: 'id', id: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}},
       get: {method:'GET', params:{baseId: 'id', id: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}},
       delete: {method:'DELETE', params:{baseId: 'id', id: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}},
-      clone: {method:'POST', params:{baseId: 'id', id: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/apy/:id/clone\\/'},
-      execute: {method:'GET', params:{baseName: 'baseName', name: 'name'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/base/:baseName/exec/:name\\/'},
+      clone: {method:'POST', params:{baseId: 'id', id: 'id'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/apy/:id/clone'},
+      execute: {method:'GET', params:{baseName: 'baseName', name: 'name'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/base/:baseName/exec/:name'},
    });
 }]);
 

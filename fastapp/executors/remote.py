@@ -170,6 +170,7 @@ threads = []
 CONFIGURATION_QUEUE = "configuration"
 SETTING_QUEUE = "setting"
 RPC_QUEUE = "rpc_queue"
+STATIC_QUEUE = "static_queue"
 
 class ExecutorServerThread(CommunicationThread):
     def __init__(self, *args, **kwargs ):
@@ -202,8 +203,8 @@ class ExecutorServerThread(CommunicationThread):
                     self.settings.update(json_body)
                     logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
-                    logger.error("Invalid event arrived (%s)" % props.app_id)
-    #
+                    logger.error("Invalid event arrived (%s)" % props.app_id)  
+
             if method.routing_key == RPC_QUEUE:
                 logger.info("Request received in %s" % self.name)
                 try:
@@ -369,3 +370,173 @@ def _do(data, functions=None, settings=None):
         if exception_message:
             return_data['exception_message'] = exception_message
         return return_data
+
+def get_static(path, vhost, username, password, async=False):
+
+    class StaticClient(object):
+        """
+        Gets the apy (id, name, module) and sets them on the _do function.__add__ .
+        Then the client is ready to response for execution requests.
+
+        """
+        def __init__(self, vhost, username, password, async=False):
+            # get needed stuff
+            self.vhost = vhost
+            self.connection = connect_to_queuemanager(
+                    host=settings.RABBITMQ_HOST,
+                    vhost=vhost,
+                    username=username,
+                    password=password,
+                    port=settings.RABBITMQ_PORT
+                ) 
+
+            logger.debug("exchanging message to vhost: %s" % self.vhost)
+
+            self.channel = self.connection.channel()
+
+            result = self.channel.queue_declare(exclusive=True)
+
+            if not async:
+                self.callback_queue = result.method.queue
+            else:
+                self.callback_queue = "/static_callback"
+                result = self.channel.queue_declare(queue=self.callback_queue)
+
+            self.channel.basic_consume(self.on_response, no_ack=True,
+                                       queue=self.callback_queue)
+
+        def on_timeout(self):
+            logger.error("timeout in waiting for response")
+            raise Exception("Timeout")
+
+        def on_response(self, ch, method, props, body):
+            if self.corr_id == props.correlation_id:
+                self.response = body
+                logger.debug("from static queue: "+body)
+
+        def call(self, n):
+            if self.callback_queue != "/static_callback":
+                async = False
+                self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
+            self.response = None
+            self.corr_id = str(uuid.uuid4())
+            expire = 5000
+            logger.debug("Message expiration set to %s ms" % str(expire))
+            self.channel.basic_publish(exchange='',
+                                       routing_key='static_queue',
+                                       properties=pika.BasicProperties(
+                                             reply_to = self.callback_queue,
+                                             delivery_mode=1,
+                                             correlation_id = self.corr_id,
+                                             expiration=str(expire)
+                                             ),
+                                       body=str(n))
+            while self.response is None and not async:
+                self.connection.process_data_events()
+            return self.response
+
+        def end(self):
+            self.channel.close()
+            self.connection.close()
+            del self.channel
+            del self.connection
+
+    executor = StaticClient(vhost, username, password, async=async)
+
+    try:
+        #import pdb; pdb.set_trace()
+        response = executor.call(path)
+    except Exception, e:
+        logger.exception(e)
+        response = json.dumps({u'status': u'TIMEOUT', u'exception': None, u'returned': None, 'id': u'cannot_import'})
+    finally:
+        executor.end()
+    return response
+
+
+class StaticServerThread(CommunicationThread):
+    def __init__(self, *args, **kwargs ):
+        self.functions = {}
+        self.settings = {}
+
+        return super(StaticServerThread, self).__init__(*args, **kwargs)
+
+    def on_message(self, ch, method, props, body):
+        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
+        logger.debug(props.app_id)
+        logger.debug(body)
+        body = json.loads(body)
+        logger.debug(body)
+
+        def find_file(p1, p2):
+            for root, dirs, files in os.walk(p):
+                for dir in dirs:
+                    if dir.startswith("."):
+                        next
+                    else:
+                        return find_file(p1, p2)
+
+        try:
+            if method.routing_key == STATIC_QUEUE:
+                logger.info("Static-Request %s received in %s" % (body['path'], self.name))
+                try:
+                    path = body['path']
+                    import os
+                    response_data = {}
+                    base_name = body['base_name']
+                    f=None
+                    for p in sys.path:
+                        if base_name in p:
+                            logger.debug(p+" found")
+                            full_path = os.path.join(p, path.replace(base_name+"/", ""))
+                            logger.info(full_path)
+                            f = open(full_path, 'r')
+                            rc="OK"
+                            import base64
+                            response_data.update({
+                                'file': base64.b64encode(f.read())
+                                })
+                    if not f:
+                        rc="NOT_FOUND"
+
+                    from app import cloud
+                    import os
+
+                    #response_data = _do(json.loads(body), self.functions, self.settings)
+
+                except Exception, e:
+                    rc="NOT_FOUND"
+                    logger.exception(e)
+                finally:
+                    response_data.update({'status': rc})
+                    logger.debug(props.reply_to)
+                    #if props.reply_to == "/static_callback":
+                    #    connection = connect_to_queuemanager(
+                    #            "localhost", 
+                    #            "/", 
+                    #            "guest", 
+                    #            "guest", 
+                    #            5672
+                    #        )
+                    #    channel = connection.channel()
+                    #    response_data.update({'rid': json.loads(body)['rid']})
+                    #    channel.basic_publish(exchange='',
+                    #        routing_key="async_callback",
+                    #        properties=pika.BasicProperties(
+                    #            #expiration = str(2000)
+                    #        ),
+                    #        body=json.dumps(response_data)
+                    #    )
+                    #    connection.close()
+                    #else:
+                    ch.basic_publish(exchange='',
+                                     routing_key=props.reply_to,
+                                     properties=pika.BasicProperties(
+                                        correlation_id = props.correlation_id,
+                                        delivery_mode=1,
+                                        ),
+                                     body=json.dumps(response_data))
+                    logger.debug("ack message")
+                    ch.basic_ack(delivery_tag = method.delivery_tag)
+        except Exception, e:
+            logger.exception(e) 

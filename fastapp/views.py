@@ -1,9 +1,12 @@
+import os
+from os.path import expanduser
+import base64
 import logging
 import json
 import dropbox
 import time
 import copy
-import os, sys
+import sys
 from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -24,13 +27,13 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 
 from fastapp import __version__ as version
-from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, error, warn, channel_name_for_user, debug, send_client
+from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 
 from fastapp.queue import generate_vhost_configuration
 from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread, Transaction
-from fastapp.models import RUNNING, TIMEOUT, FINISHED, TRANSACTION_STATE_CHOICES
+from fastapp.models import RUNNING, FINISHED
 from fastapp import responses
-from fastapp.executors.remote import call_rpc_client
+from fastapp.executors.remote import call_rpc_client, get_static
 
 
 logger = logging.getLogger(__name__)
@@ -57,17 +60,43 @@ class DjendStaticView(View):
             try:
                 logger.info("not in cache: %s" % static_path)
                 if "runserver" in sys.argv:
-                    logger.info("load %s from local filesystem" % static_path)
                     # for debugging with local runserver not loading from central storage
                     # but from local filesystem
-                    HOME = os.path.expanduser("~")
-                    PREFIX = "Dropbox/Apps/sahli_net_fastapp_local"
-                    f = open(os.path.join(HOME, PREFIX, static_path), 'r')
+                    try:
+                        REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH")
+                        logger.info("load %s from local filesystem" % static_path)
+                        f = open(os.path.join(REPOSITORIES_PATH, static_path), 'r')
+                    except IOError, e:
+                        pass
+                    try:
+                        DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
+                        f = open(os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path), 'r')
+                    except IOError, e:
+                        pass
                 else:
+                    # try to load from installed module in worker
+                    logger.info("load %s from module in worker" % static_path)
                     base_model = Base.objects.get(name=kwargs['base'])
-                    auth_token = base_model.user.authprofile.access_token
-                    client = dropbox.client.DropboxClient(auth_token)
-                    f = client.get_file(static_path).read()
+                    response_data = get_static(
+                        json.dumps({"base_name": base_model.name, "path": static_path}),
+                        generate_vhost_configuration(
+                            base_model.user.username, 
+                            base_model.name), 
+                            base_model.name, 
+                            base_model.executor.password
+                        )
+                    data = json.loads(response_data)
+                    if json.loads(response_data)['status'] == "ERROR":
+                        raise Exception(response_data)
+                    if json.loads(response_data)['status'] == "OK":
+                        f = base64.b64decode(data['file'])
+
+                    # get from dropbox
+                    if data['status'] == "NOT_FOUND":
+                        # get file from dropbox
+                        auth_token = base_model.user.authprofile.access_token
+                        client = dropbox.client.DropboxClient(auth_token)
+                        f = client.get_file(static_path).read()
                     cache.set(static_path, f, 60)
                     logger.info("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
