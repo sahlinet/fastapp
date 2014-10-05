@@ -52,7 +52,10 @@ class CockpitView(TemplateView):
 class DjendStaticView(View):
 
     def _render_html(self, t, **kwargs):
-        t = Template(t.read())
+        if type(t) == str:
+            t = Template(t)
+        else:
+            t = Template(t.read())
         c = Context(kwargs)
         return t.render(c)
 
