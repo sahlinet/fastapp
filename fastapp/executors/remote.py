@@ -465,18 +465,9 @@ class StaticServerThread(CommunicationThread):
 
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
-        logger.debug(props.app_id)
         logger.debug(body)
         body = json.loads(body)
         logger.info(body)
-
-        def find_file(p1, p2):
-            for root, dirs, files in os.walk(p):
-                for dir in dirs:
-                    if dir.startswith("."):
-                        next
-                    else:
-                        return find_file(p1, p2)
 
         try:
             if method.routing_key == STATIC_QUEUE:
@@ -490,7 +481,6 @@ class StaticServerThread(CommunicationThread):
                         if base_name in p:
                             logger.info(p+" found")
                             full_path = os.path.join(p, path.replace(base_name+"/", ""))
-                            logger.info("Static-Request %s received in %s" % (body['path'], self.name))
                             logger.info(full_path)
                             try:
                                 f = open(full_path, 'r')

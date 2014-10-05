@@ -6,6 +6,7 @@ import dropbox
 import time
 import copy
 import sys
+
 from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -24,6 +25,7 @@ from django.views.decorators.cache import never_cache
 from django.core import serializers
 from dropbox.rest import ErrorResponse
 from django.core.cache import cache
+from django.template import Context, Template
 
 from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
@@ -49,17 +51,26 @@ class CockpitView(TemplateView):
 
 class DjendStaticView(View):
 
+    def _render_html(self, t, **kwargs):
+        t = Template(t.read())
+        c = Context(kwargs)
+        return t.render(c)
+
+
     @never_cache
     def get(self, request, *args, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
         logger.info("get %s" % static_path)
 
-        f = cache.get(static_path)
+        base_model = Base.objects.get(name=kwargs['base'])
+
+        f = cache.get(base_model.name+"-"+static_path)
         if not f:
             try:
                 logger.info("not in cache: %s" % static_path)
+
                 if "runserver" in sys.argv:
-                    # for debugging with local runserver not loading from central storage
+                    # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:
                         REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH")
@@ -80,7 +91,6 @@ class DjendStaticView(View):
                 else:
                     # try to load from installed module in worker
                     logger.info("load %s from module in worker" % static_path)
-                    base_model = Base.objects.get(name=kwargs['base'])
                     response_data = get_static(
                         json.dumps({"base_name": base_model.name, "path": static_path}),
                         generate_vhost_configuration(
@@ -90,14 +100,17 @@ class DjendStaticView(View):
                             base_model.executor.password
                         )
                     data = json.loads(response_data)
-                    if json.loads(response_data)['status'] == "ERROR":
+
+                    if data['status'] == "ERROR":
                         logger.error("ERROR response from worker")
                         raise Exception(response_data)
-                    if json.loads(response_data)['status'] == "OK":
+                    elif data['status'] == "TIMEOUT":
+                        return HttpResponseServerError("Timeout")
+                    elif data['status'] == "OK":
                         logger.info("File received from worker")
                         f = base64.b64decode(data['file'])
                     # get from dropbox
-                    if data['status'] == "NOT_FOUND":
+                    elif data['status'] == "NOT_FOUND":
                         logger.info("File not found from worker")
                         # get file from dropbox
                         auth_token = base_model.user.authprofile.access_token
@@ -107,7 +120,7 @@ class DjendStaticView(View):
                         except Exception, e:
                             logger.error("File not found on dropbox")
                             raise e
-                    cache.set(static_path, f, 60)
+                    cache.set(base_model.name+"-"+static_path, f, 60)
                     logger.info("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
                 logger.error("not found: '%s'" % static_path)
@@ -136,6 +149,7 @@ class DjendStaticView(View):
             mimetype = "image/x-icon"
         elif static_path.lower().endswith('.html'):
             mimetype = "text/html"
+            f = self._render_html(f, **dict((s.key, s.value) for s in base_model.setting.all()))
         elif static_path.lower().endswith('.map'):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):

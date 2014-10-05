@@ -95,6 +95,7 @@ class RabbitmqHttpApi(RabbitmqAdmin):
 
     def set_perms(self, vhost, username):
         self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data={"scope":"client","configure":".*","write":".*","read":".*"})
+        self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), "admin"), data={"scope":"client","configure":".*","write":".*","read":".*"})
 
 def create_vhost(base):
     # create the vhosts, users and permissions
