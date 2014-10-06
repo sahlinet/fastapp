@@ -363,6 +363,7 @@ def _do(data, functions=None, settings=None):
                     returned = str(returned)
 
             except Exception, e:
+                logger.exception(e)
                 exception = "%s" % type(e).__name__
                 exception_message = e.message
                 traceback.print_exc()
@@ -446,7 +447,6 @@ def get_static(path, vhost, username, password, async=False):
     executor = StaticClient(vhost, username, password, async=async)
 
     try:
-        #import pdb; pdb.set_trace()
         response = executor.call(path)
     except Exception, e:
         logger.exception(e)
@@ -500,7 +500,6 @@ class StaticServerThread(CommunicationThread):
                     logger.exception(e)
                 finally:
                     response_data.update({'status': rc})
-                    logger.info(response_data)
                     logger.info(props.reply_to)
                     ch.basic_publish(exchange='',
                                      routing_key=props.reply_to,
