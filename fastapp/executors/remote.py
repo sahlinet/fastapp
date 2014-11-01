@@ -217,12 +217,13 @@ class ExecutorServerThread(CommunicationThread):
                     logger.exception(e)
                 finally:
                     if props.reply_to == "/async_callback":
+                        # TODO: should be a user with less permissions
                         connection = connect_to_queuemanager(
-                                "localhost", 
+                                self.host,
                                 "/", 
-                                "guest", 
-                                "guest", 
-                                5672
+                                settings.RABBITMQ_ADMIN_USER,
+                                settings.RABBITMQ_ADMIN_PASSWORD,
+                                self.port
                             )
                         channel = connection.channel()
                         response_data.update({'rid': json.loads(body)['rid']})

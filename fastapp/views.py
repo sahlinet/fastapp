@@ -87,7 +87,8 @@ class DjendStaticView(View):
                         try:
                             DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
                             logger.info("load %s from local filesystem (dropbox app)" % static_path)
-                            f = open(os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path), 'r')
+                            filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
+                            f = open(filepath, 'r')
                         except IOError, e:
                             logger.error(e)
                             return HttpResponseNotFound(static_path + " not found")
