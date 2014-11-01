@@ -178,7 +178,7 @@ class AsyncResponseThread(CommunicationThread):
             logger.info(data)
 
             transaction = Transaction.objects.get(pk=data['rid'])
-            transaction.tout = json.dumps(data)
+            transaction.tout = data
             transaction.status = FINISHED
             transaction.save()
             logger.info("tout saved")

@@ -231,7 +231,7 @@ class DjendExecView(View, DjendMixin):
             })
         except Exception, e:
             logger.exception(e)
-            raise HttpResponseServerError(e)
+            raise Exception("Could not execute request")
         return data
 
     def _execute_async(self, request, request_data, base_model, rid):
@@ -333,7 +333,7 @@ class DjendExecView(View, DjendMixin):
             # look for transaction
             transaction = Transaction.objects.get(pk=rid)
             if transaction.tout:
-                data = json.loads(transaction.tout)
+                data = transaction.tout
                 #data.update({'logs':
                 #        json.loads(serializers.serialize("json", transaction.logs.all()))
                 #    })
