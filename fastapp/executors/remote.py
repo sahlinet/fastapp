@@ -1,5 +1,6 @@
 import pika
 import uuid
+import os
 import json
 import copy
 import logging
