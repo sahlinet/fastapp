@@ -16,8 +16,9 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        THREAD_COUNT = settings.FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT
-        ASYNC_THREAD_COUNT = THREAD_COUNT
+        HEARTBEAT_THREAD_COUNT = settings.FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT
+        ASYNC_THREAD_COUNT = settings.FASTAPP_ASYNC_LISTENER_THREADCOUNT
+        LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
         threads = []
         async_threads = []
 
@@ -33,7 +34,7 @@ class Command(BaseCommand):
         username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
-        for c in range(0, THREAD_COUNT):
+        for c in range(0, HEARTBEAT_THREAD_COUNT):
             name = "HeartbeatThread-%s" % c
 
             thread = HeartbeatThread(name, host, port, "/", username, password, queues_consume=queues_consume, ttl=3000)
@@ -41,7 +42,7 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-        update_status_thread = threading.Thread(target=update_status, args=["Heartbeat", THREAD_COUNT, threads])
+        update_status_thread = threading.Thread(target=update_status, args=["Heartbeat", HEARTBEAT_THREAD_COUNT, threads])
         update_status_thread.daemon = True
         update_status_thread.start()
 
@@ -60,7 +61,7 @@ class Command(BaseCommand):
         # log receiver
         queues_consume_async = [["logentries", True]]
         log_threads = []
-        for c in range(0, ASYNC_THREAD_COUNT):
+        for c in range(0, LOG_THREAD_COUNT):
             name = "LogReceiverThread-%s" % c
 
             thread = LogReceiverThread(name, host, port, "/", username, password, queues_consume=queues_consume_async, ttl=3000)
@@ -72,7 +73,7 @@ class Command(BaseCommand):
         for t in threads+async_threads+log_threads:
             #print "join %s " % t
             try:
-                logger.info("%s Thread started" % THREAD_COUNT)
+                logger.info("Thread started")
                 t.join(1000)
             except KeyboardInterrupt:
                 print "Ctrl-c received."

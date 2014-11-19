@@ -21,18 +21,39 @@ def get_pusher():
     logger.debug(pusher_instance)
     return pusher_instance
 
-class PusherSenderThread(threading.Thread):
-    PUBLISH_INTERVAL = 20
+from fastapp.queue import CommunicationThread
+from fastapp.models import Transaction
 
-    def __init__(self, threadID, name, counter, vhost):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.counter = counter
+logger = logging.getLogger(__name__)
 
-        self.vhost = vhost
+class PusherSenderThread(CommunicationThread):
 
-        self.in_sync = False
+    def on_message(self, ch, method, props, body):
+        try:
+            logger.debug(self.name+": "+sys._getframe().f_code.co_name)
+            p = get_pusher()    
+            body = json.loads(body)
+
+            event = body['event']
+            channel = body['channel']
+            data = body['data']
+
+            logger.debug(data)
+            try:
+                p[channel].trigger(event, data)
+            except Exception, e:
+                now=datetime.now()
+                p[channel].trigger(event, data = {'datetime': str(now), 'message': str(e), 'class': "error"})
+                logger.error("Cannot send data to pusher")
+                logger.exception(e)
+
+            logger.debug("pusher event sent")
+
+            p = None
+        except Exception, e:
+            logger.exception(e)
+
+class PusherSenderThreadOld(threading.Thread):
 
     def run(self):
 
@@ -83,8 +104,8 @@ class PusherSenderThread(threading.Thread):
 
         self.channel = channel
 
-    def on_beat(self, ch, method, props, body):
-        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
+    def on_message(self, ch, method, props, body):
+        logger.info(self.name+": "+sys._getframe().f_code.co_name)
 
         p = get_pusher()    
         body = json.loads(body)

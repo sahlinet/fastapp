@@ -14,7 +14,7 @@ from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 from fastapp.executors.remote import distribute
-from fastapp.models import Executor, Instance, Process, Thread, Transaction
+from fastapp.models import Base, Instance, Process, Thread, Transaction
 from fastapp.queue import CommunicationThread
 
 from fastapp.models import FINISHED
@@ -40,10 +40,11 @@ def inactivate():
 
             # start if is_started and not running    
             try:
-                for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
-                    if not executor.is_running():
+                for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
+                #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
+                    if not base.executor.is_running():
                         # log start with last beat datetime
-                        executor.start()
+                        base.executor.start()
             except DatabaseError, e:
                 logger.error("Executor was locked with select_for_update")
                 logger.exception(e)
@@ -123,7 +124,7 @@ class HeartbeatThread(CommunicationThread):
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
 
-            logger.info("Heartbeat received from '%s'" % vhost)
+            logger.debug("Heartbeat received from '%s'" % vhost)
 
             # store timestamp in DB
             from fastapp.models import Instance
@@ -137,7 +138,7 @@ class HeartbeatThread(CommunicationThread):
             instance.save()
 
             if not data['in_sync']:
-                logger.info("Run sync to vhost: "+vhost)
+                logger.debug("Run sync to vhost: "+vhost)
                 from fastapp.models import Apy, Setting
                 for instance in Apy.objects.filter(base__name=base):
                     distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]), 

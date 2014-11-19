@@ -118,7 +118,6 @@
                            {% if active_base %}
                             <li><a href=".?refresh">Refresh</a></li>
                             {% endif %}
-                            {% if active_base %}
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">My Bases<b class="caret"></b></a>
                                 <ul class="dropdown-menu">
@@ -129,7 +128,7 @@
                                     </li>
                                     {% endfor %}
                                     <li>
-                                        <form method="post">
+                                        <form method="post" url="base/new">
                                             <div>
                                                 <div class="input-group">
                                                     <input type="text" class="form-control" name="new_base" placeholder="New base">
@@ -144,7 +143,6 @@
                                     </li>
                                 </ul>
                             </li>
-                            {% endif %}
                         </ul>
                         {% endif %}
                         {% if not user.is_authenticated %}

@@ -18,7 +18,6 @@ from datetime import datetime, timedelta
 from jsonfield import JSONField
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.template import Template
 from django_extensions.db.fields import UUIDField, ShortUUIDField
 from django.db.models.signals import post_save, post_delete
@@ -37,6 +36,9 @@ from django.core import serializers
 
 from fastapp.utils import Connection
 
+from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ index_template = """{% extends "fastapp/index.html" %}
 """
 
 class AuthProfile(models.Model):
-    user = models.OneToOneField(User, related_name="authprofile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="authprofile")
     access_token = models.CharField(max_length=72)
 
 
@@ -54,7 +56,7 @@ class Base(models.Model):
     name = models.CharField(max_length=32)
     uuid = UUIDField(auto=True)
     content = models.CharField(max_length=16384, blank=True, default=index_template)
-    user = models.ForeignKey(User, related_name='+', default=0, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+')
     public = models.BooleanField(default=False)
 
     @property
@@ -79,7 +81,10 @@ class Base(models.Model):
             config['modules'][texec.name] = {}
             config['modules'][texec.name]['module'] = texec.name+".py"
             logger.info(texec.description)
-            config['modules'][texec.name]['description'] = "\"%s\"" % texec.description
+            if texec.description:
+                config['modules'][texec.name]['description'] = texec.description
+            else:
+                config['modules'][texec.name]['description'] = ""
 
         config['settings'] = {}
         for setting in self.setting.all():
@@ -93,6 +98,7 @@ class Base(models.Model):
                     'value': "",
                     'public': setting.public
                 }
+        print config
         config.write(config_string)
         return config_string.getvalue()
 
@@ -164,6 +170,9 @@ class Base(models.Model):
 
         # add config
         zf.writestr("app.config", self.config.encode("utf-8"))
+
+        # add index.html
+        zf.writestr("index.html", self.content.encode("utf-8"))
 
         # close zip
         zf.close()
@@ -342,13 +351,18 @@ class Thread(models.Model):
         self.health = Thread.NOT_CONNECTED
         self.save()
 
+
 class Executor(models.Model):
+
+    def default_pass():
+        return get_user_model().objects.make_random_password()
+
     base = models.OneToOneField(Base, related_name="executor")
     num_instances = models.IntegerField(default=1)
     pid = models.CharField(max_length=10, null=True)
-    password = models.CharField(max_length=20, default=User.objects.make_random_password())
+    password = models.CharField(max_length=20, default=default_pass)
     started = models.BooleanField(default=False)
-    #host = models.ForeignKey(Host)
+
 
     @property
     def vhost(self):
@@ -413,7 +427,7 @@ class Executor(models.Model):
         return "Executor %s-%s" % (self.base.user.username, self.base.name)
 
 class TransportEndpoint(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
     url = models.CharField(max_length=200, blank=False, null=False)
     token = models.CharField(max_length=200, blank=False, null=False)
     override_settings_priv= models.BooleanField(default=False)
@@ -483,6 +497,7 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
     #except Exception, e:
     #    logger.exception("error in synchronize_base_to_storage")
 
+
 @receiver(post_delete, sender=Base)
 def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
@@ -506,7 +521,7 @@ def synchronize_to_storage_on_delete(sender, *args, **kwargs):
         # if post_delete is triggered from base.delete()
         pass
 
-@receiver(post_save, sender=get_user_model())
+@receiver(post_save, sender=User)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)

@@ -128,7 +128,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     def stop(self, request, pk):
         transaction.set_autocommit(False)
         logger.info("stopping %s" % pk)
-        base = self.get_queryset().select_for_update().get(id=pk)
+        base = self.get_queryset().select_for_update(nowait=True).get(id=pk)
         base.stop()
         transaction.commit()
         return self.retrieve(request, pk=pk)
@@ -161,7 +161,8 @@ class BaseViewSet(viewsets.ModelViewSet):
             logger.info("%s success" % s)
             return self.retrieve(request, pk=pk)
         else:
-            logger.error("%s failed" % s)
+            print r.status_code
+            logger.error("%s failed with returncode %s" % (s, r.status_code))
             raise Exception("%s failed" % s)
 
 
@@ -219,7 +220,6 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         base, created = Base.objects.get_or_create(user=request.user, name=name)
         if not created:
             logger.warn("base '%s' did already exist" % name)
-            #raise Exception("Base '%s' does already exist" % name)
         base.save()
         f = request.FILES['file'] 
         zf = zipfile.ZipFile(f)
@@ -248,7 +248,11 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         filelist = zf.namelist()
         for file in filelist:
             # static
+            print file
             content = zf.open(file).read()
+            if file == "index.html":
+                base.content = content
+
             if "static" in file:
                 file = "/%s/%s" % (base.name, file)
                 dropbox_connection.put_file(file, content)
@@ -258,11 +262,13 @@ class BaseImportViewSet(viewsets.ModelViewSet):
                 name = file.replace(".py", "")
                 apy, created = Apy.objects.get_or_create(base=base, name=name)
                 apy.module = content
-                apy.module = content
-                apy.description = appconfig['modules'][name]['description']
+                description = appconfig['modules'][name]['description']
+                if description:
+                    apy.description = description
                 apy.save()
 
         base_queryset = base
+        base.save()
         serializer = BaseSerializer(base_queryset, 
                 context={'request': request}, many=False)
         response = Response(serializer.data, status=201)

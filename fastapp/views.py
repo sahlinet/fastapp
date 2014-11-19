@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -36,6 +36,7 @@ from fastapp.models import RUNNING, FINISHED
 from fastapp import responses
 from fastapp.executors.remote import call_rpc_client, get_static
 
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,9 @@ class DjendStaticView(View):
     @never_cache
     def get(self, request, *args, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
-        logger.info("get %s" % static_path)
+        logger.debug("get %s" % static_path)
+        channel = channel_name_for_user(request)
+        info(channel, "get %s" % static_path)
 
         base_model = Base.objects.get(name=kwargs['base'])
 
@@ -91,6 +94,7 @@ class DjendStaticView(View):
                             f = open(filepath, 'r')
                         except IOError, e:
                             logger.error(e)
+                            warn(channel, static_path + " not found")
                             return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
@@ -164,7 +168,7 @@ class DjendStaticView(View):
             logger.error("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
         logger.debug("deliver '%s' with '%s'" % (static_path, mimetype))
-        return HttpResponse(f, mimetype=mimetype)
+        return HttpResponse(f, content_type=mimetype)
 
 class DjendMixin(object):
 
@@ -318,6 +322,7 @@ class DjendExecView(View, DjendMixin):
     #@profile
     @never_cache
     def get(self, request, *args, **kwargs):
+        #import pdb; pdb.set_trace()
         # get base
         base_model = get_object_or_404(Base, name=kwargs['base'])
 
@@ -420,6 +425,7 @@ class DjendSharedView(View, ContextMixin):
 class DjendBaseCreateView(View):
 
     def post(self, request, *args, **kwargs):
+        import pdb; pdb.set_trace()
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
             return HttpResponseBadRequest()
@@ -629,6 +635,7 @@ class DjendView(TemplateView):
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
         context['VERSION'] = version
+        context['TOKEN'] = self.request.user.auth_token
         return context
 
     @method_decorator(login_required)
