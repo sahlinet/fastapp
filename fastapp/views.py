@@ -635,7 +635,10 @@ class DjendView(TemplateView):
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
         context['VERSION'] = version
-        context['TOKEN'] = self.request.user.auth_token
+	try:
+        	context['TOKEN'] = self.request.user.auth_token
+	except:
+		pass
         return context
 
     @method_decorator(login_required)
