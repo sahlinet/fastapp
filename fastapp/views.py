@@ -322,7 +322,6 @@ class DjendExecView(View, DjendMixin):
     #@profile
     @never_cache
     def get(self, request, *args, **kwargs):
-        #import pdb; pdb.set_trace()
         # get base
         base_model = get_object_or_404(Base, name=kwargs['base'])
 
@@ -425,7 +424,6 @@ class DjendSharedView(View, ContextMixin):
 class DjendBaseCreateView(View):
 
     def post(self, request, *args, **kwargs):
-        import pdb; pdb.set_trace()
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
             return HttpResponseBadRequest()
