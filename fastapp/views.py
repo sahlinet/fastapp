@@ -685,9 +685,11 @@ def login_or_sharedkey(function):
     def wrapper(request, *args, **kwargs):
         logger.debug("authenticate %s" % request.user)
         user=request.user
+
         # if logged in
         if user.is_authenticated():
             return function(request, *args, **kwargs)
+            
         # if shared key in query string
         base_name = kwargs.get('base')
         if request.GET.has_key('shared_key'):

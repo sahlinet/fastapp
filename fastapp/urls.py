@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView, \
                 DjendBaseCreateView, DjendExecDeleteView, DjendExecView, DjendStaticView, \
                 login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, DjendView, \
-                DjendBaseSettingsView, DjendBaseRenameView, CockpitView
+                DjendBaseRenameView, CockpitView
 from rest_framework import routers
 
 from fastapp.api_views import BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
@@ -32,20 +32,12 @@ urlpatterns = patterns('',
     url(r'(?P<base>[\w-]+)/delete/$', login_required(DjendBaseDeleteView.as_view())),
     url(r'(?P<base>[\w-]+)/rename/$', login_required(DjendBaseRenameView.as_view())),
 
-    # settings
-    #url(r'(?P<base>[\w-]+)/kv/$', login_required(DjendBaseSettingsView.as_view())),
-    #url(r'(?P<base>[\w-]+)/kv/(?P<id>[\w-]+)/$', login_required(DjendBaseSettingsView.as_view())),
-
     # execs
-    #url(r'(?P<base>[\w-]+)/create_exec/$', login_required(DjendExecSaveView.as_view())),
     url(r'(?P<base>[\w-]+)/exec/(?P<id>\w+)/$', \
                                             csrf_exempt(login_or_sharedkey(DjendExecView.as_view()))),
     url(r'(?P<base>[\w-]+)/delete/(?P<id>\w+)/$', \
                                             login_required(DjendExecDeleteView.as_view())),
-    #url(r'(?P<base>[\w-]+)/clone/(?P<id>\w+)/$', \
-    #                                        login_required(DjendExecCloneView.as_view())),
-    #url(r'(?P<base>[\w-]+)/rename/(?P<id>\w+)/$', \
-    #                                        login_required(DjendExecRenameView.as_view())),
+
     # static
     url(r'(?P<base>[\w-]+)/static/(?P<name>.+)$', \
                                             login_or_sharedkey(DjendStaticView.as_view())),
