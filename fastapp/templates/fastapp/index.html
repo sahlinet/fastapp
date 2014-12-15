@@ -111,6 +111,7 @@
                         <a class="navbar-brand" href="/fastapp/">Fastapp</a>
                         <a class="navbar-brand" href="/fastapp/cockpit/"><small>Cockpit</small></a>
                         <a class="navbar-brand"><small>version {{ VERSION }}</small></a>
+                        <a class="navbar-brand"><small>{{ user }}</small></a>
                     </div>
                     <div class="collapse navbar-collapse navbar-ex1-collapse">
                         {% if user.is_authenticated %}

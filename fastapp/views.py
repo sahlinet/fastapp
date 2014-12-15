@@ -27,6 +27,8 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
+from rest_framework.authtoken.models import Token
+
 from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 
@@ -633,10 +635,11 @@ class DjendView(TemplateView):
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
         context['VERSION'] = version
-	try:
-        	context['TOKEN'] = self.request.user.auth_token
-	except:
-		pass
+    	try:
+            token = self.request.user.auth_token
+    	except Token.DoesNotExist:
+            token = Token.objects.create(user=self.request.user)
+        context['TOKEN'] = token
         return context
 
     @method_decorator(login_required)

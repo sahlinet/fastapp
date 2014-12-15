@@ -27,17 +27,12 @@ from django.db.transaction import commit_on_success
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from rest_framework.authtoken.models import Token
-
 from fastapp.queue import generate_vhost_configuration
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
 
 from django.core import serializers
 
 from fastapp.utils import Connection
-
-from django.contrib.auth.models import User
-#from django.contrib.auth.models import User
 
 import logging
 logger = logging.getLogger(__name__)
@@ -491,13 +486,6 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
         executor.save()
                 
 
-    #try:
-    #    connection = Connection(instance.user.authprofile.access_token)
-    #    gevent.spawn(connection.put_file("%s/index.html" % instance.name, instance.content))
-    #except Exception, e:
-    #    logger.exception("error in synchronize_base_to_storage")
-
-
 @receiver(post_delete, sender=Base)
 def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
@@ -520,8 +508,3 @@ def synchronize_to_storage_on_delete(sender, *args, **kwargs):
     except Base.DoesNotExist:
         # if post_delete is triggered from base.delete()
         pass
-
-@receiver(post_save, sender=User)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
