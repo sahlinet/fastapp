@@ -296,15 +296,13 @@ class Instance(models.Model):
 
     def mark_down(self):
         self.is_alive = False
-
-        # restart
-        #self.executor.start()
-
         self.save()
+
+    def __str__(self):
+        return "Instance: %s" % (self.executor.base.name)
 
 class Host(models.Model):
     name = models.CharField(max_length=50)
-
 
 
 class Process(models.Model):

@@ -301,7 +301,6 @@ def _do(data, functions=None, settings=None):
         status = STATE_OK
 
         logger.info("DATA: "+str(data))
-        #logger.info("RID: "+str(data)['rid'])
 
         request = Bunch(data['request'])
         base_name = data['base_name']
@@ -347,6 +346,7 @@ def _do(data, functions=None, settings=None):
                 func.info = info 
                 func.debug = debug 
                 func.warn = warning 
+                func.error = error 
 
                 # attatch settings
                 setting_dict = settings
