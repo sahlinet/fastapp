@@ -411,7 +411,7 @@ class Executor(models.Model):
             return False
 
         # if pid, check
-        return (subprocess.call("/bin/ps -ef|egrep -v grep|egrep -c %s 1>/dev/null" % self.pid, shell=True)==0)
+        return (subprocess.call("/bin/ps -p %s |egrep -c %s 1>/dev/null" % (self.pid, self.base.name), shell=True)==0)
 
     def is_alive(self):
         return self.instances.count()>1

@@ -127,8 +127,8 @@ class BaseViewSet(viewsets.ModelViewSet):
 
     def stop(self, request, pk):
         transaction.set_autocommit(False)
-        logger.info("stopping %s" % pk)
         base = self.get_queryset().select_for_update(nowait=True).get(id=pk)
+        logger.info("stopping %s" % base.name)
         base.stop()
         transaction.commit()
         return self.retrieve(request, pk=pk)

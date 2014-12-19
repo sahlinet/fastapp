@@ -34,7 +34,7 @@ def inactivate():
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
-                logger.warn("inactive instance '%s' detected" % instance)
+                logger.info("inactive instance '%s' detected, mark stopped" % instance)
                 instance.mark_down()
                 instance.save()
 
@@ -44,6 +44,7 @@ def inactivate():
                 #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
                     if not base.executor.is_running():
                         # log start with last beat datetime
+                        logger.warn("start worker for not running base: %s" % base.name)
                         base.executor.start()
             except DatabaseError, e:
                 logger.error("Executor was locked with select_for_update")
