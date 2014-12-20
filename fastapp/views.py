@@ -52,7 +52,20 @@ class CockpitView(TemplateView):
         context['threads'] = Thread.objects.all().order_by('parent__name', 'name')
         return context
 
-class DjendStaticView(View):
+
+class ResponseUnavailableViewMixing():
+    def verify(self, request, base_model):
+        if not base_model.state:
+            response = HttpResponse()
+            if "html" in request.META['HTTP_ACCEPT']:
+                response.content_type = "text/html"
+                response.content = "Base is not available"
+            response.status_code=503
+            return response
+        else:
+            return None
+
+class DjendStaticView(ResponseUnavailableViewMixing, View):
 
     def _render_html(self, t, **kwargs):
         if type(t) == str:
@@ -72,26 +85,37 @@ class DjendStaticView(View):
 
         base_model = Base.objects.get(name=kwargs['base'])
 
+        #if not base_model.state:
+        #    response = HttpResponse()
+        #    if "html" in request.META['HTTP_ACCEPT']:
+        #        response.content_type = "text/html"
+        #        response.content = "Base is not available"
+        #    response.status_code=503
+        #    return response
+        response = self.verify(request, base_model)
+        if response:
+            return response
+
         f = cache.get(base_model.name+"-"+static_path)
         if not f:
             try:
-                logger.info("not in cache: %s" % static_path)
+                logger.debug("not in cache: %s" % static_path)
 
                 if "runserver" in sys.argv:
                     # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:
                         REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH")
-                        logger.info("load %s from local filesystem (repositories)" % static_path)
+                        logger.debug("load %s from local filesystem (repositories)" % static_path)
                         full_path = os.path.join(REPOSITORIES_PATH, static_path)
-                        logger.info(full_path)
+                        logger.debug(full_path)
                         f = open(full_path, 'r')
                     except IOError, e:
                         logger.exception(e)
                     if not f:
                         try:
                             DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
-                            logger.info("load %s from local filesystem (dropbox app)" % static_path)
+                            logger.debug("load %s from local filesystem (dropbox app)" % static_path)
                             filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
                             f = open(filepath, 'r')
                         except IOError, e:
@@ -100,7 +124,7 @@ class DjendStaticView(View):
                             return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
-                    logger.info("load %s from module in worker" % static_path)
+                    logger.debug("load %s from module in worker" % static_path)
                     response_data = get_static(
                         json.dumps({"base_name": base_model.name, "path": static_path}),
                         generate_vhost_configuration(
@@ -117,11 +141,11 @@ class DjendStaticView(View):
                     elif data['status'] == "TIMEOUT":
                         return HttpResponseServerError("Timeout")
                     elif data['status'] == "OK":
-                        logger.info("File received from worker")
+                        logger.debug("File received from worker")
                         f = base64.b64decode(data['file'])
                     # get from dropbox
                     elif data['status'] == "NOT_FOUND":
-                        logger.info("File not found from worker")
+                        logger.debug("File not found from worker")
                         # get file from dropbox
                         auth_token = base_model.user.authprofile.access_token
                         client = dropbox.client.DropboxClient(auth_token)
@@ -131,13 +155,13 @@ class DjendStaticView(View):
                             logger.error("File not found on dropbox")
                             raise e
                     cache.set(base_model.name+"-"+static_path, f, 60)
-                    logger.info("cache it: '%s'" % static_path)
+                    logger.debug("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
                 logger.error("not found: '%s'" % static_path)
                 logger.exception(e)
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
-            logger.info("found in cache: '%s'" % static_path)
+            logger.debug("found in cache: '%s'" % static_path)
 
         # default
         mimetype = "text/plain"
@@ -175,11 +199,11 @@ class DjendStaticView(View):
 class DjendMixin(object):
 
     def connection(self, request):
-        logger.info("Creating connection for %s" % request.user)
+        logger.debug("Creating connection for %s" % request.user)
         return Connection(request.user.authprofile.access_token)
 
 
-class DjendExecView(View, DjendMixin):
+class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
     STATE_OK = "OK"
     STATE_NOK = "NOK"
     STATE_NOT_FOUND = "NOT_FOUND"
@@ -326,6 +350,10 @@ class DjendExecView(View, DjendMixin):
     def get(self, request, *args, **kwargs):
         # get base
         base_model = get_object_or_404(Base, name=kwargs['base'])
+
+        response = self.verify(request, base_model)
+        if response:
+            return response
 
         # get exec from database
         try:

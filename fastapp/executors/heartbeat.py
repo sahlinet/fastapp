@@ -156,6 +156,8 @@ class HeartbeatThread(CommunicationThread):
                         instance.base.name,
                         instance.base.executor.password
                     )
+
+                # execute init exec
         except Exception, e:
             logger.exception(e)
         time.sleep(0.1)        

@@ -196,7 +196,6 @@ class ExecutorServerThread(CommunicationThread):
                             })
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
                     except Exception, e:
-                        #logger.error()
                         traceback.print_exc()
 
                 elif props.app_id == "setting":

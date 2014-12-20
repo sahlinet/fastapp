@@ -62,8 +62,8 @@ class RabbitmqHttpApi(RabbitmqAdmin):
     API_URI = "/api/"
 
     def _call(self, uri, data=None):
-        logger.info(uri)
-        logger.info(str(data))
+        logger.debug(uri)
+        logger.debug(str(data))
 
         user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
@@ -87,7 +87,7 @@ class RabbitmqHttpApi(RabbitmqAdmin):
             raise Exception()
 
     def add_vhost(self, name):
-        logger.info(name)
+        logger.debug(name)
         self._call("/api/vhosts/%s" % urllib.quote_plus(name))
 
     def add_user(self, name, password):
@@ -100,9 +100,8 @@ class RabbitmqHttpApi(RabbitmqAdmin):
 def create_vhost(base):
     # create the vhosts, users and permissions
     vhost = base.executor.vhost
-    logger.info("Create vhost configuration: %s" % vhost)
+    logger.debug("Create vhost configuration: %s" % vhost)
 
-    #service = RabbitmqAdmin.factory("CTL")
     service = RabbitmqAdmin.factory("HTTP_API")
     try:
         service.add_vhost(vhost)
@@ -178,7 +177,7 @@ class CommunicationThread(threading.Thread):
             heartbeat_interval=40, 
             credentials=self.credentials
             )
-        logger.info("Starting " + self.name)
+        logger.debug("Starting " + self.name)
 
         self._run = True
         while self._run:
@@ -207,12 +206,12 @@ class CommunicationThread(threading.Thread):
                     logger.exception(e)
 
     def stop(self):
-        logger.info(self.name+": "+sys._getframe().f_code.co_name)
+        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         self._run = False
         logger.debug('Stopping')
         self._stopping = True
         self._connection.ioloop.start()
-        logger.info('Stopped')
+        logger.debug('Stopped')
 
     def health(self):
         return self.is_connected
@@ -261,7 +260,6 @@ class CommunicationThread(threading.Thread):
 
         # queue consumer
         for queue in self.queues_consume:
-            #jjlogger.info("TTL: "+str(self.ttl))
             channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared, 
                     #arguments={
                     #  'x-message-ttl' : self.ttl
