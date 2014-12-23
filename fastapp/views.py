@@ -47,7 +47,12 @@ class CockpitView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CockpitView, self).get_context_data(**kwargs)
-        context['executors'] = Executor.objects.all().order_by('base__name')
+        print kwargs
+        qs = Executor.objects.all().order_by('base__name')
+        if not self.request.user.is_superuser:
+            print "NOT"
+            qs=qs.filter(base__user=self.request.user)
+        context['executors'] = qs.order_by('base__name')
         context['process_list'] = Process.objects.all().order_by('-running')
         context['threads'] = Thread.objects.all().order_by('parent__name', 'name')
         return context
@@ -111,7 +116,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         logger.debug(full_path)
                         f = open(full_path, 'r')
                     except IOError, e:
-                        logger.exception(e)
+                        logger.warning(e)
                     if not f:
                         try:
                             DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
@@ -119,7 +124,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                             filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
                             f = open(filepath, 'r')
                         except IOError, e:
-                            logger.error(e)
+                            logger.warning(e)
                             warn(channel, static_path + " not found")
                             return HttpResponseNotFound(static_path + " not found")
                 else:
@@ -152,13 +157,12 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         try:
                             f = client.get_file(static_path).read()
                         except Exception, e:
-                            logger.error("File not found on dropbox")
+                            logger.warning("File not found on dropbox")
                             raise e
                     cache.set(base_model.name+"-"+static_path, f, 60)
                     logger.debug("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
-                logger.error("not found: '%s'" % static_path)
-                logger.exception(e)
+                logger.warning("not found: '%s'" % static_path)
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
             logger.debug("found in cache: '%s'" % static_path)
@@ -191,7 +195,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         elif static_path.lower().endswith('.swf'):
             mimetype = "application/x-shockwave-flash"
         else:
-            logger.error("suffix not recognized in '%s'" % static_path)
+            logger.warning("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
         logger.debug("deliver '%s' with '%s'" % (static_path, mimetype))
         return HttpResponse(f, content_type=mimetype)
@@ -337,7 +341,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 location = json.loads(data['returned'])['content']
                 return HttpResponseRedirect(location)
             else:
-                logger.error("Wrong response")
+                logger.warning("Wrong response")
                 return HttpResponseServerError("You're apy did not return any allowed response-class or is not called with 'json' or 'callback' as querystring.")
             return HttpResponse(content, content_type, status=response_status_code)
 
@@ -359,7 +363,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
         try:
             exec_model = base_model.apys.get(name=kwargs['id'])
         except Apy.DoesNotExist:
-            warn(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
+            warning(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
             return HttpResponseNotFound("404 on %s"     % request.META['PATH_INFO'])
 
         rid = request.GET.get('rid', None)

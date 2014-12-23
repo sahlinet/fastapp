@@ -211,7 +211,6 @@ class ExecutorServerThread(CommunicationThread):
                 try:
                     response_data = {}
                     response_data = _do(json.loads(body), self.functions, self.settings)
-
                 except Exception, e:
                     logger.exception(e)
                 finally:
@@ -366,7 +365,6 @@ def _do(data, functions=None, settings=None):
                 logger.exception(e)
                 exception = "%s" % type(e).__name__
                 exception_message = e.message
-                traceback.print_exc()
                 status = STATE_NOK
             logger.debug("END DO")
         return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
@@ -485,14 +483,14 @@ class StaticServerThread(CommunicationThread):
                             try:
                                 f = open(full_path, 'r')
                             except Exception, e:
-                                logger.exception(e)
-                                logger.error("could not open file")
+                                logger.warning(e)
+                                logger.warning("Could not open file %s" % full_path)
                             rc="OK"
                             response_data.update({
                                 'file': base64.b64encode(f.read())
                                 })
                     if not f:
-                        logger.error("not found")
+                        logger.warning("not found")
                         rc="NOT_FOUND"
 
                 except Exception, e:
