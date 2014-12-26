@@ -93,7 +93,6 @@ class Base(models.Model):
                     'value': "",
                     'public': setting.public
                 }
-        print config
         config.write(config_string)
         return config_string.getvalue()
 
@@ -376,9 +375,10 @@ class Executor(models.Model):
         
         python_path = sys.executable
         try:
+            MODELSPY = os.path.join(settings.PROJECT_ROOT, "..")
             p = subprocess.Popen("%s %s/manage.py start_worker --settings=%s --vhost=%s --base=%s --username=%s --password=%s" % (
                     python_path, 
-                    settings.PROJECT_ROOT,
+                    MODELSPY,
                     settings.SETTINGS_MODULE,
                     self.vhost,
                     self.base.name, 
