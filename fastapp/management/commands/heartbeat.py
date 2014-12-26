@@ -26,6 +26,7 @@ class Command(BaseCommand):
         inactivate_thread.daemon = True
         inactivate_thread.start()
 
+        print settings.PROJECT_ROOT
 
         queues_consume = [[HEARTBEAT_QUEUE, True]]
 
@@ -71,10 +72,10 @@ class Command(BaseCommand):
 
 
         for t in threads+async_threads+log_threads:
-            #print "join %s " % t
             try:
                 logger.info("Thread started")
                 t.join(1000)
             except KeyboardInterrupt:
+                logger.info("KeyBoardInterrupt received")
                 print "Ctrl-c received."
                 sys.exit(0)
