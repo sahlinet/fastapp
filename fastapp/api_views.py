@@ -112,6 +112,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     model = Base
     serializer_class = BaseSerializer
     renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (TokenAuthentication, SessionAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
