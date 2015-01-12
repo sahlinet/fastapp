@@ -36,4 +36,4 @@ class BaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Base
         #fields = ('id', 'name', 'uuid')
-        fields = ('id', 'name', 'state', 'uuid', 'pids')
+        fields = ('id', 'name', 'state', 'uuid', 'pids', 'content')

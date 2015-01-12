@@ -26,7 +26,7 @@ urlpatterns = patterns('',
     url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html")))),
 
     # base
-    url(r'(?P<base>[\w-]+)/index/$', login_required(DjendBaseView.as_view())),
+    url(r'(?P<base>[\w-]+)/index/$', login_required(DjendBaseView.as_view(template_name="fastapp/base.html"))),
     url(r'(?P<base>[\w-]+)/sync/$', login_required(DjendBaseSaveView.as_view())),
     url(r'(?P<base>[\w-]+)/new/$', login_required(DjendBaseCreateView.as_view())),
     url(r'(?P<base>[\w-]+)/delete/$', login_required(DjendBaseDeleteView.as_view())),
@@ -61,7 +61,7 @@ urlpatterns = patterns('',
     url(r'^api-token-auth/', 'rest_framework.authtoken.views.obtain_auth_token'),
 
     # home
-    url(r'^$', DjendView.as_view()),
+    url(r'^$', DjendView.as_view(template_name="fastapp/base_list.html")),
 )
 
 from rest_framework.urlpatterns import format_suffix_patterns

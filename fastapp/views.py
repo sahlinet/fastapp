@@ -587,7 +587,7 @@ class DjendBaseSaveView(View):
     def dispatch(self, *args, **kwargs):
         return super(DjendBaseSaveView, self).dispatch(*args, **kwargs)
 
-class DjendBaseView(View, ContextMixin):
+class DjendBaseView(TemplateView, ContextMixin):
 
     def _refresh_single_base(self, base):
         base = Base.objects.get(name=base)
@@ -629,7 +629,6 @@ class DjendBaseView(View, ContextMixin):
             # context
             try:
                 context['bases'] = Base.objects.filter(user=request.user.id).order_by('name')
-                context['VERSION'] = version
                 context['FASTAPP_NAME'] = base
                 context['DROPBOX_REDIRECT_URL'] = settings.DROPBOX_REDIRECT_URL
                 context['PUSHER_KEY'] = settings.PUSHER_KEY
@@ -639,7 +638,7 @@ class DjendBaseView(View, ContextMixin):
                 context['username'] = request.user.username
                 context['LAST_EXEC'] = request.GET.get('done')
                 context['transaction_list'] = Transaction.objects.filter(apy__base__name=base).filter(created__gte=datetime.now()-timedelta(minutes=30)).order_by('created')
-                rs = base_model.template(context)
+                #rs = base_model.template(context)
 
             except ErrorResponse, e:
                 if e.__dict__['status'] == 404:
@@ -653,25 +652,24 @@ class DjendBaseView(View, ContextMixin):
         except NoBasesFound, e:
             message(request, logging.WARNING, "No bases found")
 
-        if not rs:
-            rs = render_to_string("fastapp/index.html", context_instance=context)
+        rs = render_to_string("fastapp/base.html", context_instance=context)
+        #rs = render_to_string("fastapp/base.html", context_instance=context)
 
         return HttpResponse(rs)
 
 
 class DjendView(TemplateView):
-    template_name = "fastapp/default.html"
 
     def get_context_data(self, **kwargs):
         context = super(DjendView, self).get_context_data(**kwargs)
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
-        context['VERSION'] = version
-    	try:
-            token = self.request.user.auth_token
-    	except Token.DoesNotExist:
-            token = Token.objects.create(user=self.request.user)
-        context['TOKEN'] = token
+        #context['VERSION'] = version
+    	#try:
+        #    token = self.request.user.auth_token
+    	#except Token.DoesNotExist:
+        #    token = Token.objects.create(user=self.request.user)
+        #context['TOKEN'] = token
         return context
 
     @method_decorator(login_required)

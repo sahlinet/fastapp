@@ -37,7 +37,7 @@ from fastapp.utils import Connection
 import logging
 logger = logging.getLogger(__name__)
 
-index_template = """{% extends "fastapp/index.html" %}
+index_template = """{% extends "fastapp/base.html" %}
 {% block content %}
 {% endblock %}
 """
@@ -174,6 +174,7 @@ class Base(models.Model):
         return buffer
 
     def template(self, context):
+        logger.info(self.content)
         t = Template(self.content)
         return t.render(context)
 

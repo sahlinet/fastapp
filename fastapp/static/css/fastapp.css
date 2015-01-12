@@ -57,7 +57,7 @@ div.rendered {
   background-color: #0B0719;
 }
 div.bases {
-	height: 220px;
+	height: 80px;
 	margin: 10px;
 }
 .highlight {
@@ -68,9 +68,13 @@ div.bases {
   border: 1px solid #e1e1e8;
   border-radius: 4px;
 }
-.highlight:hover {
-	background-color: #ececf1;
+.highlight a:hover {
+  text-decoration: none;
+
 }
+/*.highlight:hover {
+	background-color: #ececf1;
+}*/
 /* Grid */
 .gridStyle {
     border: 1px solid rgb(212,212,212);
