@@ -49,7 +49,7 @@
   };
 });
 
-  window.app.controller('BasesCtrl', ['$scope', 'Bases', 'Base', 'Apy', '$upload', '$cookies', '$window', function($scope, Bases, Base, Apy, $upload, $cookies, $window) {
+  window.app.controller('BasesCtrl', ['$scope', 'Bases', 'Base', 'Apy', '$upload', '$cookies', '$window', '$http', '$document', function($scope, Bases, Base, Apy, $upload, $cookies, $window, $http, $document) {
     console.warn("BasesCtrl");
     $scope.init = function() {
       console.warn("init");
@@ -66,7 +66,30 @@
       $scope.base = Base.get({'baseId': window.active_base_id});
     }
 
+    $scope.creation_running = function() {
+      return ($scope.creation_is_running);
+    };
 
+    $scope.submit_new_base = function(e) {
+      e.preventDefault();
+      $scope.creation_is_running = true;
+      $http({
+        method  : 'POST',
+        url     : 'base/new',
+        data    : $.param({'new_base_name': this.new_base_name}),  // pass in data as strings
+        headers : { 'Content-Type': 'application/x-www-form-urlencoded' }  // set the headers so angular passing info as form data (not request payload)
+      }).success(function(data, status, headers, config) {
+          $document.find('form#new_base div').append(angular.element('<span class="help-block">Base created</span>'));
+          $document.find('form#new_base').addClass('has-success');
+          $scope.new_base_name = "";
+          $scope.bases.push(data);
+      }).error(function(data, status, headers, config) {
+        // quota exceeded or already existant
+        $document.find('form#new_base div').append(angular.element('<span class="help-block">'+data+'</span>'));
+        $document.find('form#new_base').addClass('has-warning');
+      });
+      $scope.creation_is_running = false;
+    };
 
     $scope.cycle_state = function(base) {
       console.log(base);
@@ -80,7 +103,21 @@
           base.state = true;
           base.pids = data['pids'];
         });
-      };
+      }
+    };
+
+    $scope.restart = function(base) {
+      if (base.state === true) {
+          Base.restart({baseId: base.id}, base);
+      }
+    };
+
+    $scope.destroy = function(base) {
+      if (base.state === false) {
+          Base.destroy({baseId: base.id}, base, function(data) {
+            base.pids = [];
+          });
+      }
     };
 
     $scope.onFileSelect = function($files) {

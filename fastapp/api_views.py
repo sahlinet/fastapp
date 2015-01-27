@@ -134,7 +134,33 @@ class BaseViewSet(viewsets.ModelViewSet):
         transaction.commit()
         return self.retrieve(request, pk=pk)
 
-        
+    def restart(self, request, pk):
+        transaction.set_autocommit(False)
+        logger.info("restarting %s" % pk)
+        base = self.get_queryset().get(id=pk)
+        base.stop()
+        base.start()
+        transaction.commit()
+        return self.retrieve(request, pk=pk)
+
+
+    def destroy(self, request, pk):
+        transaction.set_autocommit(False)
+        logger.info("destroying%s" % pk)
+        base = self.get_queryset().get(id=pk)
+        base.destroy()
+        transaction.commit()
+        return self.retrieve(request, pk=pk)
+
+    #def destroy(self, request, pk):
+    #    transaction.set_autocommit(False)
+    #    logger.info("Destroying %s" % pk)
+    #    base = self.get_queryset().get(id=pk)
+    #    base.stop()
+    #    base.start()
+    #    transaction.commit()
+    #    return self.retrieve(request, pk=pk)
+
     def transport(self, request, pk):
         base = self.get_queryset().get(pk=pk)
         transport_url = self.request.DATA['url']

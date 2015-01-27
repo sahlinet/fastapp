@@ -1,110 +1,195 @@
 # -*- coding: utf-8 -*-
-import datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
+from __future__ import unicode_literals
+
+from django.db import models, migrations
+import fastapp.models
+import jsonfield.fields
+from django.conf import settings
+import django_extensions.db.fields
 
 
-class Migration(SchemaMigration):
+class Migration(migrations.Migration):
 
-    def forwards(self, orm):
-        # Adding model 'AuthProfile'
-        db.create_table(u'fastapp_authprofile', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='authprofile', unique=True, to=orm['auth.User'])),
-            ('access_token', self.gf('django.db.models.fields.CharField')(max_length=72)),
-        ))
-        db.send_create_signal(u'fastapp', ['AuthProfile'])
+    dependencies = [
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
 
-        # Adding model 'Base'
-        db.create_table(u'fastapp_base', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=32)),
-            ('uuid', self.gf('django.db.models.fields.CharField')(max_length=36, blank=True)),
-            ('content', self.gf('django.db.models.fields.CharField')(max_length=8192)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(default=0, related_name='+', blank=True, to=orm['auth.User'])),
-        ))
-        db.send_create_signal(u'fastapp', ['Base'])
-
-        # Adding model 'Exec'
-        db.create_table(u'fastapp_exec', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('module', self.gf('django.db.models.fields.CharField')(max_length=8192)),
-            ('base', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='execs', null=True, to=orm['fastapp.Base'])),
-        ))
-        db.send_create_signal(u'fastapp', ['Exec'])
-
-
-    def backwards(self, orm):
-        # Deleting model 'AuthProfile'
-        db.delete_table(u'fastapp_authprofile')
-
-        # Deleting model 'Base'
-        db.delete_table(u'fastapp_base')
-
-        # Deleting model 'Exec'
-        db.delete_table(u'fastapp_exec')
-
-
-    models = {
-        u'auth.group': {
-            'Meta': {'object_name': 'Group'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80'}),
-            'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
-        },
-        u'auth.permission': {
-            'Meta': {'ordering': "(u'content_type__app_label', u'content_type__model', u'codename')", 'unique_together': "((u'content_type', u'codename'),)", 'object_name': 'Permission'},
-            'codename': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['contenttypes.ContentType']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
-        },
-        u'auth.user': {
-            'Meta': {'object_name': 'User'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
-        },
-        u'contenttypes.contenttype': {
-            'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
-            'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
-        },
-        u'fastapp.authprofile': {
-            'Meta': {'object_name': 'AuthProfile'},
-            'access_token': ('django.db.models.fields.CharField', [], {'max_length': '72'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'authprofile'", 'unique': 'True', 'to': u"orm['auth.User']"})
-        },
-        u'fastapp.base': {
-            'Meta': {'object_name': 'Base'},
-            'content': ('django.db.models.fields.CharField', [], {'max_length': '8192'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'default': '0', 'related_name': "'+'", 'blank': 'True', 'to': u"orm['auth.User']"}),
-            'uuid': ('django.db.models.fields.CharField', [], {'max_length': '36', 'blank': 'True'})
-        },
-        u'fastapp.exec': {
-            'Meta': {'object_name': 'Exec'},
-            'base': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'execs'", 'null': 'True', 'to': u"orm['fastapp.Base']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'module': ('django.db.models.fields.CharField', [], {'max_length': '8192'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'})
-        }
-    }
-
-    complete_apps = ['fastapp']
+    operations = [
+        migrations.CreateModel(
+            name='Apy',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=64)),
+                ('module', models.CharField(default=b'def func(self):\n    pass', max_length=16384)),
+                ('description', models.CharField(max_length=1024, null=True, blank=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='AuthProfile',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('access_token', models.CharField(max_length=72)),
+                ('user', models.OneToOneField(related_name='authprofile', to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Base',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=32)),
+                ('uuid', django_extensions.db.fields.UUIDField(editable=False, name=b'uuid', blank=True)),
+                ('content', models.CharField(default=b'{% extends "fastapp/base.html" %}\n{% block content %}\n{% endblock %}\n', max_length=16384, blank=True)),
+                ('public', models.BooleanField(default=False)),
+                ('user', models.ForeignKey(related_name='bases', to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Counter',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('executed', models.IntegerField(default=0)),
+                ('failed', models.IntegerField(default=0)),
+                ('apy', models.OneToOneField(related_name='counter', to='fastapp.Apy')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Executor',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('num_instances', models.IntegerField(default=1)),
+                ('pid', models.CharField(max_length=10, null=True)),
+                ('password', models.CharField(default=fastapp.models.default_pass, max_length=20)),
+                ('started', models.BooleanField(default=False)),
+                ('base', models.OneToOneField(related_name='executor', to='fastapp.Base')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Host',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=50)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Instance',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('is_alive', models.BooleanField(default=False)),
+                ('uuid', django_extensions.db.fields.ShortUUIDField(editable=False, name=b'uuid', blank=True)),
+                ('last_beat', models.DateTimeField(null=True, blank=True)),
+                ('executor', models.ForeignKey(related_name='instances', to='fastapp.Executor')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='LogEntry',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('created', models.DateTimeField(auto_now_add=True, null=True)),
+                ('level', models.CharField(max_length=2, choices=[(b'10', b'DEBUG'), (b'20', b'INFO'), (b'30', b'WARNING'), (b'40', b'ERROR'), (b'50', b'CRITICAL')])),
+                ('msg', models.TextField()),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Process',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('running', models.DateTimeField(auto_now=True)),
+                ('name', models.CharField(max_length=64, null=True)),
+                ('rss', models.IntegerField(default=0, max_length=7)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Setting',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('key', models.CharField(max_length=128)),
+                ('value', models.CharField(max_length=8192)),
+                ('public', models.BooleanField(default=False)),
+                ('base', models.ForeignKey(related_name='setting', to='fastapp.Base')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Thread',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=64, null=True)),
+                ('health', models.CharField(default=b'SO', max_length=2, choices=[(b'SA', b'Started'), (b'SO', b'Stopped'), (b'NC', b'Not connected')])),
+                ('parent', models.ForeignKey(related_name='threads', blank=True, to='fastapp.Process', null=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Transaction',
+            fields=[
+                ('rid', models.IntegerField(default=fastapp.models.create_random, serialize=False, primary_key=True)),
+                ('status', models.CharField(default=b'R', max_length=1, choices=[(b'R', b'RUNNING'), (b'F', b'FINISHED'), (b'T', b'TIMEOUT')])),
+                ('created', models.DateTimeField(auto_now_add=True, null=True)),
+                ('modified', models.DateTimeField(auto_now=True, null=True)),
+                ('tin', jsonfield.fields.JSONField(null=True, blank=True)),
+                ('tout', jsonfield.fields.JSONField(null=True, blank=True)),
+                ('async', models.BooleanField(default=False)),
+                ('apy', models.ForeignKey(related_name='transactions', to='fastapp.Apy')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='TransportEndpoint',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('url', models.CharField(max_length=200)),
+                ('token', models.CharField(max_length=200)),
+                ('override_settings_priv', models.BooleanField(default=False)),
+                ('override_settings_pub', models.BooleanField(default=True)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AddField(
+            model_name='logentry',
+            name='transaction',
+            field=models.ForeignKey(related_name='logs', to='fastapp.Transaction'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='apy',
+            name='base',
+            field=models.ForeignKey(related_name='apys', blank=True, to='fastapp.Base', null=True),
+            preserve_default=True,
+        ),
+    ]

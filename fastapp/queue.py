@@ -2,7 +2,6 @@ import logging
 import pika
 import sys
 import subprocess
-import traceback
 import threading
 import time
 import requests
@@ -17,7 +16,6 @@ def generate_vhost_configuration(*args):
     separator = "-"
     vhost = "/"+separator.join(list(args))
     logger.debug("generate_vhost_configuration: %s" % vhost)
-    traceback.print_exc()
     return vhost
 
 def create_vhosts():
@@ -134,12 +132,6 @@ def connect_to_queue(host, queue, vhost, username, password, port):
         return channel
     except Exception, e:
         logger.exception(e)
-        logger.error(host)
-        logger.error(queue)
-        logger.error(vhost)
-        logger.error(username)
-        logger.error(password)
-        logger.error(str(port))
         del channel
         del connection
         raise e

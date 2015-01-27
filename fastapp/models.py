@@ -4,16 +4,13 @@ import urllib
 import ConfigParser
 from configobj import ConfigObj
 import io
-import subprocess
-import os
-import sys
-import signal
 import StringIO
 import gevent
 import json
 import pytz
 import random
 import zipfile
+import re
 from datetime import datetime, timedelta
 from jsonfield import JSONField
 
@@ -27,8 +24,9 @@ from django.db.transaction import commit_on_success
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from fastapp.queue import generate_vhost_configuration
+from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
+#from fastapp.executors.local import SpawnExecutor, TutumExecutor
 
 from django.core import serializers
 
@@ -51,7 +49,7 @@ class Base(models.Model):
     name = models.CharField(max_length=32)
     uuid = UUIDField(auto=True)
     content = models.CharField(max_length=16384, blank=True, default=index_template)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='bases')
     public = models.BooleanField(default=False)
 
     @property
@@ -200,6 +198,9 @@ class Base(models.Model):
     def stop(self):
         return self.executor.stop()
 
+    def destroy(self):
+        return self.executor.destroy()
+
     def __str__(self):
         return "<Base: %s>" % self.name
 
@@ -345,14 +346,14 @@ class Thread(models.Model):
         self.save()
 
 
+
+def default_pass():
+    return get_user_model().objects.make_random_password()
+
 class Executor(models.Model):
-
-    def default_pass():
-        return get_user_model().objects.make_random_password()
-
     base = models.OneToOneField(Base, related_name="executor")
     num_instances = models.IntegerField(default=1)
-    pid = models.CharField(max_length=10, null=True)
+    pid = models.CharField(max_length=72, null=True)
     password = models.CharField(max_length=20, default=default_pass)
     started = models.BooleanField(default=False)
 
@@ -361,9 +362,29 @@ class Executor(models.Model):
     def vhost(self):
         return generate_vhost_configuration(self.base.user.username, self.base.name)
 
+    @property
+    def implementation(self):
+        s_exec = getattr(settings, 'FASTAPP_WORKER_IMPLEMENTATION', 'fastapp.executors.local.SpawnExecutor')
+    	regex = re.compile("(.*)\.(.*)")
+    	r = regex.search(s_exec)
+    	s_mod = r.group(1)
+    	s_cls = r.group(2)
+        m = __import__(s_mod, globals(), locals(), [s_cls])
+        try:
+    	   cls = m.__dict__[s_cls]
+           return cls(
+               vhost = self.vhost, 
+               base_name = self.base.name, 
+               username = self.base.name, 
+               password = self.password
+           )
+        except KeyError, e:
+            logger.error("Could not load %s" % s_exec)
+            raise e
+
+
     def start(self):
         logger.info("Start manage.py start_worker")
-        from queue import create_vhost
         create_vhost(self.base)
 
         try:
@@ -374,37 +395,36 @@ class Executor(models.Model):
             instance.save()
             logger.info("Instance created with id %s" % instance.id)
         
-        python_path = sys.executable
         try:
-            MODELSPY = os.path.join(settings.PROJECT_ROOT, "..")
-            p = subprocess.Popen("%s %s/manage.py start_worker --settings=%s --vhost=%s --base=%s --username=%s --password=%s" % (
-                    python_path, 
-                    MODELSPY,
-                    settings.SETTINGS_MODULE,
-                    self.vhost,
-                    self.base.name, 
-                    self.base.name, self.password),
-                    cwd=settings.PROJECT_ROOT,
-                    shell=True, stdin=None, stdout=None, stderr=None, preexec_fn=os.setsid
-                )
-            self.pid = p.pid
+            self.pid = self.implementation.start(self.pid)
         except Exception, e:
             logger.exception(e)
             raise e
+
         logger.info("%s: worker started with pid %s" % (self, self.pid))
+
         self.started = True
         self.save()
 
     def stop(self):
-        logger.info("kill process with PID %s" % self.pid)
-        try:
-            os.killpg(int(self.pid), signal.SIGTERM)
-        except OSError, e:
-            logger.exception(e)
-        if not self.is_running():
-            self.pid = None
+        logger.info("stop worker with PID %s" % self.pid)
+
+        self.implementation.stop(self.pid)
+
+        if not self.implementation.state(self.pid):
+        #    self.pid = None
             self.started = False
             self.save()
+
+    def restart(self):
+        self.stop()
+        self.start()
+
+    def destroy(self):
+        self.implementation.destroy(self.pid)
+        self.pid = None
+        self.started = False
+        self.save()
 
     def is_running(self):
         # if no pid, return directly false
@@ -412,7 +432,7 @@ class Executor(models.Model):
             return False
 
         # if pid, check
-        return (subprocess.call("/bin/ps -p %s -o command|egrep -c %s 1>/dev/null" % (self.pid, self.base.name), shell=True)==0)
+        return self.implementation.state(self.pid)
 
     def is_alive(self):
         return self.instances.count()>1

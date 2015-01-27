@@ -145,7 +145,7 @@ $(function() {
     });*/
 
     // new base
-    $("button#new_base").click(function(event) {
+    /*$("button#new_base").click(function(event) {
       new_base = $(event.currentTarget).parent().siblings("input").val();
       $.post("/fastapp/base/new/", {'new_base_name': new_base}, function(data){
         if (data.redirect) {
@@ -153,6 +153,7 @@ $(function() {
         }
       });
     });
+    */
 
     // forms
     $("form").submit(function(event) {

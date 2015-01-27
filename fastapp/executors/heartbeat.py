@@ -38,7 +38,7 @@ def inactivate():
                 instance.mark_down()
                 instance.save()
 
-            # start if is_started and not running    
+            # start if is_started and not running
             try:
                 for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
                 #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
@@ -47,8 +47,8 @@ def inactivate():
                         logger.warn("start worker for not running base: %s" % base.name)
                         base.executor.start()
             except DatabaseError, e:
-                logger.error("Executor was locked with select_for_update")
-                logger.exception(e)
+                logger.warning("Executor was locked with select_for_update")
+                #logger.exception(e)
                 transaction.rollback()
             transaction.commit()
             time.sleep(10)

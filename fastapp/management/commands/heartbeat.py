@@ -26,8 +26,6 @@ class Command(BaseCommand):
         inactivate_thread.daemon = True
         inactivate_thread.start()
 
-        print settings.PROJECT_ROOT
-
         queues_consume = [[HEARTBEAT_QUEUE, True]]
 
         host = getattr(settings, "RABBITMQ_HOST", "localhost")            

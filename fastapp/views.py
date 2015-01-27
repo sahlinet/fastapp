@@ -27,7 +27,7 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
-from rest_framework.authtoken.models import Token
+from plans.quota import get_user_quota
 
 from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
@@ -296,7 +296,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             user = channel_name_for_user(request)
 
             if data["status"] == "OK":
-                #info(user, str(data))
                 exec_model.mark_executed()
             else:
                 #error(user, str(data))
@@ -458,11 +457,18 @@ class DjendSharedView(View, ContextMixin):
 class DjendBaseCreateView(View):
 
     def post(self, request, *args, **kwargs):
+
+        # TODO: should be in planet project and not fastapp
+        if get_user_quota(request.user).get('MAX_BASES_PER_USER') <= request.user.bases.count(): 
+            return HttpResponseForbidden("Too many bases for your plan.")
+
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
-            return HttpResponseBadRequest()
+            return HttpResponseBadRequest("A base with this name does already exist.")
         base.save()
-        response_data = {"redirect": "/fastapp/%s/index/" % base.name}
+        from fastapp.serializers import BaseSerializer
+        base_data = BaseSerializer(base)
+        response_data = base_data.data
         return HttpResponse(json.dumps(response_data), content_type="application/json")
 
     @csrf_exempt
@@ -576,6 +582,7 @@ class DjendBaseSaveView(View):
                 info(channel_name_for_user(request), "Exec '%s' saved" % exec_name)
         # base
         else:
+            logger.info("Save base")
             base.content = content
             base.save()
             # save in database

@@ -13,6 +13,8 @@ baseServices.factory('Base', ['$resource', '$cookies', function($resource, $cook
       update: {method:'PUT', params:{baseId: 'baseId'}, isArray:false},
       start: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/start'},
       stop: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/stop'},
+      restart: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/restart'},
+      destroy: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/destroy'},
       transport: {method:'POST', params:{baseId: 'baseId'}, isArray:false, headers:{'X-CSRFToken': $cookies.csrftoken}, url:'/fastapp/api/base/:baseId/transport'},
    });
  }]);
