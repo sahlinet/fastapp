@@ -35,7 +35,7 @@ class BaseExecutor(object):
 
 class TutumExecutor(BaseExecutor):
 
-	DOCKER_IMAGE = "philipsahli/skyblue-planet-worker"
+	DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
 
 	def __init__(self, *args, **kwargs):
 		import tutum
@@ -119,7 +119,7 @@ class TutumExecutor(BaseExecutor):
 
 class DockerExecutor(BaseExecutor):
 
-	DOCKER_IMAGE = "philipsahli/skyblue-planet-worker"
+	DOCKER_IMAGE = "philipsahli/skyblue-planet-worker:develop"
 
 	def __init__(self, *args, **kwargs):
 
