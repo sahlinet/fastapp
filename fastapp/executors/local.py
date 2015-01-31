@@ -169,7 +169,8 @@ class DockerExecutor(BaseExecutor):
 		self.docker.kill(id)
 
 	def destroy(self, id):
-		self.docker.remove_container(id)
+		if self._container_exists(id):
+			self.docker.remove_container(id)
 
 	def _get_container(self, id):
 		from docker import errors
