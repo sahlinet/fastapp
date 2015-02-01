@@ -48,7 +48,8 @@ class TutumExecutor(BaseExecutor):
 		super(TutumExecutor, self).__init__(*args, **kwargs)
 
 	def start(self, id):
-		if not self._container_exists(id):
+		new = not self._container_exists(id)
+		if new:
 			service = self.api.Service.create(image=TutumExecutor.DOCKER_IMAGE, 
 				name=self.name, 
 				target_num_containers=1,
@@ -64,34 +65,43 @@ class TutumExecutor(BaseExecutor):
 					{ 'key': "EXECUTOR", 'value': "tutum"},
 				],
 				autorestart="ALWAYS",
-				#tags=["worker"],
 				entrypoint = self._start_command
 			)
 			service.save()
 		else:
-			service = self._get_container(self, id)
-		tag = self.api.Tag.fetch(service)
-		tag.add(['workers'])
-		tag.save()
+			service = self._get_container(id)
+		if new:
+			tag = self.api.Tag.fetch(service)
+			tag.add(['workers'])
+			tag.save()
 		service.start()
-		time.sleep(10)
+
+		while True:
+			service = self._get_container(id)
+			if service.state == "Running":
+				break
+
 		return service.uuid
 
 	def _get_container(self, id):
 		from tutum.api.exceptions import TutumApiError
-		#import pdb; pdb.set_trace()
 		logger.debug("Get container (%s)" % id)
 		try:
 			service = self.api.Service.fetch(id)
-		except TutumApiError:
+			if service.state == "Terminated":
+				raise ContainerNotFound()
+		except TutumApiError, e:
 			#if e.response.status_code == 404:
-			logger.debug("Container not found (%s)" % id)
+			logger.warning("Container not found (%s)" % id)
+			logger.exception(e)
 			raise ContainerNotFound()
 		logger.debug("Container found (%s)" % id)
 		return service
 
 	def _container_exists(self, id):
 		logger.debug("Check if container exists (%s)" % id)
+		if not id:
+			return False
 		try:
 			self._get_container(id)
 		except ContainerNotFound:
@@ -100,13 +110,24 @@ class TutumExecutor(BaseExecutor):
 
 	def stop(self, id):
 		service = self.api.Service.fetch(id)
-		service.delete()
+		service.stop()
+		while True:
+			service = self._get_container(id)
+			if service.state == "Stopped":
+				break
 
 	def destroy(self, id):
-		service = self.api.Service.fetch(id)
-		service.terminate()
+		if self._container_exists(id):
+			service = self.api.Service.fetch(id)
+			service.destroy()
+			while True:
+				service = self._get_container(id)
+				if service.state == "Terminated":
+					break
 
 	def state(self, id):
+		if not id:
+			return False
 		from tutum.api.exceptions import TutumApiError
 		try:
 			service = self.api.Service.fetch(id)
