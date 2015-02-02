@@ -119,9 +119,12 @@ class TutumExecutor(BaseExecutor):
 	def destroy(self, id):
 		if self._container_exists(id):
 			service = self.api.Service.fetch(id)
-			service.destroy()
+			service.delete()
 			while True:
-				service = self._get_container(id)
+				try:
+					service = self._get_container(id)
+				except ContainerNotFound, e:
+					pass
 				if service.state == "Terminated":
 					break
 
