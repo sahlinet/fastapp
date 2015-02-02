@@ -40,10 +40,10 @@ class TutumExecutor(BaseExecutor):
 	def __init__(self, *args, **kwargs):
 		import tutum
 		self.api = tutum
-		self.api.username = settings.TUTUM_USERNAME
+		self.api.user = settings.TUTUM_USERNAME
 		self.api.apikey = settings.TUTUM_APIKEY
 
-		logger.info("Using TUTUM_USERNAME: %s" % self.api.username)
+		logger.info("Using TUTUM_USERNAME: %s" % self.api.user)
 
 		super(TutumExecutor, self).__init__(*args, **kwargs)
 
@@ -51,7 +51,7 @@ class TutumExecutor(BaseExecutor):
 		new = not self._container_exists(id)
 		if new:
 			service = self.api.Service.create(image=TutumExecutor.DOCKER_IMAGE, 
-				name=self.name, 
+				name=self.name.replace("_", "_"), 
 				target_num_containers=1,
 				mem_limit = "128m",
 				cpu_shares = 512,
@@ -128,7 +128,7 @@ class TutumExecutor(BaseExecutor):
 			while True:
 				try:
 					service = self._get_container(id)
-				except ContainerNotFound, e:
+				except ContainerNotFound:
 					pass
 				if service.state == "Terminated":
 					break
