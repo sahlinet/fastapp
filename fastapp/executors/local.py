@@ -77,15 +77,20 @@ class TutumExecutor(BaseExecutor):
 		service.start()
 
 		while True:
-			service = self._get_container(id)
-			if service.state == "Running":
-				break
+			try:
+				service = self._get_container(service.uuid)
+				if service.state == "Running":
+					break
+			except ContainerNotFound:
+				pass
 
 		return service.uuid
 
 	def _get_container(self, id):
 		from tutum.api.exceptions import TutumApiError
 		logger.debug("Get container (%s)" % id)
+		if not id:
+			raise ContainerNotFound()
 		try:
 			service = self.api.Service.fetch(id)
 			if service.state == "Terminated":
