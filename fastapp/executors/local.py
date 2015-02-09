@@ -3,7 +3,6 @@ import os
 import signal
 import subprocess
 import logging
-import time
 
 from django.conf import settings
 
@@ -32,6 +31,9 @@ class BaseExecutor(object):
 			)
 		#return start_command.split(" ")
 		return start_command
+
+	def destroy(self, id):
+		logger.info("Executor does not support 'destroy'")
 
 class TutumExecutor(BaseExecutor):
 
@@ -62,7 +64,7 @@ class TutumExecutor(BaseExecutor):
 					{ 'key': "RABBITMQ_PORT", 'value': settings.WORKER_RABBITMQ_PORT},
 					{ 'key': "RABBITMQ_ADMIN_USER", 'value': settings.RABBITMQ_ADMIN_USER},
 					{ 'key': "RABBITMQ_ADMIN_PASSWORD", 'value': settings.RABBITMQ_ADMIN_USER},
-					{ 'key': "EXECUTOR", 'value': "tutum"},
+					{ 'key': "EXECUTOR", 'value': "Tutum"},
 				],
 				autorestart="ALWAYS",
 				entrypoint = self._start_command
@@ -175,8 +177,6 @@ class DockerExecutor(BaseExecutor):
 					'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
 					'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
 					'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
-					#'RABBITMQ_ADMIN_USER': settings.RABBITMQ_ADMIN_USER,
-					#'RABBITMQ_ADMIN_PASSWORD': settings.RABBITMQ_ADMIN_USER,
 					'RABBITMQ_ADMIN_USER': "guest",
 					'RABBITMQ_ADMIN_PASSWORD': "guest",
 					'EXECUTOR': "docker"
@@ -244,21 +244,18 @@ class DockerExecutor(BaseExecutor):
 
 class SpawnExecutor(BaseExecutor):
 
-	def start(self):
-		self.pid = None
+	def start(self, pid=None):
+		self.pid = pid
 
 		python_path = sys.executable
 		try:
 		    MODELSPY = os.path.join(settings.PROJECT_ROOT, "..")
+		    env = os.environ.copy()
+		    env['EXECUTOR'] = "Spawn"
 		    p = subprocess.Popen("%s %s/manage.py start_worker --settings=%s --vhost=%s --base=%s --username=%s --password=%s" % (
-			    python_path, 
-			    MODELSPY,
-			    settings.SETTINGS_MODULE,
-			    self.vhost,
-			    self.base_name, 
-			    self.base_name, self.password),
+			    python_path, MODELSPY, settings.SETTINGS_MODULE, self.vhost, self.base_name, self.base_name, self.password),
 			    cwd=settings.PROJECT_ROOT,
-			    shell=True, stdin=None, stdout=None, stderr=None, preexec_fn=os.setsid
+			    shell=True, stdin=None, stdout=None, stderr=None, preexec_fn=os.setsid, env=env
 			)
 		    self.pid = p.pid
 		except Exception, e:
@@ -267,11 +264,17 @@ class SpawnExecutor(BaseExecutor):
 		return self.pid
 
 	def stop(self, pid):
+		if not pid:
+			return
 		try:
 			os.killpg(int(pid), signal.SIGTERM)
 		except OSError, e:
-			raise e
+			logger.exception(e)
+		except ValueError, e:
+			logger.exception(e)
 
 	def state(self, pid):
 		# if pid, check
+		if not pid:
+			return False
 		return (subprocess.call("/bin/ps -p %s -o command|egrep -c %s 1>/dev/null" % (pid, self.base_name), shell=True)==0)

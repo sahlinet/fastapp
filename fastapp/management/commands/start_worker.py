@@ -84,13 +84,6 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-
-        # increase thread_count by one because of HeartbeatThread
-        thread_count = settings.FASTAPP_WORKER_THREADCOUNT+1
-        update_status_thread = threading.Thread(target=update_status, args=[vhost, thread_count, threads])
-        update_status_thread.daemon = True
-        update_status_thread.start()        
-        
         username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 

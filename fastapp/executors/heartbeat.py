@@ -103,10 +103,22 @@ def update_status(parent_name, thread_count, threads):
 
 class HeartbeatThread(CommunicationThread):
 
-
     def send_message(self):
+	"""
+	Client functionality for heartbeating and sending statistics.
+	"""
         logger.debug("send message to vhost: %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
-        payload = {'in_sync': self.in_sync}
+        pid = os.getpid()
+        args = ["ps", "-p", str(pid), "-o", "rss="]
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        (out, err) = proc.communicate()
+        rss = str(out).rstrip().strip().lstrip()
+        logger.info("MEM-Usage of '%s': %s" % (pid, rss))
+
+        payload = {
+		'in_sync': self.in_sync,
+		'rss': rss
+	}
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',
                 routing_key=HEARTBEAT_QUEUE,
@@ -116,16 +128,21 @@ class HeartbeatThread(CommunicationThread):
                 body=json.dumps(payload)
             )
         self.in_sync = True
+
         self.schedule_next_message()
 
     def on_message(self, ch, method, props, body):
+	"""
+	Server functionality for storing status and statistics.
+	"""
+
         try:
             logger.debug(self.name+": "+sys._getframe().f_code.co_name)
             data = json.loads(body)
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
 
-            logger.debug("Heartbeat received from '%s'" % vhost)
+            logger.info("Heartbeat received from '%s'" % vhost)
 
             # store timestamp in DB
             from fastapp.models import Instance
@@ -138,8 +155,11 @@ class HeartbeatThread(CommunicationThread):
             instance.last_beat = datetime.now().replace(tzinfo=pytz.UTC)
             instance.save()
 
+            process, created = Process.objects.get_or_create(name=vhost)
+            process.rss = int(data['rss'])
+            process.save()
+
             if not data['in_sync']:
-                logger.debug("Run sync to vhost: "+vhost)
                 from fastapp.models import Apy, Setting
                 for instance in Apy.objects.filter(base__name=base):
                     distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]), 
@@ -156,8 +176,16 @@ class HeartbeatThread(CommunicationThread):
                         instance.base.name,
                         instance.base.executor.password
                     )
+                ## execute init exec
+                #for instance in Setting.objects.filter(base__name=base):
+                #    distribute(INIT_QUEUE, json.dumps({
+                #        instance.key: instance.value
+                #        }), 
+                #        vhost,
+                #        instance.base.name,
+                #        instance.base.executor.password
+                #    )
 
-                # execute init exec
         except Exception, e:
             logger.exception(e)
         time.sleep(0.1)        
