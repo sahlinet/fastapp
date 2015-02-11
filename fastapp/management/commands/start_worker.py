@@ -1,12 +1,11 @@
 import logging
 import sys
-import threading
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
 
 from fastapp.executors.remote import ExecutorServerThread, StaticServerThread
-from fastapp.executors.heartbeat import HeartbeatThread, HEARTBEAT_QUEUE, update_status
+from fastapp.executors.heartbeat import HeartbeatThread, HEARTBEAT_QUEUE
 from django.conf import settings
 
 
@@ -91,7 +90,9 @@ class Command(BaseCommand):
             username=username,
             password=password,
             additional_payload={'vhost': vhost}, ttl=3000)
+        thread.thread_list = threads
         self.stdout.write('Start HeartbeatThread')
+
         threads.append(thread)
         thread.daemon = True
         thread.start()

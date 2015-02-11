@@ -20,16 +20,13 @@ from django_extensions.db.fields import UUIDField, ShortUUIDField
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db.models import F
-from django.db.transaction import commit_on_success
+from django.db import transaction
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import serializers
 
 from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
-#from fastapp.executors.local import SpawnExecutor, TutumExecutor
-
-from django.core import serializers
-
 from fastapp.utils import Connection
 
 import logging
@@ -214,10 +211,11 @@ class Apy(models.Model):
     description = models.CharField(max_length=1024, blank=True, null=True)
 
     def mark_executed(self):
-        commit_on_success()
+        with transaction.atomic():
+        #commit_on_success()
 
-        self.counter.executed = F('executed')+1
-        self.counter.save()
+            self.counter.executed = F('executed')+1
+            self.counter.save()
 
     def mark_failed(self):
         self.counter.failed = F('failed')+1
@@ -245,11 +243,14 @@ def create_random():
     rand=random.SystemRandom().randint(10000000,99999999)
     return rand
 
+from django.utils import timezone
+
 class Transaction(models.Model):
     rid = models.IntegerField(primary_key=True, default=create_random)
     apy = models.ForeignKey(Apy, related_name="transactions")
     status = models.CharField(max_length=1, choices=TRANSACTION_STATE_CHOICES, default=RUNNING)
-    created = models.DateTimeField(auto_now_add=True, null=True)
+    #created = models.DateTimeField(auto_now_add=True, null=True)
+    created = models.DateTimeField(default=timezone.now, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     tin = JSONField(blank=True, null=True)
     tout = JSONField(blank=True, null=True)

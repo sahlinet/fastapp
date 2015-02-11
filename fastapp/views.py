@@ -47,10 +47,8 @@ class CockpitView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CockpitView, self).get_context_data(**kwargs)
-        print kwargs
         qs = Executor.objects.all().order_by('base__name')
         if not self.request.user.is_superuser:
-            print "NOT"
             qs=qs.filter(base__user=self.request.user)
         context['executors'] = qs.order_by('base__name')
         context['process_list'] = Process.objects.all().order_by('-running')
@@ -235,6 +233,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 'GET': get_dict.dict(),
                 'POST': post_dict.dict(),
                 'user': {'username': request.user.username},
+                'UUID': exec_model.base.uuid,
                 'REMOTE_ADDR': request.META.get('REMOTE_ADDR')
                 }
             })

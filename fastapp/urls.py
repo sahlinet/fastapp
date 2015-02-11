@@ -34,7 +34,7 @@ urlpatterns = patterns('',
 
     # execs
     url(r'(?P<base>[\w-]+)/exec/(?P<id>\w+)/$', \
-                                            csrf_exempt(login_or_sharedkey(DjendExecView.as_view()))),
+                                            csrf_exempt(login_or_sharedkey(DjendExecView.as_view())), name='exec'),
     url(r'(?P<base>[\w-]+)/delete/(?P<id>\w+)/$', \
                                             login_required(DjendExecDeleteView.as_view())),
 

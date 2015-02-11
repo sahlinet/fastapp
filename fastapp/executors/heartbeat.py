@@ -8,11 +8,15 @@ import subprocess
 import pytz
 from datetime import datetime, timedelta
 
-
+from django.core.urlresolvers import reverse
+from django.test import RequestFactory
+from django.contrib.auth import get_user_model
 from django.core import serializers
 from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
+
+from fastapp.views import DjendExecView
 from fastapp.executors.remote import distribute
 from fastapp.models import Base, Instance, Process, Thread, Transaction
 from fastapp.queue import CommunicationThread
@@ -107,6 +111,7 @@ class HeartbeatThread(CommunicationThread):
 	"""
 	Client functionality for heartbeating and sending statistics.
 	"""
+        logger.info("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         logger.debug("send message to vhost: %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         pid = os.getpid()
         args = ["ps", "-p", str(pid), "-o", "rss="]
@@ -115,10 +120,27 @@ class HeartbeatThread(CommunicationThread):
         rss = str(out).rstrip().strip().lstrip()
         logger.info("MEM-Usage of '%s': %s" % (pid, rss))
 
+        thread_list_status = [ thread.state for thread in self.thread_list]
+
+        if self.ready_for_init:
+            self.ready_for_init = False
+
+        if self.on_next_ready_for_init:
+            self.ready_for_init = True
+            self.on_next_ready_for_init = False
+
+        if not self.in_sync:
+            self.ready_for_init = False
+
         payload = {
-		'in_sync': self.in_sync,
-		'rss': rss
-	}
+    		'in_sync': self.in_sync,
+            'ready_for_init': self.ready_for_init,
+            'threads': {
+                'count': len(self.thread_list),
+                'list': thread_list_status
+            },
+    		'rss': rss
+	    }
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',
                 routing_key=HEARTBEAT_QUEUE,
@@ -127,6 +149,11 @@ class HeartbeatThread(CommunicationThread):
                 ),
                 body=json.dumps(payload)
             )
+
+        if not self.in_sync:
+            print "Set to true ready_for_init"
+            self.on_next_ready_for_init = True
+
         self.in_sync = True
 
         self.schedule_next_message()
@@ -159,6 +186,23 @@ class HeartbeatThread(CommunicationThread):
             process.rss = int(data['rss'])
             process.save()
 
+            #logger.info(data['ready_for_init'], data['in_sync'])
+
+            # verify and warn for incomplete threads
+            base_obj = Base.objects.get(name=base)
+            for thread in data['threads']['list']:
+                try: 
+                    if thread['count_settings'] != len(base_obj.setting.all()):
+                        pass
+                        #logger.debug("%s is incomplete" % thread['name'])
+                        #print("%s is incomplete" % thread['name'])
+                    else:
+                        pass
+                        #logger.debug("%s is complete" % thread['name'])
+                        #print("%s is complete" % thread['name'])
+                except Exception:
+                    pass
+
             if not data['in_sync']:
                 from fastapp.models import Apy, Setting
                 for instance in Apy.objects.filter(base__name=base):
@@ -176,15 +220,27 @@ class HeartbeatThread(CommunicationThread):
                         instance.base.name,
                         instance.base.executor.password
                     )
+
+            if data.has_key('ready_for_init') and data['ready_for_init']:
+
                 ## execute init exec
-                #for instance in Setting.objects.filter(base__name=base):
-                #    distribute(INIT_QUEUE, json.dumps({
-                #        instance.key: instance.value
-                #        }), 
-                #        vhost,
-                #        instance.base.name,
-                #        instance.base.executor.password
-                #    )
+                try:
+                    init = base_obj.apys.get(name='init')
+                    url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.name})
+
+                    request_factory = RequestFactory()
+                    request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name}) 
+                    request.user = get_user_model().objects.get(username='philipsahli')
+
+                    view = DjendExecView()
+                    response = view.get(request, base=base_obj.name, id=init.name)
+                    logger.info("Init method called for base %s, response_code: %s" % (base_obj.name, response.status_code))
+
+                except Exception, e:
+                    logger.exception(e)
+                    print e
+
+
 
         except Exception, e:
             logger.exception(e)

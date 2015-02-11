@@ -150,6 +150,8 @@ class CommunicationThread(threading.Thread):
         self.credentials = pika.PlainCredentials(username, password)
 
         self.in_sync = False
+        self.ready_for_init = False
+        self.on_next_ready_for_init = False
 
         self.is_connected = False
 
@@ -160,6 +162,10 @@ class CommunicationThread(threading.Thread):
         self.exchange_count = len(self.topic_receiver)
 
         self.ttl = ttl
+
+    @property
+    def state(self):
+        return self.name
 
     def run(self):
         self.parameters = pika.ConnectionParameters(

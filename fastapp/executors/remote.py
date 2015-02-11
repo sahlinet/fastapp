@@ -58,11 +58,11 @@ def distribute(event, body, vhost, username, password):
             logger.debug("exchanging message to vhost username: %s" % self.username)
             logger.debug("exchanging message to vhost password: %s" % self.password)
             self.connection = connect_to_queuemanager(
-		host=settings.RABBITMQ_HOST,
-                vhost=vhost,
-                username=username,
-                password=password,
-		port=settings.RABBITMQ_PORT,
+            		host=settings.RABBITMQ_HOST,
+                    vhost=vhost,
+                    username=username,
+                    password=password,
+            		port=settings.RABBITMQ_PORT,
                 )
 
             self.channel = self.connection.channel()
@@ -174,6 +174,7 @@ SETTING_QUEUE = "setting"
 RPC_QUEUE = "rpc_queue"
 STATIC_QUEUE = "static_queue"
 
+
 class ExecutorServerThread(CommunicationThread):
     def __init__(self, *args, **kwargs ):
         self.functions = {}
@@ -181,10 +182,17 @@ class ExecutorServerThread(CommunicationThread):
 
         return super(ExecutorServerThread, self).__init__(*args, **kwargs)
 
+    @property
+    def state(self):
+        return {'name': self.name, 
+           'count_settings': len(self.settings), 
+           'count_functions': len(self.functions), 
+           'settings': self.settings.keys(),
+           'functions': self.functions.keys()
+        }
+
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
-        logger.debug(props.app_id)
-        logger.debug(body)
         try:
             if method.exchange == "configuration":
                 if props.app_id == "configuration":
@@ -246,6 +254,10 @@ class ExecutorServerThread(CommunicationThread):
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
             logger.exception(e)
+
+
+    #def __repr__(self):
+    #    return self.__dict__
 
 class ApyNotFound(Exception):
     pass
