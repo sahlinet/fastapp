@@ -16,7 +16,6 @@ from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
-from fastapp.views import DjendExecView
 from fastapp.executors.remote import distribute
 from fastapp.models import Base, Instance, Process, Thread, Transaction
 from fastapp.queue import CommunicationThread
@@ -232,6 +231,7 @@ class HeartbeatThread(CommunicationThread):
                     request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name}) 
                     request.user = get_user_model().objects.get(username='philipsahli')
 
+                    from fastapp.views import DjendExecView
                     view = DjendExecView()
                     response = view.get(request, base=base_obj.name, id=init.name)
                     logger.info("Init method called for base %s, response_code: %s" % (base_obj.name, response.status_code))
