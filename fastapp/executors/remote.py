@@ -188,7 +188,8 @@ class ExecutorServerThread(CommunicationThread):
            'count_settings': len(self.settings), 
            'count_functions': len(self.functions), 
            'settings': self.settings.keys(),
-           'functions': self.functions.keys()
+           'functions': self.functions.keys(),
+           'connected': self.is_connected
         }
 
     def on_message(self, ch, method, props, body):

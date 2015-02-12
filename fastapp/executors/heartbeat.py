@@ -191,6 +191,12 @@ class HeartbeatThread(CommunicationThread):
             base_obj = Base.objects.get(name=base)
             for thread in data['threads']['list']:
                 try: 
+                    thread_obj, created = Thread.objects.get_or_create(name=thread['name'], parent=process)
+                    if thread['connected']:
+                        thread_obj.health = Thread.STARTED
+                    else:
+                        thread_obj.health = Thread.STOPPED
+                    thread_obj.save()
                     if thread['count_settings'] != len(base_obj.setting.all()):
                         pass
                         #logger.debug("%s is incomplete" % thread['name'])
@@ -199,7 +205,8 @@ class HeartbeatThread(CommunicationThread):
                         pass
                         #logger.debug("%s is complete" % thread['name'])
                         #print("%s is complete" % thread['name'])
-                except Exception:
+                except Exception, e:
+                    #logger.exception(e)
                     pass
 
             if not data['in_sync']:

@@ -12,11 +12,13 @@ from django.shortcuts import get_object_or_404
 from rest_framework import renderers
 
 from fastapp.utils import Connection
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from fastapp.models import Base, Apy, Setting, TransportEndpoint
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
 from fastapp.utils import info, check_code
 from django.db import transaction
+from django.core.management import call_command
+
 from rest_framework.decorators import link
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
@@ -108,6 +110,30 @@ class ApyViewSet(viewsets.ModelViewSet):
         self.kwargs['pk'] = self.object.id
         return self.retrieve(request, new_pk=cloned_exec.id)
 
+class BaseAdminViewSet(viewsets.ModelViewSet):
+    model = Base
+    serializer_class = BaseSerializer
+    renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (TokenAuthentication, SessionAuthentication, BasicAuthentication)
+    permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser)
+
+    def get_queryset(self):
+        return Base.objects.all()._clone().all()
+
+    def destroy_all(self, request):
+        transaction.set_autocommit(False)
+        logger.info("Destroy all workers")
+        call_command('destroy_workers')
+        transaction.commit()
+        return Response("ok")
+
+    def recreate_all(self, request):
+        transaction.set_autocommit(False)
+        logger.info("Recreate all workers")
+        call_command('recreate_workers')
+        transaction.commit()
+        return Response("ok")
+
 class BaseViewSet(viewsets.ModelViewSet):
     model = Base
     serializer_class = BaseSerializer
@@ -151,15 +177,6 @@ class BaseViewSet(viewsets.ModelViewSet):
         base.destroy()
         transaction.commit()
         return self.retrieve(request, pk=pk)
-
-    #def destroy(self, request, pk):
-    #    transaction.set_autocommit(False)
-    #    logger.info("Destroying %s" % pk)
-    #    base = self.get_queryset().get(id=pk)
-    #    base.stop()
-    #    base.start()
-    #    transaction.commit()
-    #    return self.retrieve(request, pk=pk)
 
     def transport(self, request, pk):
         base = self.get_queryset().get(pk=pk)

@@ -415,6 +415,12 @@ class Executor(models.Model):
         if not self.implementation.state(self.pid):
         #    self.pid = None
             self.started = False
+
+            # Threads
+            process = Process.objects.get(name=self.vhost)
+            for thread in process.threads.all():
+                thread.delete()
+
             self.save()
 
     def restart(self):

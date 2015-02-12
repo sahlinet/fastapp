@@ -7,7 +7,7 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView,
                 DjendBaseRenameView, CockpitView
 from rest_framework import routers
 
-from fastapp.api_views import BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
+from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
 
 
 from django.views.decorators.cache import never_cache
@@ -46,6 +46,10 @@ urlpatterns = patterns('',
     url(r'^api/transportendpoints/(?P<pk>\d+)/$', TransportEndpointViewSet.as_view({'put': 'update'}), name='transportendpoint-list'),
     url(r'^api/base/$', BaseViewSet.as_view({'get': 'list', 'post': 'create'}), name='base-list'),
     url(r'^api/base/(?P<pk>\d+)/$', BaseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='base-detail'),
+
+    url(r'^api/base/destroy_all/$', BaseAdminViewSet.as_view({'get': 'destroy_all'}), name='bases-destroy'),
+    url(r'^api/base/recreate_all/$', BaseAdminViewSet.as_view({'get': 'recreate_all'}), name='bases-recreate'),
+
     url(r'^api/base/(?P<pk>\d+)/start/$', BaseViewSet.as_view({'post': 'start'}), name='base-stop'),
     url(r'^api/base/(?P<pk>\d+)/stop/$', BaseViewSet.as_view({'post': 'stop'}), name='base-start'),
     url(r'^api/base/(?P<pk>\d+)/restart/$', BaseViewSet.as_view({'post': 'restart'}), name='base-restart'),
