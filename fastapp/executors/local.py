@@ -53,7 +53,7 @@ class TutumExecutor(BaseExecutor):
 		new = not self._container_exists(id)
 		if new:
 			service = self.api.Service.create(image=TutumExecutor.DOCKER_IMAGE, 
-				name=self.name.replace("_", "_"), 
+				name=self.name.replace("_", "-"), 
 				target_num_containers=1,
 				mem_limit = "128m",
 				cpu_shares = 512,
@@ -64,6 +64,7 @@ class TutumExecutor(BaseExecutor):
 					{ 'key': "RABBITMQ_PORT", 'value': settings.WORKER_RABBITMQ_PORT},
 					{ 'key': "RABBITMQ_ADMIN_USER", 'value': settings.RABBITMQ_ADMIN_USER},
 					{ 'key': "RABBITMQ_ADMIN_PASSWORD", 'value': settings.RABBITMQ_ADMIN_USER},
+					{ 'key': "FASTAPP_CORE_SENDER_PASSWORD", 'value': settings.FASTAPP_CORE_SENDER_PASSWORD},
 					{ 'key': "EXECUTOR", 'value': "Tutum"},
 				],
 				autorestart="ALWAYS",
@@ -177,8 +178,9 @@ class DockerExecutor(BaseExecutor):
 					'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
 					'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
 					'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
-					'RABBITMQ_ADMIN_USER': "guest",
-					'RABBITMQ_ADMIN_PASSWORD': "guest",
+					'RABBITMQ_ADMIN_USER': settings.RABBITMQ_ADMIN_USER,
+					'RABBITMQ_ADMIN_PASSWORD': settings.RABBITMQ_ADMIN_PASSWORD,
+					'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
 					'EXECUTOR': "docker"
 				},
 				name=self.name, 

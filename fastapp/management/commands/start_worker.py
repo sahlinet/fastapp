@@ -3,10 +3,11 @@ import sys
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from fastapp.executors.remote import ExecutorServerThread, StaticServerThread
 from fastapp.executors.heartbeat import HeartbeatThread, HEARTBEAT_QUEUE
-from django.conf import settings
+from fastapp.utils import load_setting
 
 
 logger = logging.getLogger("fastapp.executors.remote")
@@ -47,11 +48,12 @@ class Command(BaseCommand):
         username = options['username']
         # TODO: password should come from database
         password = options['password']
-        #vhost = generate_vhost_configurationate_vhost_configuration(username, base)
         logger.info("vhost: %s" % vhost)
 
         host = getattr(settings, "RABBITMQ_HOST", "localhost")
         port = getattr(settings, "RABBITMQ_PORT", 5672)
+
+        SENDER_PASSWORD = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
 
         for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
 
@@ -83,12 +85,10 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-        username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
-        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 
-        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port, "/", queues_produce=[[HEARTBEAT_QUEUE]], 
-            username=username,
-            password=password,
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port, load_setting("CORE_VHOST"), queues_produce=[[HEARTBEAT_QUEUE]], 
+            username=load_setting("CORE_SENDER_USERNAME"),
+            password=SENDER_PASSWORD,
             additional_payload={'vhost': vhost}, ttl=3000)
         thread.thread_list = threads
         self.stdout.write('Start HeartbeatThread')

@@ -21,10 +21,12 @@ from fastapp.models import Base, Instance, Process, Thread, Transaction
 from fastapp.queue import CommunicationThread
 
 from fastapp.models import FINISHED
+from fastapp.utils import load_setting
 
 logger = logging.getLogger(__name__)
 
-HEARTBEAT_QUEUE = "heartbeat_queue"
+HEARTBEAT_VHOST = load_setting('CORE_VHOST')
+HEARTBEAT_QUEUE = load_setting('HEARTBEAT_QUEUE')
 CONFIGURATION_QUEUE = "configuration"
 SETTING_QUEUE = "setting"
 
@@ -43,7 +45,7 @@ def inactivate():
 
             # start if is_started and not running
             try:
-                for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
+                  for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
                 #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
                     if not base.executor.is_running():
                         # log start with last beat datetime
@@ -110,14 +112,13 @@ class HeartbeatThread(CommunicationThread):
 	"""
 	Client functionality for heartbeating and sending statistics.
 	"""
-        logger.info("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
-        logger.debug("send message to vhost: %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
+        logger.debug("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         pid = os.getpid()
         args = ["ps", "-p", str(pid), "-o", "rss="]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE)
         (out, err) = proc.communicate()
         rss = str(out).rstrip().strip().lstrip()
-        logger.info("MEM-Usage of '%s': %s" % (pid, rss))
+        logger.debug("MEM-Usage of '%s': %s" % (pid, rss))
 
         thread_list_status = [ thread.state for thread in self.thread_list]
 

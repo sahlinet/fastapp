@@ -10,9 +10,10 @@ import re
 from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
+from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.queue import connect_to_queue
-
+from fastapp import defaults
 
 import sys
 import _ast
@@ -267,5 +268,17 @@ def check_code(code, name):
     return not (len(r) > 0 or len(errors) > 0), r, errors
 
 
-
-
+def load_setting(name):
+    v=None
+    logger.info("Load setting %s" % name)
+    default = getattr(defaults, name, None)
+    setting = getattr(settings, name, None)
+    if setting:
+        v = setting
+    elif default:
+        v = default
+    if not v:
+        logger.error("Could not load setting %s" % name)
+        raise ImproperlyConfigured()
+    logger.info("Loaded setting %s with value: %s" % (name, v))
+    return v

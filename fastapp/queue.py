@@ -9,6 +9,8 @@ import json
 import urllib
 from django.conf import settings
 
+from fastapp.defaults import WORKER_VHOST_PERMISSIONS, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,10 +21,11 @@ def generate_vhost_configuration(*args):
     return vhost
 
 def create_vhosts():
-	from models import Base 
+    from models import Base 
     # create the vhosts, users and permissions
-	for base in Base.objects.all():
-		create_vhost(base)
+    for base in Base.objects.all():
+        import pdb; pdb.set_trace()
+        create_vhost(base)
 
 def create_broker_url(username, password, host, port, vhost):
 	return "amqp://%s:%s@%s:%s/%s" % (username, password, host, port, vhost)
@@ -69,12 +72,6 @@ class RabbitmqHttpApi(RabbitmqAdmin):
         host = getattr(settings, "RABBITMQ_HOST", "localhost")
         port = getattr(settings, "RABBITMQ_HTTP_API_PORT", "15672")
 
-        logger.debug(user)
-        logger.debug(password)
-
-        logger.debug(host)
-        logger.debug(port)
-
         if data:
             data=json.dumps(data)
         url = "http://%s:%s" % (host, port)
@@ -85,29 +82,46 @@ class RabbitmqHttpApi(RabbitmqAdmin):
             raise Exception()
 
     def add_vhost(self, name):
-        logger.debug(name)
+        logger.info("Add vhost %s" % name)
         self._call("/api/vhosts/%s" % urllib.quote_plus(name))
 
     def add_user(self, name, password):
         self._call("/api/users/%s" % name, data={'password': password, 'tags': "" })
 
-    def set_perms(self, vhost, username):
-        self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data={"scope":"client","configure":".*","write":".*","read":".*"})
-        self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), "admin"), data={"scope":"client","configure":".*","write":".*","read":".*"})
+    def set_perms(self, vhost, username, permissions):
+        logger.info("Set perms for user %s " % username)
+        self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data=permissions)
 
 def create_vhost(base):
     # create the vhosts, users and permissions
     vhost = base.executor.vhost
-    logger.debug("Create vhost configuration: %s" % vhost)
+    logger.info("Create vhost configuration: %s" % vhost)
 
     service = RabbitmqAdmin.factory("HTTP_API")
     try:
+
+        # add vhost
+        logger.info("Add vhost %s" % vhost)
         service.add_vhost(vhost)
+        logger.info("Add vhost %s done" % vhost)
+
+        # add worker and server user on vhost
+        logger.info("Add user %s" % base.name)
         service.add_user(base.name, base.executor.password)
-        service.set_perms(vhost, base.name)
+        logger.info("Add user %s done" % base.name)
+        logger.info("Add user %s" % RABBITMQ_SERVER_USER)
+        service.add_user(RABBITMQ_SERVER_USER, base.executor.password)
+        logger.info("Add user %s done" % RABBITMQ_SERVER_USER)
+
+        # add permissions for worker user on vhost
+        logger.info("Set permissions on vhost %s for user %s" % (vhost, base.name))
+        service.set_perms(vhost, base.name, WORKER_VHOST_PERMISSIONS)
+
+        # add permissions for server user on vhost
+        service.set_perms(vhost, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS)
+
     except Exception, e:
         logger.exception(e)
-        sys.exit(1)
         raise e
 
 #from memory_profiler import profile as memory_profile
@@ -181,7 +195,7 @@ class CommunicationThread(threading.Thread):
         while self._run:
             try:
                 self._connection = pika.SelectConnection(self.parameters, self.on_connected, on_close_callback=self.on_close)
-                logger.debug("'%s' connected" % self.name)
+                logger.info("'%s' connected to: %s:%s%s" % (self.name, self.host, self.port, self.vhost))
                 self.is_connected = True 
             except Exception, e:
                 self.is_connected = False
@@ -219,13 +233,13 @@ class CommunicationThread(threading.Thread):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
 
     def consume_on_queue_declared(self, frame):
-        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         logger.debug(frame)
 
         for queue in self.queues_consume:
             ack = False
             if len(queue) == 2:
                 ack = queue[1]
+            logger.info("'%s' start consuming on: %s" % (self.name, queue[0]))
             self.channel.basic_consume(self.on_message, queue=queue[0], no_ack=ack)
 
     def on_queue_declared_for_exchange(self, frame):
@@ -259,9 +273,6 @@ class CommunicationThread(threading.Thread):
         # queue consumer
         for queue in self.queues_consume:
             channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared, 
-                    #arguments={
-                    #  'x-message-ttl' : self.ttl
-                    #  }
                 )
 
         # queue producer

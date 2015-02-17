@@ -7,6 +7,9 @@ from django.core.management.base import BaseCommand
 from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE, AsyncResponseThread
 from fastapp.log import LogReceiverThread
 from django.conf import settings
+from fastapp.queue import RabbitmqAdmin
+
+from fastapp.utils import load_setting
 
 logger = logging.getLogger("fastapp.executors.remote")
 
@@ -16,27 +19,42 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        HEARTBEAT_THREAD_COUNT = settings.FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT
-        ASYNC_THREAD_COUNT = settings.FASTAPP_ASYNC_LISTENER_THREADCOUNT
-        LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
+
         threads = []
         async_threads = []
 
+        # start cleanup thread
         inactivate_thread = threading.Thread(target=inactivate)
         inactivate_thread.daemon = True
         inactivate_thread.start()
 
+        host = load_setting("RABBITMQ_HOST")
+        port = load_setting("RABBITMQ_PORT")
+
+        SENDER_PASSWORD = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
+        RECEIVER_PASSWORD = load_setting("FASTAPP_CORE_RECEIVER_PASSWORD")
+
+        # create core vhost
+        CORE_SENDER_USERNAME = load_setting("CORE_SENDER_USERNAME")
+        CORE_RECEIVER_USERNAME = load_setting("CORE_RECEIVER_USERNAME")
+        SENDER_PERMISSIONS  = load_setting("SENDER_PERMISSIONS")
+        RECEIVER_PERMISSIONS = load_setting("RECEIVER_PERMISSIONS")
+
+        service = RabbitmqAdmin.factory("HTTP_API")
+        CORE_VHOST = load_setting("CORE_VHOST")
+        service.add_vhost(CORE_VHOST)
+        service.add_user(CORE_SENDER_USERNAME, SENDER_PASSWORD)
+        service.add_user(CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD)
+        service.set_perms(CORE_VHOST, CORE_SENDER_USERNAME, SENDER_PERMISSIONS)
+        service.set_perms(CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PERMISSIONS)
+
+        # heartbeat
         queues_consume = [[HEARTBEAT_QUEUE, True]]
-
-        host = getattr(settings, "RABBITMQ_HOST", "localhost")            
-        port = getattr(settings, "RABBITMQ_PORT", 5672)
-        username = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")            
-        password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
-
+        HEARTBEAT_THREAD_COUNT = settings.FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT
         for c in range(0, HEARTBEAT_THREAD_COUNT):
             name = "HeartbeatThread-%s" % c
 
-            thread = HeartbeatThread(name, host, port, "/", username, password, queues_consume=queues_consume, ttl=3000)
+            thread = HeartbeatThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume, ttl=3000)
             threads.append(thread)
             thread.daemon = True
             thread.start()
@@ -47,23 +65,27 @@ class Command(BaseCommand):
 
 
         # async response thread
-        queues_consume_async = [["async_callback", True]]
+        ASYNC_THREAD_COUNT = settings.FASTAPP_ASYNC_LISTENER_THREADCOUNT
+        async_queue_name = load_setting("ASYNC_RESPONSE_QUEUE")
+        queues_consume_async = [[async_queue_name, True]]
         for c in range(0, ASYNC_THREAD_COUNT):
             name = "AsyncResponseThread-%s" % c
 
-            thread = AsyncResponseThread(name, host, port, "/", username, password, queues_consume=queues_consume_async, ttl=3000)
+            thread = AsyncResponseThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_async, ttl=3000)
             async_threads.append(thread)
             thread.daemon = True
             thread.start()
 
 
         # log receiver
-        queues_consume_async = [["logentries", True]]
+        LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
+        log_queue_name = load_setting("LOGS_QUEUE")
+        queues_consume_async = [[log_queue_name, True]]
         log_threads = []
         for c in range(0, LOG_THREAD_COUNT):
             name = "LogReceiverThread-%s" % c
 
-            thread = LogReceiverThread(name, host, port, "/", username, password, queues_consume=queues_consume_async, ttl=3000)
+            thread = LogReceiverThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_async, ttl=3000)
             log_threads.append(thread)
             thread.daemon = True
             thread.start()
