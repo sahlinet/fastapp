@@ -9,7 +9,7 @@ import json
 import urllib
 from django.conf import settings
 
-from fastapp.defaults import WORKER_VHOST_PERMISSIONS, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS
+from fastapp.defaults import WORKER_VHOST_PERMISSIONS, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS, CORE_RECEIVER_USERNAME
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,6 @@ def create_vhosts():
     from models import Base 
     # create the vhosts, users and permissions
     for base in Base.objects.all():
-        import pdb; pdb.set_trace()
         create_vhost(base)
 
 def create_broker_url(username, password, host, port, vhost):
@@ -89,7 +88,7 @@ class RabbitmqHttpApi(RabbitmqAdmin):
         self._call("/api/users/%s" % name, data={'password': password, 'tags': "" })
 
     def set_perms(self, vhost, username, permissions):
-        logger.info("Set perms for user %s " % username)
+        logger.info("Set perms for user %s (%s)" % (username, permissions))
         self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data=permissions)
 
 def create_vhost(base):
@@ -119,10 +118,11 @@ def create_vhost(base):
 
         # add permissions for server user on vhost
         service.set_perms(vhost, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS)
+        service.set_perms(vhost, CORE_RECEIVER_USERNAME, SERVER_VHOST_PERMISSIONS)
 
     except Exception, e:
         logger.exception(e)
-        raise e
+        raise
 
 #from memory_profiler import profile as memory_profile
 #@memory_profile
@@ -132,6 +132,7 @@ def connect_to_queuemanager(host, vhost, username, password, port):
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=40, credentials=credentials))
     except Exception, e:
+        logger.error("Cannot connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
         logger.exception(e)
         raise e
     return connection
@@ -208,6 +209,12 @@ class CommunicationThread(threading.Thread):
                 self._connection.ioloop.start()
             except KeyboardInterrupt:
                 self.stop()
+            except Exception, e:
+                logger.warn(str(self.parameters.__dict__))
+                logger.warn(self.name)
+                logger.warn(self.vhost)
+                logger.warn(self.queues_consume)
+                raise e
             finally:
                 pass
                 try:
@@ -239,7 +246,7 @@ class CommunicationThread(threading.Thread):
             ack = False
             if len(queue) == 2:
                 ack = queue[1]
-            logger.info("'%s' start consuming on: %s" % (self.name, queue[0]))
+            logger.info("'%s' start consuming on: %s:%s" % (self.name, self.vhost, queue[0]))
             self.channel.basic_consume(self.on_message, queue=queue[0], no_ack=ack)
 
     def on_queue_declared_for_exchange(self, frame):

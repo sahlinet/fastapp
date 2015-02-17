@@ -169,7 +169,7 @@ class HeartbeatThread(CommunicationThread):
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
 
-            logger.info("Heartbeat received from '%s'" % vhost)
+            logger.info("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
             # store timestamp in DB
             from fastapp.models import Instance

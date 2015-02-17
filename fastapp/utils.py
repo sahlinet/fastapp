@@ -270,15 +270,15 @@ def check_code(code, name):
 
 def load_setting(name):
     v=None
-    logger.info("Load setting %s" % name)
     default = getattr(defaults, name, None)
     setting = getattr(settings, name, None)
     if setting:
         v = setting
+        logger.info("Loaded setting from settings %s with value: %s" % (name, v))
     elif default:
         v = default
+        logger.info("Loaded setting from defaults %s with value: %s" % (name, v))
     if not v:
         logger.error("Could not load setting %s" % name)
         raise ImproperlyConfigured()
-    logger.info("Loaded setting %s with value: %s" % (name, v))
     return v

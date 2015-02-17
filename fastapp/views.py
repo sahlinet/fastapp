@@ -281,7 +281,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                     )
         except Exception, e:
             logger.exception(e)
-            raise HttpResponseServerError(e)
+            raise e
         return True
 
     #@memory_profile

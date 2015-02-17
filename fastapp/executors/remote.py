@@ -8,9 +8,12 @@ import sys
 import traceback
 import base64
 from bunch import Bunch
-from fastapp.queue import connect_to_queuemanager, CommunicationThread
 
 from django.conf import settings
+
+from fastapp.queue import connect_to_queuemanager, CommunicationThread
+from fastapp.utils import load_setting
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,11 @@ RESPONSE_TIMEOUT = 30
 CONFIGURATION_QUEUE = "configuration"
 CONFIGURATION_EVENT = CONFIGURATION_QUEUE
 SETTINGS_EVENT = "setting"
+
+CONFIGURATION_QUEUE = "configuration"
+SETTING_QUEUE = "setting"
+RPC_QUEUE = "rpc_queue"
+STATIC_QUEUE = "static_queue"
 
 class Worker():
 
@@ -105,12 +113,18 @@ def call_rpc_client(apy, vhost, username, password, async=False):
 
             self.channel = self.connection.channel()
 
-            result = self.channel.queue_declare(exclusive=True)
+            self.async = async
 
-            if not async:
+            self._set_callback_queue()
+
+
+        def _set_callback_queue(self):
+
+            if not self.async:
+                result = self.channel.queue_declare(exclusive=True)
                 self.callback_queue = result.method.queue
             else:
-                self.callback_queue = "/async_callback"
+                self.callback_queue = "async_callback"
                 result = self.channel.queue_declare(queue=self.callback_queue)
 
             self.channel.basic_consume(self.on_response, no_ack=True,
@@ -126,15 +140,14 @@ def call_rpc_client(apy, vhost, username, password, async=False):
                 logger.debug("from rpc queue: "+body)
 
         def call(self, n):
-            if self.callback_queue != "/async_callback":
-                async = False
+            if not self.async:
                 self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
             expire = 5000
             logger.debug("Message expiration set to %s ms" % str(expire))
             self.channel.basic_publish(exchange='',
-                                       routing_key='rpc_queue',
+                                       routing_key=RPC_QUEUE,
                                        properties=pika.BasicProperties(
                                              reply_to = self.callback_queue,
                                              delivery_mode=1,
@@ -142,7 +155,8 @@ def call_rpc_client(apy, vhost, username, password, async=False):
                                              expiration=str(expire)
                                              ),
                                        body=str(n))
-            while self.response is None and not async:
+            logger.info("Message published to: %s:%s" % (self.vhost, RPC_QUEUE))
+            while self.response is None and not self.async:
                 self.connection.process_data_events()
             return self.response
 
@@ -152,11 +166,17 @@ def call_rpc_client(apy, vhost, username, password, async=False):
             del self.channel
             del self.connection
 
-    executor = ExecutorClient(vhost, username, password, async=async)
+    if not async:
+        executor = ExecutorClient(vhost, username, password)
+    else:
+        executor = ExecutorClient(vhost, load_setting("CORE_RECEIVER_USERNAME"), load_setting("FASTAPP_CORE_RECEIVER_PASSWORD"), async=async)
+
 
     try:
         response = executor.call(apy)
-    except Exception:
+        #import pdb; pdb.set_trace()
+    except Exception, e:
+        logger.warn(e)
         response = json.dumps({u'status': u'TIMEOUT', u'exception': None, u'returned': None, 'id': u'cannot_import'})
     finally:
         executor.end()
@@ -169,10 +189,7 @@ STATE_NOT_FOUND = "NOT_FOUND"
 
 threads = []
 
-CONFIGURATION_QUEUE = "configuration"
-SETTING_QUEUE = "setting"
-RPC_QUEUE = "rpc_queue"
-STATIC_QUEUE = "static_queue"
+
 
 
 class ExecutorServerThread(CommunicationThread):
@@ -216,20 +233,20 @@ class ExecutorServerThread(CommunicationThread):
                     logger.error("Invalid event arrived (%s)" % props.app_id)  
 
             if method.routing_key == RPC_QUEUE:
-                logger.info("Request received in %s" % self.name)
+                logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
                 try:
                     response_data = {}
                     response_data = _do(json.loads(body), self.functions, self.settings)
                 except Exception, e:
                     logger.exception(e)
                 finally:
-                    if props.reply_to == "/async_callback":
+                    if props.reply_to == "async_callback":
                         # TODO: should be a user with less permissions
                         connection = connect_to_queuemanager(
                                 self.host,
-                                "/", 
-                                settings.RABBITMQ_ADMIN_USER,
-                                settings.RABBITMQ_ADMIN_PASSWORD,
+                                load_setting("CORE_VHOST"),
+                                load_setting("CORE_SENDER_USERNAME"),
+                                load_setting("FASTAPP_CORE_SENDER_PASSWORD"),
                                 self.port
                             )
                         channel = connection.channel()
