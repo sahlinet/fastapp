@@ -75,7 +75,7 @@ Workers are started in a Docker container running on [Tutum.co](https://www.tutu
 
 ### Queue
 
-For asynchronous communication RabbitMQ is used. The admin user is used to setup users and virtual hosts.
+For asynchronous communication RabbitMQ is used. The admin user is used to create virtual hosts, users and their permissions.
 
 	RABBITMQ_ADMIN_USER = "admin"
 	RABBITMQ_ADMIN_PASSWORD = "admin"

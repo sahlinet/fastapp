@@ -72,19 +72,19 @@ def update_status(parent_name, thread_count, threads):
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
             rss = str(out).rstrip().strip().lstrip()
-            logger.debug("MEM-Usage of '%s': %s" % (parent_name, rss))
+            #logger.debug("MEM-Usage of '%s': %s" % (parent_name, rss))
             process, created = Process.objects.get_or_create(name=parent_name)
             process.rss = int(rss)
             process.save()
 
             # threads
             for t in threads:
-                logger.debug(t.name+": "+str(t.isAlive()))
+                #logger.debug(t.name+": "+str(t.isAlive()))
 
                 # store in db
                 thread_model, created = Thread.objects.get_or_create(name=t.name, parent=process)
                 if t.isAlive() and t.health():
-                    logger.debug("Thread '%s' is healthy." % t.name)
+                    #logger.debug("Thread '%s' is healthy." % t.name)
                     thread_model.started()
                     alive_thread_count=alive_thread_count+1
                 else:
@@ -96,7 +96,7 @@ def update_status(parent_name, thread_count, threads):
             if thread_count == alive_thread_count:
                 process.up()
                 process.save()
-                logger.debug("Process '%s' is healthy." % parent_name)
+                #logger.debug("Process '%s' is healthy." % parent_name)
             else:
                 logger.error("Process '%s' is not healthy. Threads: %s / %s" % (parent_name, alive_thread_count, thread_count))
             time.sleep(10)
@@ -118,7 +118,7 @@ class HeartbeatThread(CommunicationThread):
         proc = subprocess.Popen(args, stdout=subprocess.PIPE)
         (out, err) = proc.communicate()
         rss = str(out).rstrip().strip().lstrip()
-        logger.debug("MEM-Usage of '%s': %s" % (pid, rss))
+        #logger.debug("MEM-Usage of '%s': %s" % (pid, rss))
 
         thread_list_status = [ thread.state for thread in self.thread_list]
 
@@ -164,19 +164,18 @@ class HeartbeatThread(CommunicationThread):
 	"""
 
         try:
-            logger.debug(self.name+": "+sys._getframe().f_code.co_name)
             data = json.loads(body)
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
+            logger.debug("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
-            logger.info("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
             # store timestamp in DB
             from fastapp.models import Instance
             try:
                 instance = Instance.objects.get(executor__base__name=base)
             except Instance.DoesNotExist, e:
-                logger.error("instance does not exist")
+                logger.error("Instance does not exist")
                 raise Exception()
             instance.is_alive = True
             instance.last_beat = datetime.now().replace(tzinfo=pytz.UTC)
