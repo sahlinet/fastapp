@@ -270,6 +270,7 @@ class ExecutorServerThread(CommunicationThread):
                                          body=json.dumps(response_data))
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
+                logger.info("Response sent %s (%s)" % (self.name, str(props.reply_to)))
         except Exception, e:
             logger.exception(e)
 

@@ -55,6 +55,9 @@ class Command(BaseCommand):
 
         SENDER_PASSWORD = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
 
+        logger.info("FASTAPP_WORKER_THREADCOUNT: %s" % load_setting("FASTAPP_WORKER_THREADCOUNT"))
+        logger.info("FASTAPP_PUBLISH_INTERVAL: %s" % load_setting("FASTAPP_PUBLISH_INTERVAL"))
+
         for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
 
             # start threads     

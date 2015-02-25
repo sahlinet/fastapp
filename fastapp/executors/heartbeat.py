@@ -276,8 +276,6 @@ class AsyncResponseThread(CommunicationThread):
             transaction.tout = data
             transaction.status = FINISHED
             transaction.save()
-            logger.info("tout saved")
-
 
         except Exception, e:
             logger.exception(e)
