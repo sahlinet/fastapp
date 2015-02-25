@@ -131,7 +131,7 @@ class TutumExecutor(BaseExecutor):
 			while True:
 				try:
 					service = self._get_container(id)
-				except ContainerNotFound:
+				except ContainerNotFound, e:
 					logger.exception(e)
 					break
 				if service.state == "Terminated":
