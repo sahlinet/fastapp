@@ -35,9 +35,14 @@ class BaseExecutor(object):
 	def destroy(self, id):
 		logger.info("Executor does not support 'destroy'")
 
+MEM_LIMIT = "128m"
+CPU_SHARES = 512
+DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+
 class TutumExecutor(BaseExecutor):
 
-	DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+	TUTUM_TAGS = ["workers"]
 
 	def __init__(self, *args, **kwargs):
 		import tutum
@@ -52,18 +57,16 @@ class TutumExecutor(BaseExecutor):
 	def start(self, id):
 		new = not self._container_exists(id)
 		if new:
-			service = self.api.Service.create(image=TutumExecutor.DOCKER_IMAGE, 
+			service = self.api.Service.create(image=DOCKER_IMAGE, 
 				name=self.name.replace("_", "-"), 
 				target_num_containers=1,
-				mem_limit = "128m",
-				cpu_shares = 512,
+				mem_limit = MEM_LIMIT,
+				cpu_shares = CPU_SHARES,
 				container_envvars = [
-					{ 'key': "FASTAPP_WORKER_THREADCOUNT", 'value': settings.FASTAPP_WORKER_THREADCOUNT },
-					{ 'key': "FASTAPP_PUBLISH_INTERVAL", 'value': settings.FASTAPP_PUBLISH_INTERVAL},
 					{ 'key': "RABBITMQ_HOST", 'value': settings.WORKER_RABBITMQ_HOST},
 					{ 'key': "RABBITMQ_PORT", 'value': settings.WORKER_RABBITMQ_PORT},
-					#{ 'key': "RABBITMQ_ADMIN_USER", 'value': settings.RABBITMQ_ADMIN_USER},
-					#{ 'key': "RABBITMQ_ADMIN_PASSWORD", 'value': settings.RABBITMQ_ADMIN_USER},
+					{ 'key': "FASTAPP_WORKER_THREADCOUNT", 'value': settings.FASTAPP_WORKER_THREADCOUNT },
+					{ 'key': "FASTAPP_PUBLISH_INTERVAL", 'value': settings.FASTAPP_PUBLISH_INTERVAL},
 					{ 'key': "FASTAPP_CORE_SENDER_PASSWORD", 'value': settings.FASTAPP_CORE_SENDER_PASSWORD},
 					{ 'key': "EXECUTOR", 'value': "Tutum"},
 				],
@@ -75,7 +78,7 @@ class TutumExecutor(BaseExecutor):
 			service = self._get_container(id)
 		if new:
 			tag = self.api.Tag.fetch(service)
-			tag.add(['workers'])
+			tag.add(TutumExecutor.TUTUM_TAGS)
 			tag.save()
 		service.start()
 
@@ -172,15 +175,13 @@ class DockerExecutor(BaseExecutor):
 			container = self.docker.create_container(
 				image = DockerExecutor.DOCKER_IMAGE,
 				detach = True,
-				mem_limit = "128m",
-				cpu_shares = 512,
+				mem_limit = MEM_LIMIT,
+				cpu_shares = CPU_SHARES,
 				environment = {
-					'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
-					'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
 					'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
 					'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
-					#'RABBITMQ_ADMIN_USER': settings.RABBITMQ_ADMIN_USER,
-					#'RABBITMQ_ADMIN_PASSWORD': settings.RABBITMQ_ADMIN_PASSWORD,
+					'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
+					'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
 					'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
 					'EXECUTOR': "docker"
 				},
@@ -252,9 +253,15 @@ class SpawnExecutor(BaseExecutor):
 
 		python_path = sys.executable
 		try:
-		    MODELSPY = os.path.join(settings.PROJECT_ROOT, "..")
+		    MODELSPY = os.path.join(settings.PROJECT_ROOT, "../../app_worker")
 		    env = os.environ.copy()
 		    env['EXECUTOR'] = "Spawn"
+		    from fastapp.utils import load_setting
+		    env['FASTAPP_CORE_SENDER_PASSWORD'] = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
+		    env['FASTAPP_WORKER_THREADCOUNT'] = str(load_setting("FASTAPP_WORKER_THREADCOUNT"))
+		    env['FASTAPP_PUBLISH_INTERVAL'] = str(load_setting("FASTAPP_PUBLISH_INTERVAL"))
+		    env['RABBITMQ_HOST'] = str(load_setting("WORKER_RABBITMQ_HOST"))
+		    settings.SETTINGS_MODULE = "app_worker.settings"
 		    p = subprocess.Popen("%s %s/manage.py start_worker --settings=%s --vhost=%s --base=%s --username=%s --password=%s" % (
 			    python_path, MODELSPY, settings.SETTINGS_MODULE, self.vhost, self.base_name, self.base_name, self.password),
 			    cwd=settings.PROJECT_ROOT,
