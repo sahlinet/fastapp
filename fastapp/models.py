@@ -417,9 +417,12 @@ class Executor(models.Model):
             self.started = False
 
             # Threads
-            process = Process.objects.get(name=self.vhost)
-            for thread in process.threads.all():
-                thread.delete()
+            try:
+                process = Process.objects.get(name=self.vhost)
+                for thread in process.threads.all():
+                    thread.delete()
+            except Exception:
+                pass
 
             self.save()
 

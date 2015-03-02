@@ -3,8 +3,15 @@ import os
 import signal
 import subprocess
 import logging
+import StringIO
+
+from docker import Client
+from docker.tls import TLSConfig
+from docker.utils import kwargs_from_env
 
 from django.conf import settings
+
+from fastapp.utils import load_setting
 
 logger = logging.getLogger(__name__)
 
@@ -153,14 +160,13 @@ class TutumExecutor(BaseExecutor):
 
 
 
+
 class DockerExecutor(BaseExecutor):
 
 	DOCKER_IMAGE = "philipsahli/skyblue-planet-worker:develop"
 
 	def __init__(self, *args, **kwargs):
 
-		from docker import Client
-		from docker.utils import kwargs_from_env
 		docker_kwargs = kwargs_from_env()
 		docker_kwargs['tls'].assert_hostname = False
 
@@ -173,7 +179,7 @@ class DockerExecutor(BaseExecutor):
 			logger.info("Create container for %s" % self.vhost)
 
 			container = self.docker.create_container(
-				image = DockerExecutor.DOCKER_IMAGE,
+				image = self.__class__.DOCKER_IMAGE,
 				detach = True,
 				mem_limit = MEM_LIMIT,
 				cpu_shares = CPU_SHARES,
@@ -245,6 +251,53 @@ class DockerExecutor(BaseExecutor):
 			)
 		return start_command.split(" ")
 		#return start_command	
+
+class RemoteDockerExecutor(DockerExecutor):
+
+	DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+	def __init__(self, *args, **kwargs):
+		"""
+		tls_config = docker.tls.TLSConfig(
+		  client_cert=('/path/to/client-cert.pem', '/path/to/client-key.pem'),
+		  ca_cert='/path/to/ca.pem'
+		)
+		client = docker.Client(base_url='<https_url>', tls=tls_config)
+		"""
+
+		client_cert = load_setting("DOCKER_CLIENT_CERT")
+		client_key = load_setting("DOCKER_CLIENT_KEY")
+		#client_ca = load_setting("DOCKER_CLIENT_CA")
+
+		login_user = load_setting("DOCKER_LOGIN_USER")
+		login_pass = load_setting("DOCKER_LOGIN_PASS")
+		login_email = load_setting("DOCKER_LOGIN_EMAIL")
+		login_host = load_setting("DOCKER_LOGIN_HOST")
+
+
+		ssl_version = "TLSv1"
+
+		tls_config = TLSConfig(
+		  client_cert=(client_cert, client_key),
+		  #ca_cert=client_ca,
+		  ssl_version=ssl_version,
+		  verify=False,
+		  assert_hostname=False
+		)
+
+		base_url = load_setting("DOCKER_TLS_URL")
+		self.docker = Client(base_url, tls=tls_config)
+
+		self.docker.login(
+			username=login_user,
+			password=login_pass,
+			email=login_email,
+			registry=login_host,
+			reauth=True,
+			insecure_registry=True,
+			)
+
+		super(DockerExecutor, self).__init__(*args, **kwargs)
 
 class SpawnExecutor(BaseExecutor):
 
