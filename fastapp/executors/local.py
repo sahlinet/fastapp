@@ -158,8 +158,6 @@ class TutumExecutor(BaseExecutor):
 		return (service.state == "Running")
 
 
-
-
 class DockerExecutor(BaseExecutor):
 
 	DOCKER_IMAGE = "philipsahli/skyblue-planet-worker:develop"

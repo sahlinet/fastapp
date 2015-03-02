@@ -284,7 +284,8 @@ def load_setting(name):
     return v
 
 def load_var_to_file(var):
-    path = os.path.join(os.environ['HOME'], "tmp")
+    #path = os.path.join(os.environ['HOME'], "tmp")
+    path = "/tmp/"
     fq_file = os.path.join(path, var)
     content = os.environ[var]
     if not os.path.exists(path):

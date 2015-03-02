@@ -47,15 +47,44 @@ Workers are spawned from within server process.
 
 or
 
-#### Docker
+#### Docker on local machine
 
-Workers are started in a Docker container.
+Workers are started in a Docker container, Docker environment must be available. Thus `kwargs_from_env()` from docker-py must work.
 
     FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
     FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+or
+
+#### Docker on Remote host
+
+Workers are started in a Docker container.
+
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.RemoteDockerExecutor"
+    FASTAPP_DOCKER_MEM_LIMIT = "128m"
+    FASTAPP_DOCKER_CPU_SHARES = 512
+
+Docker image to use:
+
+    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+Point to the docker instance and the stuff for TLS authentication. `load_var_to_file` expects the content from the files in an environment variable.
+You can also set a filepath if the files are on the machine.
+
+	DOCKER_TLS_URL = "https://IPADDRESS:2376"
+	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")     # $HOME/.docker/xy/certs/cert.pem
+	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")		# $HOME/.docker/xy/certs/key.pem
+	DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem
+
+Following stuff is needed for login to one private repository as you would do with `docker login`
+
+	DOCKER_LOGIN_USER = "username1"
+	DOCKER_LOGIN_PASS = "api_key"
+	DOCKER_LOGIN_EMAIL = "username@example.com"
+	DOCKER_LOGIN_HOST= "https://tutum.co/v1/"
 
 or
 
