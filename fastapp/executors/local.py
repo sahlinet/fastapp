@@ -3,7 +3,6 @@ import os
 import signal
 import subprocess
 import logging
-import StringIO
 
 from docker import Client
 from docker.tls import TLSConfig
