@@ -282,3 +282,16 @@ def load_setting(name):
         logger.error("Could not load setting %s" % name)
         raise ImproperlyConfigured()
     return v
+
+def load_var_to_file(var):
+    path = os.path.join(os.environ['HOME'], "tmp")
+    fq_file = os.path.join(path, var)
+    content = os.environ[var]
+    if not os.path.exists(path):
+        os.mkdir(path)
+    if not os.path.exists(fq_file):
+        f = open(fq_file, 'w')
+        f.write(content)
+        f.close()
+    return fq_file
+
