@@ -236,7 +236,7 @@ class HeartbeatThread(CommunicationThread):
 
                     request_factory = RequestFactory()
                     request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name}) 
-                    request.user = get_user_model().objects.get(username='philipsahli')
+                    request.user = get_user_model().objects.get(username='admin')
 
                     from fastapp.views import DjendExecView
                     view = DjendExecView()
