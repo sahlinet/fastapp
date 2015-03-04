@@ -94,7 +94,7 @@ class Command(BaseCommand):
             password=SENDER_PASSWORD,
             additional_payload={'vhost': vhost}, ttl=3000)
         thread.thread_list = threads
-        logger.info('Start HeartbeatThread')
+        logger.info('HeartbeatThreads started')
 
         threads.append(thread)
         thread.daemon = True

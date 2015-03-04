@@ -287,7 +287,12 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
     #@memory_profile
     def _handle_response(self, request, data, exec_model):
         response_class = data.get("response_class", None)
-        response_status_code = 200
+        default_status_code = 200
+        if not data['returned']:
+            status_code = default_status_code
+        else:
+            if response_class:
+                response_status_code = json.loads(data['returned']).get('status_code', default_status_code)
 
         # respond with json
         if request.GET.has_key(u'json') or request.GET.has_key('callback'):
@@ -341,6 +346,8 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             else:
                 logger.warning("Wrong response")
                 return HttpResponseServerError("You're apy did not return any allowed response-class or is not called with 'json' or 'callback' as querystring.")
+
+
             return HttpResponse(content, content_type, status=response_status_code)
 
         else:

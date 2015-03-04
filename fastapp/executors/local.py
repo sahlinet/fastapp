@@ -306,7 +306,6 @@ class SpawnExecutor(BaseExecutor):
 		    MODELSPY = os.path.join(settings.PROJECT_ROOT, "../../app_worker")
 		    env = os.environ.copy()
 		    env['EXECUTOR'] = "Spawn"
-		    from fastapp.utils import load_setting
 		    env['FASTAPP_CORE_SENDER_PASSWORD'] = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
 		    env['FASTAPP_WORKER_THREADCOUNT'] = str(load_setting("FASTAPP_WORKER_THREADCOUNT"))
 		    env['FASTAPP_PUBLISH_INTERVAL'] = str(load_setting("FASTAPP_PUBLISH_INTERVAL"))

@@ -112,7 +112,7 @@ class HeartbeatThread(CommunicationThread):
 	"""
 	Client functionality for heartbeating and sending statistics.
 	"""
-        logger.debug("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
+        logger.info("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         pid = os.getpid()
         args = ["ps", "-p", str(pid), "-o", "rss="]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -167,8 +167,7 @@ class HeartbeatThread(CommunicationThread):
             data = json.loads(body)
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
-            logger.debug("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
-
+            logger.info("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
             # store timestamp in DB
             from fastapp.models import Instance

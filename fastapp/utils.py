@@ -295,6 +295,9 @@ def load_var_to_file(var):
         f.write(content)
         f.close()
         # fix \n to newlines
-        os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
+        if sys.platform == "darwin":
+            os.popen4("echo $(cat %s) > %s" % (fq_file, fq_file))
+        else:
+            os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
     return fq_file
 
