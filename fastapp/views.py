@@ -293,6 +293,8 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
         else:
             if response_class:
                 response_status_code = json.loads(data['returned']).get('status_code', default_status_code)
+            else:
+                response_status_code = default_status_code
 
         # respond with json
         if request.GET.has_key(u'json') or request.GET.has_key('callback'):
