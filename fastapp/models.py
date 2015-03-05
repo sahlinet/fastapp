@@ -39,7 +39,10 @@ index_template = """{% extends "fastapp/base.html" %}
 
 class AuthProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="authprofile")
-    access_token = models.CharField(max_length=72)
+    access_token = models.CharField(max_length=72, help_text="Access token for dropbox-auth")
+
+    def __unicode__(self):
+        return self.user.username
 
 
 class Base(models.Model):
