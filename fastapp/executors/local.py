@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 import logging
+import tutum
 
 from docker import Client
 from docker.tls import TLSConfig
@@ -17,6 +18,10 @@ logger = logging.getLogger(__name__)
 class ContainerNotFound(Exception):
     pass
 
+MEM_LIMIT = "128m"
+CPU_SHARES = 512
+DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
 class BaseExecutor(object):
 	def __init__(self, *args, **kwargs):
 		self.vhost = kwargs['vhost']
@@ -24,7 +29,10 @@ class BaseExecutor(object):
 		self.username = kwargs['username']
 		self.password = kwargs['password']
 
-		self.name = "worker-%s" % self.base_name
+		# container name, must be unique, therefore we use a mix from site's domain name and executor
+		from django.contrib.sites.models import Site
+		slug = "worker-%s-%s" % (Site.objects.get_current().domain, self.base_name)
+		self.name = slug.replace("_", "-").replace(".", "-")
 
 	@property
 	def _start_command(self):
@@ -41,9 +49,8 @@ class BaseExecutor(object):
 	def destroy(self, id):
 		logger.info("Executor does not support 'destroy'")
 
-MEM_LIMIT = "128m"
-CPU_SHARES = 512
-DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+	def _pre_start(self):
+		pass
 
 
 class TutumExecutor(BaseExecutor):
@@ -51,7 +58,6 @@ class TutumExecutor(BaseExecutor):
 	TUTUM_TAGS = ["workers"]
 
 	def __init__(self, *args, **kwargs):
-		import tutum
 		self.api = tutum
 		self.api.user = settings.TUTUM_USERNAME
 		self.api.apikey = settings.TUTUM_APIKEY
@@ -63,8 +69,10 @@ class TutumExecutor(BaseExecutor):
 	def start(self, id):
 		new = not self._container_exists(id)
 		if new:
+
+			# create the service
 			service = self.api.Service.create(image=DOCKER_IMAGE, 
-				name=self.name.replace("_", "-"), 
+				name=self.container_name,
 				target_num_containers=1,
 				mem_limit = MEM_LIMIT,
 				cpu_shares = CPU_SHARES,
@@ -172,11 +180,15 @@ class DockerExecutor(BaseExecutor):
 		super(DockerExecutor, self).__init__(*args, **kwargs)
 
 	def start(self, id):
+
+		self._pre_start()
+
 		if not self._container_exists(id):
 			logger.info("Create container for %s" % self.vhost)
 
 			container = self.docker.create_container(
 				image = self.__class__.DOCKER_IMAGE,
+				name=self.container_name, 
 				detach = True,
 				mem_limit = MEM_LIMIT,
 				cpu_shares = CPU_SHARES,
@@ -188,7 +200,6 @@ class DockerExecutor(BaseExecutor):
 					'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
 					'EXECUTOR': "docker"
 				},
-				name=self.name, 
 				entrypoint = self._start_command
 			)
 
@@ -296,6 +307,12 @@ class RemoteDockerExecutor(DockerExecutor):
 
 		super(DockerExecutor, self).__init__(*args, **kwargs)
 
+	def _pre_start(self):
+			if ":" in DOCKER_IMAGE:
+				out = self.api.pull(repository=DOCKER_IMAGE.split(":")[0], tag=DOCKER_IMAGE.split(":")[1])
+			else:
+				out = self.api.pull(repository=DOCKER_IMAGE)
+			logger.info(out)
 class SpawnExecutor(BaseExecutor):
 
 	def start(self, pid=None):
