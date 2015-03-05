@@ -4,12 +4,14 @@ import signal
 import subprocess
 import logging
 import tutum
+import random
 
 from docker import Client
 from docker.tls import TLSConfig
 from docker.utils import kwargs_from_env
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 from fastapp.utils import load_setting
 
@@ -30,8 +32,7 @@ class BaseExecutor(object):
 		self.password = kwargs['password']
 
 		# container name, must be unique, therefore we use a mix from site's domain name and executor
-		from django.contrib.sites.models import Site
-		slug = "worker-%s-%s" % (Site.objects.get_current().domain, self.base_name)
+		slug = "worker-%s-%i-%s" % (Site.objects.get_current().domain, random.randrange(1,900000), self.base_name)
 		self.name = slug.replace("_", "-").replace(".", "-")
 
 	@property
@@ -72,7 +73,7 @@ class TutumExecutor(BaseExecutor):
 
 			# create the service
 			service = self.api.Service.create(image=DOCKER_IMAGE, 
-				name=self.container_name,
+				name=self.name,
 				target_num_containers=1,
 				mem_limit = MEM_LIMIT,
 				cpu_shares = CPU_SHARES,
@@ -175,7 +176,7 @@ class DockerExecutor(BaseExecutor):
 		docker_kwargs = kwargs_from_env()
 		docker_kwargs['tls'].assert_hostname = False
 
-		self.docker = Client(**docker_kwargs)
+		self.api = Client(**docker_kwargs)
 
 		super(DockerExecutor, self).__init__(*args, **kwargs)
 
@@ -186,9 +187,9 @@ class DockerExecutor(BaseExecutor):
 		if not self._container_exists(id):
 			logger.info("Create container for %s" % self.vhost)
 
-			container = self.docker.create_container(
+			container = self.api.create_container(
 				image = self.__class__.DOCKER_IMAGE,
-				name=self.container_name, 
+				name=self.name, 
 				detach = True,
 				mem_limit = MEM_LIMIT,
 				cpu_shares = CPU_SHARES,
@@ -208,22 +209,22 @@ class DockerExecutor(BaseExecutor):
 
 		id = container.get('Id')
 		logger.info("Start container (%s)" % id)
-		self.docker.start(container=id)
+		self.api.start(container=id)
 		return id
 
 	def stop(self, id):
 		logger.info("Stop container (%s)" % id)
-		self.docker.kill(id)
+		self.api.kill(id)
 
 	def destroy(self, id):
 		if self._container_exists(id):
-			self.docker.remove_container(id)
+			self.api.remove_container(id)
 
 	def _get_container(self, id):
 		from docker import errors
 		logger.debug("Get container (%s)" % id)
 		try:
-			service = self.docker.inspect_container(id)
+			service = self.api.inspect_container(id)
 		except errors.APIError, e:
 			if e.response.status_code == 404:
 				logger.debug("Container not found (%s)" % id)
@@ -294,9 +295,9 @@ class RemoteDockerExecutor(DockerExecutor):
 		)
 
 		base_url = load_setting("DOCKER_TLS_URL")
-		self.docker = Client(base_url, tls=tls_config)
+		self.api = Client(base_url, tls=tls_config)
 
-		self.docker.login(
+		self.api.login(
 			username=login_user,
 			password=login_pass,
 			email=login_email,
