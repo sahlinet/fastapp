@@ -727,6 +727,11 @@ def dropbox_auth_finish(request):
     except dropbox.client.DropboxOAuth2Flow.ProviderException, e:
         raise e
 
+# URL handler for /dropbox-auth-start
+def dropbox_auth_disconnect(request):
+    request.user.authprofile.access_token = ""
+    request.user.authprofile.save()
+    return HttpResponseRedirect("/profile/")
 
 @csrf_exempt
 def login_or_sharedkey(function):

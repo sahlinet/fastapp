@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView, \
                 DjendBaseCreateView, DjendExecDeleteView, DjendExecView, DjendStaticView, \
-                login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, DjendView, \
+                login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, dropbox_auth_disconnect, DjendView, \
                 DjendBaseRenameView, CockpitView
 from rest_framework import routers
 
@@ -22,6 +22,7 @@ urlpatterns = patterns('',
     # dropbox auth
     url(r'dropbox_auth_start/?$',dropbox_auth_start),
     url(r'dropbox_auth_finish/?$',dropbox_auth_finish),
+    url(r'dropbox_auth_disconnect/?$',dropbox_auth_disconnect),
 
     url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html")))),
 

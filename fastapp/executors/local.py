@@ -199,7 +199,8 @@ class DockerExecutor(BaseExecutor):
 					'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
 					'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
 					'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
-					'EXECUTOR': "docker"
+					'EXECUTOR': "docker",
+					'constraint:node!=fed*': "docker",
 				},
 				entrypoint = self._start_command
 			)
@@ -314,6 +315,7 @@ class RemoteDockerExecutor(DockerExecutor):
 			else:
 				out = self.api.pull(repository=DOCKER_IMAGE)
 			logger.info(out)
+
 class SpawnExecutor(BaseExecutor):
 
 	def start(self, pid=None):
