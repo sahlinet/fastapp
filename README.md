@@ -21,6 +21,7 @@ Add fastapp to your urls.py
 
 # Configuration
 
+
 ## Required
 
 ### Threads
@@ -101,6 +102,25 @@ Workers are started in a Docker container running on [Tutum.co](https://www.tutu
     FASTAPP_DOCKER_CPU_SHARES = 512
 
     FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+    
+## Cache
+
+Configure a cache backend.
+
+	CACHES = {
+	    "default": {
+	        "BACKEND": "django_redis.cache.RedisCache",
+	        "LOCATION": "redis://127.0.0.1:6379/1",
+	        "OPTIONS": {
+	            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+	        }
+	    }
+	}
+
+For best performance use redis and also for storing the sessions:
+
+	SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+	SESSION_CACHE_ALIAS = "default"
 
 ### Queue
 

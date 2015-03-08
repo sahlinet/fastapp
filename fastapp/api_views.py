@@ -61,9 +61,7 @@ class ApyViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.base = Base.objects.get(id=self.kwargs['base_pk'], user=self.request.user)
-        logger.info("Check code syntax")
         result, warnings, errors = check_code(obj.module, obj.name)
-        logger.info(str(result))
         warnings_prep = []
         errors_prep = []
         for warning in warnings:
@@ -84,8 +82,8 @@ class ApyViewSet(viewsets.ModelViewSet):
                 'msg': error.message,
                 })
         if not result:
-            logger.info(str(warnings))
-            logger.info(str(errors))
+            #logger.info(str(warnings))
+            #logger.info(str(errors))
             response_data = {
                 'warnings' : warnings_prep,
                 'errors' : errors_prep

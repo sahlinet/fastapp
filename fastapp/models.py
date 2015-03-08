@@ -40,6 +40,7 @@ index_template = """{% extends "fastapp/base.html" %}
 class AuthProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="authprofile")
     access_token = models.CharField(max_length=72, help_text="Access token for dropbox-auth")
+    dropbox_userid = models.CharField(max_length=32, help_text="Userid on dropbox", default=None, null=True)
 
     def __unicode__(self):
         return self.user.username
@@ -73,7 +74,6 @@ class Base(models.Model):
         for texec in self.apys.all():
             config['modules'][texec.name] = {}
             config['modules'][texec.name]['module'] = texec.name+".py"
-            logger.info(texec.description)
             if texec.description:
                 config['modules'][texec.name]['description'] = texec.description
             else:
@@ -172,7 +172,6 @@ class Base(models.Model):
         return buffer
 
     def template(self, context):
-        logger.info(self.content)
         t = Template(self.content)
         return t.render(context)
 
@@ -212,6 +211,7 @@ class Apy(models.Model):
     module = models.CharField(max_length=16384, default=MODULE_DEFAULT_CONTENT)
     base = models.ForeignKey(Base, related_name="apys", blank=True, null=True)
     description = models.CharField(max_length=1024, blank=True, null=True)
+    rev = models.CharField(max_length=32, blank=True, null=True)
 
     def mark_executed(self):
         with transaction.atomic():
@@ -317,7 +317,7 @@ class Process(models.Model):
 
     def up(self):
         pass
-        #logger.info("Heartbeat is up")
+        #   logger.info("Heartbeat is up")
 
     def is_up(self):
         now = datetime.utcnow().replace(tzinfo = pytz.utc)
@@ -463,26 +463,31 @@ class TransportEndpoint(models.Model):
 @receiver(post_save, sender=Base)
 def initialize_on_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
+    # TODO: If a user connects his dropbox after creating a base, it should be initialized anyway.
     if not kwargs.get('created'): return
+
     try:
         connection = Connection(instance.user.authprofile.access_token)
         connection.create_folder("%s" % instance.name)
+
         connection.put_file("%s/app.config" % (instance.name), instance.config)
-        
         connection.put_file("%s/index.html" % (instance.name), index_template)
     except Exception, e:
-        logger.exception("error in initialize_on_storage")
+        logger.exception(e)
 
 @receiver(post_save, sender=Apy)
 def synchronize_to_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
     try:
         connection = Connection(instance.base.user.authprofile.access_token)
-        gevent.spawn(connection.put_file("%s/%s.py" % (instance.base.name, instance.name), instance.module))
-        if kwargs.get('created'):
-            gevent.spawn(connection.put_file("%s/app.config" % (instance.base.name), instance.base.config))
+        result = connection.put_file("%s/%s.py" % (instance.base.name, instance.name), instance.module)
+        queryset = Apy.objects.all()
+        queryset.filter(pk=instance.pk).update(rev = result['rev'])
+
+        # update app.config for saving description
+        result = connection.put_file("%s/app.config" % (instance.base.name), instance.base.config)
     except Exception, e:
-        logger.exception("error in synchronize_to_storage")
+        logger.exception(e)
 
     if kwargs.get('created'):
         counter = Counter(apy=instance)
@@ -512,7 +517,7 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
     # create executor instance if none
     try:
         instance.executor
-    except Executor.DoesNotExist, e:
+    except Executor.DoesNotExist:
         logger.debug("create executor for base %s" % instance)
         executor = Executor(base=instance)
         executor.save()
@@ -521,11 +526,12 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
 @receiver(post_delete, sender=Base)
 def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
-    connection = Connection(instance.user.authprofile.access_token)
+    connection = Connection(instance.base.user.authprofile.access_token)
     try:
         gevent.spawn(connection.delete_file("%s" % instance.name))
     except Exception, e:
-        logger.exception("error in base_to_storage_on_delete")
+        logger.error("error in base_to_storage_on_delete")
+        logger.exception(e)
 
 @receiver(post_delete, sender=Apy)
 def synchronize_to_storage_on_delete(sender, *args, **kwargs):

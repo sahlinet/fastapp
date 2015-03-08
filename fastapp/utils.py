@@ -58,6 +58,13 @@ class Connection(object):
         logger.debug("get file %s" % path)
         return self._call('get_file', path)
 
+    def get_file_content_and_rev(self, path):
+        file, metadata = self._call('get_file_and_metadata', path)
+        content = file.read()
+        file.close()
+        rev = metadata['rev']
+        return content, rev
+
     def get_file_content(self, path):
         logger.debug("return content %s" % path)
         return self.get_file(path).read()
@@ -71,6 +78,9 @@ class Connection(object):
 
     def create_folder(self, path):
         return self._call('file_create_folder', path)
+
+    def delta(self, cursor):
+        return self._call('delta', cursor)
 
     def _call(self, ms, *args):
         try:
@@ -258,7 +268,6 @@ def check_code(code, name):
     r = []
     try:
         w = checker.Checker(tree, name)
-        logger.info(name)
         r = w.messages
         for message in w.messages:
             logger.info(str(message))

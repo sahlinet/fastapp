@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView, \
                 DjendBaseCreateView, DjendExecDeleteView, DjendExecView, DjendStaticView, \
                 login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, dropbox_auth_disconnect, DjendView, \
-                DjendBaseRenameView, CockpitView
+                DjendBaseRenameView, CockpitView, DropboxNotifyView
 from rest_framework import routers
 
 from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
@@ -23,6 +23,7 @@ urlpatterns = patterns('',
     url(r'dropbox_auth_start/?$',dropbox_auth_start),
     url(r'dropbox_auth_finish/?$',dropbox_auth_finish),
     url(r'dropbox_auth_disconnect/?$',dropbox_auth_disconnect),
+    url(r'dropbox_notify/?$', DropboxNotifyView.as_view()),
 
     url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html")))),
 

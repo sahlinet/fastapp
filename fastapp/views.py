@@ -6,6 +6,8 @@ import dropbox
 import time
 import copy
 import sys
+import threading
+import re
 
 from datetime import datetime, timedelta
 
@@ -26,6 +28,7 @@ from django.core import serializers
 from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
+from django.core.cache import cache
 
 from plans.quota import get_user_quota
 
@@ -691,6 +694,7 @@ class DjendView(TemplateView):
     def dispatch(self, *args, **kwargs):
         return super(DjendView, self).dispatch(*args, **kwargs)
 
+
 def get_dropbox_auth_flow(web_app_session):
     redirect_uri = "%s/fastapp/dropbox_auth_finish" % settings.DROPBOX_REDIRECT_URL
     dropbox_consumer_key = settings.DROPBOX_CONSUMER_KEY
@@ -711,6 +715,7 @@ def dropbox_auth_finish(request):
         auth, created = AuthProfile.objects.get_or_create(user=request.user)
         # store access_token
         auth.access_token = access_token
+        auth.dropbox_userid = user_id
         auth.user = request.user
         auth.save()
 
@@ -732,6 +737,81 @@ def dropbox_auth_disconnect(request):
     request.user.authprofile.access_token = ""
     request.user.authprofile.save()
     return HttpResponseRedirect("/profile/")
+
+
+def process_user(uid):
+    auth_profile = AuthProfile.objects.filter(dropbox_userid=uid)[0]
+    token = auth_profile.access_token
+    user = auth_profile.user
+    logger.info("Process notfications fro user: %s" % user.username)
+    cursor = cache.get("cursor-%s" % uid)
+
+    client = Connection(token) 
+
+    has_more = True
+
+    while has_more:
+        result = client.delta(cursor)
+
+        for path, metadata in result['entries']:
+
+            # Handle only files ending with ".py"
+            if not path.endswith("py") or not metadata:
+                continue
+            logger.info("%s got change notification (user: %s)" % (path, user.username))
+
+            regex = re.compile("/(.*)/(.*).py")
+            r = regex.search(path)
+            base_name = r.groups()[0]
+            apy_name = r.groups()[1]
+            logger.debug("base_name: %s, apy_name: %s, user: %s" % (base_name, apy_name, user))
+
+            try:
+                apy = Apy.objects.get(name=apy_name, base__name=base_name)
+            except Apy.DoesNotExist, e:
+                logger.warn(e.message)
+                continue
+
+            new_rev = metadata['rev']
+            logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
+            if apy.rev == new_rev:
+                logger.debug("no changes")
+            else:
+                logger.debug("load changes")
+
+                content, rev = client.get_file_content_and_rev("%s" % path)
+                apy.module = content
+                apy.rev = rev
+                apy.save()
+                logger.debug("Apy %s saved" % apy.name)
+
+        # Update cursor
+        cursor = result['cursor']
+        cursor = cache.set("cursor-%s" % uid, cursor)
+
+        # Repeat only if there's more to do
+        has_more = result['has_more']
+
+class DropboxNotifyView(View):
+
+    def get(self, request):
+        challenge = request.GET['challenge']
+        return HttpResponse(challenge)
+
+    def post(self, request):
+        logger.debug(request.body)
+
+        # get delta for user
+        for uid in json.loads(request.body)['delta']['users']:
+             threading.Thread(target=process_user, args=(uid,)).start()
+
+
+        return HttpResponse()
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super(DropboxNotifyView, self).dispatch(*args, **kwargs) 
+
 
 @csrf_exempt
 def login_or_sharedkey(function):
