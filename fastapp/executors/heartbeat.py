@@ -112,7 +112,7 @@ class HeartbeatThread(CommunicationThread):
 	"""
 	Client functionality for heartbeating and sending statistics.
 	"""
-        logger.info("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
+        logger.debug("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         pid = os.getpid()
         args = ["ps", "-p", str(pid), "-o", "rss="]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE)
