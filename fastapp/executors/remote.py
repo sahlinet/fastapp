@@ -442,6 +442,7 @@ def get_static(path, vhost, username, password, async=False):
             raise Exception("Timeout")
 
         def on_response(self, ch, method, props, body):
+            logger.debug("StaticClient.on_message")
             if self.corr_id == props.correlation_id:
                 self.response = body
                 logger.debug("from static queue: "+body)
@@ -456,6 +457,7 @@ def get_static(path, vhost, username, password, async=False):
             self.corr_id = str(uuid.uuid4())
             expire = 10000
             logger.debug("Message expiration set to %s ms" % str(expire))
+            logger.debug("Wait for corr_id %s" % self.corr_id)
             self.channel.basic_publish(exchange='',
                                        routing_key=STATIC_QUEUE,
                                        properties=pika.BasicProperties(
