@@ -428,12 +428,8 @@ def get_static(path, vhost, username, password, async=False):
 
             result = self.channel.queue_declare(exclusive=True)
 
-            if not async:
-                self.callback_queue = result.method.queue
-            else:
-                self.callback_queue = "/static_callback"
-                result = self.channel.queue_declare(queue=self.callback_queue)
-
+            #if not async:
+            self.callback_queue = result.method.queue
             self.channel.basic_consume(self.on_response, no_ack=True,
                                        queue=self.callback_queue)
 
@@ -524,6 +520,7 @@ class StaticServerThread(CommunicationThread):
                             response_data.update({
                                 'file': base64.b64encode(f.read())
                                 })
+                            f.close()
                     if not f:
                         logger.warning("not found")
                         rc="NOT_FOUND"
