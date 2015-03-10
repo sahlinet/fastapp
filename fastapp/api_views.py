@@ -43,7 +43,6 @@ class TransportEndpointViewSet(viewsets.ModelViewSet):
     authentication_classes = (SessionAuthentication,)
 
     def get_queryset(self):
-        print self
         return TransportEndpoint.objects.filter(user=self.request.user)
 
     def pre_save(self, obj):
