@@ -147,8 +147,14 @@ def connect_to_queue(host, queue, vhost, username, password, port):
         return channel
     except Exception, e:
         logger.exception(e)
-        del channel
-        del connection
+        try:
+            del connection
+        except UnboundLocalError:
+            pass
+        try:
+            del channel
+        except UnboundLocalError:
+            pass
         raise e
 
 class CommunicationThread(threading.Thread):

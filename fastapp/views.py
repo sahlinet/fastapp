@@ -28,7 +28,6 @@ from django.core import serializers
 from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
-from django.core.cache import cache
 
 from plans.quota import get_user_quota
 
@@ -107,11 +106,11 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             try:
                 logger.debug("not in cache: %s" % static_path)
 
-                if "runserver" in sys.argv:
+                REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
+                if "runserver" in sys.argv and REPOSITORIES_PATH:
                     # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:
-                        REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH")
                         logger.debug("load %s from local filesystem (repositories)" % static_path)
                         full_path = os.path.join(REPOSITORIES_PATH, static_path)
                         logger.debug(full_path)
@@ -291,8 +290,9 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
     def _handle_response(self, request, data, exec_model):
         response_class = data.get("response_class", None)
         default_status_code = 200
-        if not data['returned']:
-            status_code = default_status_code
+        logger.debug(data)
+        if not data.has_key('returned'):
+            response_status_code = default_status_code
         else:
             if response_class:
                 response_status_code = json.loads(data['returned']).get('status_code', default_status_code)

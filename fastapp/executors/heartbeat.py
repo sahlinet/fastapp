@@ -235,6 +235,7 @@ class HeartbeatThread(CommunicationThread):
 
                     request_factory = RequestFactory()
                     request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name}) 
+                    # TODO: fails if user admin is not created
                     request.user = get_user_model().objects.get(username='admin')
 
                     from fastapp.views import DjendExecView

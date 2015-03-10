@@ -445,6 +445,8 @@ def get_static(path, vhost, username, password, async=False):
             if self.corr_id == props.correlation_id:
                 self.response = body
                 logger.debug("from static queue: "+body)
+            else:
+                logger.warn("correlation_id did not match (%s!=%s)" % (self.corr_id, props.correlation_id))
 
         def call(self, n):
             if self.callback_queue != "/static_callback":
@@ -452,10 +454,10 @@ def get_static(path, vhost, username, password, async=False):
                 self.connection.add_timeout(RESPONSE_TIMEOUT, self.on_timeout)
             self.response = None
             self.corr_id = str(uuid.uuid4())
-            expire = 3000
+            expire = 10000
             logger.debug("Message expiration set to %s ms" % str(expire))
             self.channel.basic_publish(exchange='',
-                                       routing_key='static_queue',
+                                       routing_key=STATIC_QUEUE,
                                        properties=pika.BasicProperties(
                                              reply_to = self.callback_queue,
                                              delivery_mode=1,

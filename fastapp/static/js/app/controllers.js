@@ -387,7 +387,7 @@ window.app.controller('TransportEndpointCtrl', ['$scope', '$filter', '$q', '$htt
   $scope.transport = function(transport, base) {
     console.log(transport);
     console.log(base);
-    Base.transport({baseId: base.id}, transport);
+    Base.transport({baseId: window.active_base_id}, transport);
 
   };
 
