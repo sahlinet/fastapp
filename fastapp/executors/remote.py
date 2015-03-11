@@ -441,7 +441,7 @@ def get_static(path, vhost, username, password, async=False):
             logger.debug("StaticClient.on_message")
             if self.corr_id == props.correlation_id:
                 self.response = body
-                logger.debug("from static queue: "+body)
+                logger.debug("from static queue: "+body[:100])
             else:
                 logger.warn("correlation_id did not match (%s!=%s)" % (self.corr_id, props.correlation_id))
 
@@ -487,9 +487,6 @@ def get_static(path, vhost, username, password, async=False):
 
 class StaticServerThread(CommunicationThread):
     def __init__(self, *args, **kwargs ):
-        self.functions = {}
-        self.settings = {}
-
         return super(StaticServerThread, self).__init__(*args, **kwargs)
 
     def on_message(self, ch, method, props, body):
@@ -499,6 +496,7 @@ class StaticServerThread(CommunicationThread):
         logger.info(body)
 
         try:
+            logger.debug(method.routing_key)
             if method.routing_key == STATIC_QUEUE:
                 logger.info("Static-Request %s received in %s" % (body['path'], self.name))
                 try:
@@ -531,13 +529,14 @@ class StaticServerThread(CommunicationThread):
                 finally:
                     response_data.update({'status': rc})
                     logger.info(props.reply_to)
-                    ch.basic_publish(exchange='',
+                    publish_result = ch.basic_publish(exchange='',
                                      routing_key=props.reply_to,
                                      properties=pika.BasicProperties(
                                         correlation_id = props.correlation_id,
                                         delivery_mode=1,
                                         ),
                                      body=json.dumps(response_data))
+                    logger.info("message published: %s" % str(publish_result))
                     logger.info("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:

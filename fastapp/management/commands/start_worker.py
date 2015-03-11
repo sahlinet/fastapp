@@ -46,9 +46,9 @@ class Command(BaseCommand):
         base = options['base']
         vhost = options['vhost']
         username = options['username']
-        # TODO: password should come from database
+
         password = options['password']
-        logger.info("vhost: %s" % vhost)
+        logger.debug("vhost: %s" % vhost)
 
         host = getattr(settings, "RABBITMQ_HOST", "localhost")
         port = getattr(settings, "RABBITMQ_PORT", 5672)
@@ -59,9 +59,7 @@ class Command(BaseCommand):
         logger.info("FASTAPP_PUBLISH_INTERVAL: %s" % load_setting("FASTAPP_PUBLISH_INTERVAL"))
 
         for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
-
             # start threads     
-            #thread = ExecutorServerThread(c, "ExecutorServerThread-%s-%s" % (c, base), c, vhost, username, password)
             from fastapp.executors.remote import CONFIGURATION_QUEUE, RPC_QUEUE 
             name = "ExecutorSrvThread-%s-%s" % (c, base)
             thread = ExecutorServerThread(name, host, port, vhost, 
@@ -74,9 +72,7 @@ class Command(BaseCommand):
             thread.start()
 
         for c in range(0, 10):
-
             # start threads     
-            #thread = ExecutorServerThread(c, "ExecutorServerThread-%s-%s" % (c, base), c, vhost, username, password)
             from fastapp.executors.remote import STATIC_QUEUE
             name = "StaticServerThread-%s-%s" % (c, base)
             thread = StaticServerThread(name, host, port, vhost, 
@@ -87,6 +83,7 @@ class Command(BaseCommand):
             threads_static.append(thread)
             thread.daemon = True
             thread.start()
+        logger.info('StaticServerThreads started')
 
 
         thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port, load_setting("CORE_VHOST"), queues_produce=[[HEARTBEAT_QUEUE]], 
