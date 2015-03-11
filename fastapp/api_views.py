@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import zipfile
 import requests
+from threading import Thread
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
 from rest_framework import permissions, viewsets
+from rest_framework import status
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from rest_framework import renderers
@@ -118,18 +119,17 @@ class BaseAdminViewSet(viewsets.ModelViewSet):
         return Base.objects.all()._clone().all()
 
     def destroy_all(self, request):
-        transaction.set_autocommit(False)
         logger.info("Destroy all workers")
-        call_command('destroy_workers')
-        transaction.commit()
-        return Response("ok")
+        #call_command('destroy_workers')
+        thread = Thread(target = call_command, args = ('destroy_workers', ))
+        thread.start()
+        return Response("ok", status=status.HTTP_202_ACCEPTED)
 
     def recreate_all(self, request):
-        transaction.set_autocommit(False)
         logger.info("Recreate all workers")
-        call_command('recreate_workers')
-        transaction.commit()
-        return Response("ok")
+        thread = Thread(target = call_command, args = ('recreate_workers', ))
+        thread.start()
+        return Response("ok", status=status.HTTP_202_ACCEPTED)
 
 class BaseViewSet(viewsets.ModelViewSet):
     model = Base
