@@ -131,7 +131,7 @@ class HeartbeatThread(CommunicationThread):
 
         if not self.in_sync:
             self.ready_for_init = False
-
+        import fastapp
         payload = {
     		'in_sync': self.in_sync,
             'ready_for_init': self.ready_for_init,
@@ -139,7 +139,8 @@ class HeartbeatThread(CommunicationThread):
                 'count': len(self.thread_list),
                 'list': thread_list_status
             },
-    		'rss': rss
+    		'rss': rss,
+            'version': fastapp.__version__,
 	    }
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',
@@ -182,6 +183,7 @@ class HeartbeatThread(CommunicationThread):
 
             process, created = Process.objects.get_or_create(name=vhost)
             process.rss = int(data['rss'])
+            process.version = data['version']
             process.save()
 
             #logger.info(data['ready_for_init'], data['in_sync'])

@@ -314,6 +314,7 @@ class Process(models.Model):
     running = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=64, null=True)
     rss = models.IntegerField(max_length=7, default=0)
+    version = models.CharField(max_length=7, default=0)
 
     def up(self):
         pass

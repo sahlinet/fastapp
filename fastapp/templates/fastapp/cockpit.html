@@ -12,6 +12,7 @@
 					<th>Last up</th>
 					<th>RSS</th>
 					<th>Threads</th>
+					<th>Version</th>
 				</tr>
 				{% for process in process_list %}
 				<tr>
@@ -23,6 +24,7 @@
 						{{ thread.name }} [{{ thread.health}}]</br>
 						{% endfor %}
 					</td>
+					<td> {{ process.version }} </td>
 				</tr>
 				{% endfor %}
 			</table>
