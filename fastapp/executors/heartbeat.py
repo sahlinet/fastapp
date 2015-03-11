@@ -183,7 +183,8 @@ class HeartbeatThread(CommunicationThread):
 
             process, created = Process.objects.get_or_create(name=vhost)
             process.rss = int(data['rss'])
-            process.version = data['version']
+            if data.has_key('version'):
+                process.version = data['version']
             process.save()
 
             #logger.info(data['ready_for_init'], data['in_sync'])
