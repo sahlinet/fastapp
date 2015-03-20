@@ -470,7 +470,7 @@ class DjendBaseCreateView(View):
     def post(self, request, *args, **kwargs):
 
         # TODO: should be in planet project and not fastapp
-        if get_user_quota(request.user).get('MAX_BASES_PER_USER') <= request.user.bases.count(): 
+        if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count(): 
             return HttpResponseForbidden("Too many bases for your plan.")
 
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
