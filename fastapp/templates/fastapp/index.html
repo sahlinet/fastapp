@@ -1,369 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="">
-        <meta name="author" content="">
+{% extends 'default.html' %}
 
-        {% block extra_header_pre %}
-        {% endblock %}
+{% block fastapp_title %}
+<title>Fastapp {% if FASTAPP_NAME %}: {{ FASTAPP_NAME }} {% endif %}    asdf</title>
+{% endblock fastapp_title %}
 
-        {% block fastapp_title %}
-        <title>Fastapp {% if FASTAPP_NAME %}: {{ FASTAPP_NAME }} {% endif %}</title>
-        {% endblock fastapp_title %}
+{% block main %}{% endblock %}
 
-        {% block fastapp_header %}
-        <!-- Bootstrap core CSS -->
-        <link href="{{ STATIC_URL }}bare/css/bootstrap.css" rel="stylesheet">
-        <!-- JQuery -->
-        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+{% block fastapp_header %}
+<!-- Bootstrap core CSS -->
+<link href="{{ STATIC_URL }}bare/css/bootstrap.css" rel="stylesheet">
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
 
-        <!-- js -->
-        <script src="{{ STATIC_URL }}js/ndatetime-1.4.0.min.js"></script>
+<!-- js -->
+<script src="{{ STATIC_URL }}js/ndatetime-1.4.0.min.js"></script>
 
-        <!-- js for fastapp -->
-        <script type="text/javascript"> 
-            window.channel = "{{ CHANNEL }}"; 
-            window.pusher_key = "{{ PUSHER_KEY }}";
-            window.shared_key_link = "{{ active_base.shared }}";
-            window.active_base = "{{ active_base.name }}";
-            window.active_base_id = "{{ active_base.id }}";
-            window.username= "{{ username }}";
-        </script>
-       
-        <!-- Pusher -->
-        <!--<script src="https://d3dy5gmtp8yhk7.cloudfront.net/2.1/pusher.min.js" type="text/javascript"></script>-->
+<!-- js for fastapp -->
+<script type="text/javascript"> 
+window.channel = "{{ CHANNEL }}"; 
+window.pusher_key = "{{ PUSHER_KEY }}";
+window.shared_key_link = "{{ active_base.shared }}";
+window.active_base = "{{ active_base.name }}";
+window.active_base_id = "{{ active_base.id }}";
+window.username= "{{ username }}";
+</script>
 
-         <!-- css for fastapp -->
-        <link href="{{ STATIC_URL }}css/fastapp.css" rel="stylesheet"/>
-        {% if "full" not in request.GET %}
-        <link href="{{ STATIC_URL }}css/fastapp-nav.css" rel="stylesheet"/>
-        {% endif %}
+<!-- Pusher -->
+<!--<script src="https://d3dy5gmtp8yhk7.cloudfront.net/2.1/pusher.min.js" type="text/javascript"></script>-->
+
+<!-- css for fastapp -->
+<link href="{{ STATIC_URL }}css/fastapp.css" rel="stylesheet"/>
+{% if "full" not in request.GET %}
+<link href="{{ STATIC_URL }}css/fastapp-nav.css" rel="stylesheet"/>
+{% endif %}
 
 
-         <!-- Grid  -->
-        <link href="{{ STATIC_URL }}grid/ng-grid.css" rel="stylesheet"/>
-        <!--<script type="text/javascript" src="{{ STATIC_URL }}grid/angular-1.2.10.min.js"></script>-->
-        <script type="text/javascript" src="{{ STATIC_URL }}bower_components/angularjs/angular.js"></script>
-        <!--<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular/angular.js"></script>-->
+<!-- Grid  -->
+<link href="{{ STATIC_URL }}grid/ng-grid.css" rel="stylesheet"/>
+<!--<script type="text/javascript" src="{{ STATIC_URL }}grid/angular-1.2.10.min.js"></script>-->
+<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angularjs/angular.js"></script>
+<!--<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular/angular.js"></script>-->
 
-        <script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular-xeditable/dist/js/xeditable.js"></script>
+<script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular-xeditable/dist/js/xeditable.js"></script>
 
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular-cookies.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular-cookies.js"></script>
 
-        <!--<script type="text/javascript" src="{{ STATIC_URL }}grid/ng-grid-2.0.7.min.js"></script>-->
-        <script type="text/javascript" src="{{ STATIC_URL }}bower_components/ng-grid/build/ng-grid.js"></script>
+<!--<script type="text/javascript" src="{{ STATIC_URL }}grid/ng-grid-2.0.7.min.js"></script>-->
+<script type="text/javascript" src="{{ STATIC_URL }}bower_components/ng-grid/build/ng-grid.js"></script>
 
-        <script src="{{ STATIC_URL }}js/angular-pusher.min.js"></script>
+<script src="{{ STATIC_URL }}js/angular-pusher.min.js"></script>
 
-          <script src="{{ STATIC_URL }}bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
-          <script src="{{ STATIC_URL }}bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+<script src="{{ STATIC_URL }}bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
+<script src="{{ STATIC_URL }}bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
 
-        <script src="{{ STATIC_URL }}js/app/services.js"></script>
+<script src="{{ STATIC_URL }}js/app/services.js"></script>
 
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.min.js"></script>
-        <script src="{{ STATIC_URL }}js/app/controllers.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.min.js"></script>
+<script src="{{ STATIC_URL }}js/app/controllers.js"></script>
 
-        <script src="{{ STATIC_URL }}bower_components/ng-file-upload/angular-file-upload.js"></script>
+<script src="{{ STATIC_URL }}bower_components/ng-file-upload/angular-file-upload.js"></script>
 
-        <!--<script src="{{ STATIC_URL }}js/app/directives.js"></script>-->
+<!--<script src="{{ STATIC_URL }}js/app/directives.js"></script>-->
 
         <!-- Or use TAG number for specific version. New versions are auto deployed 
         <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
         <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/restangular/1.3.1/restangular.js"></script>
         <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/restangular/1.3.1/restangular.min.js"></script>
-        -->
+    -->
 
-        <script src="{{ STATIC_URL }}js/angular-base64.min.js"></script>
-        <script src="{{ STATIC_URL }}js/fastapp.js"></script>
+    <script src="{{ STATIC_URL }}js/angular-base64.min.js"></script>
+    <script src="{{ STATIC_URL }}js/fastapp.js"></script>
 
-        <!-- CodeMirror -->
-        <script src="{{ STATIC_URL }}codemirror/js/codemirror.js"></script>
-        <link rel="stylesheet" href="{{ STATIC_URL }}codemirror/css/codemirror.css"/>
-        <script src="{{ STATIC_URL }}codemirror/js/javascript.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/python.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/xml.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/css.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/htmlmixed.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/htmlembedded.js"></script>
-        <script src="{{ STATIC_URL }}codemirror/js/vim.js"></script>
+    <!-- CodeMirror -->
+    <script src="{{ STATIC_URL }}codemirror/js/codemirror.js"></script>
+    <link rel="stylesheet" href="{{ STATIC_URL }}codemirror/css/codemirror.css"/>
+    <script src="{{ STATIC_URL }}codemirror/js/javascript.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/python.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/xml.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/css.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/htmlmixed.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/htmlembedded.js"></script>
+    <script src="{{ STATIC_URL }}codemirror/js/vim.js"></script>
 
-        {% endblock fastapp_header %}
+    {% endblock fastapp_header %}
 
-        {% block extra_header %}
-        {% endblock %}
-    </head>
+    {% block extra_header %}
+    {% endblock %}
+</head>
 
-    <body ng-app="execApp">
-        {% block fastapp_nav %}
-        <div id="wrap" ng-controller="BasesCtrl">
-            <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-                <a href="https://github.com/fatrix/django-fastapp"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
-                <div class="container">
-                    <div class="navbar-header">
-                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        </button>
-                        <a class="navbar-brand" href="/fastapp/">Fastapp</a>
-                        <a class="navbar-brand" href="/fastapp/cockpit/"><small>Cockpit</small></a>
-                        <a class="navbar-brand"><small>version {{ VERSION }}</small></a>
-                        <a class="navbar-brand"><small>{{ user }}</small></a>
-                    </div>
-                    <div class="collapse navbar-collapse navbar-ex1-collapse">
-                        {% if user.is_authenticated %}
-                        <ul class="nav navbar-nav navbar-right pull-left">
-                           {% if active_base %}
-                            <li><a href=".?refresh">Refresh</a></li>
-                            {% endif %}
-                            <li class="dropdown">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">My Bases<b class="caret"></b></a>
-                                <ul class="dropdown-menu">
-                                    {% for base in bases %}
-                                    <li>
-                                        <a class="{% ifequal active_base base %}active{%endifequal%}"
-                                            href="/fastapp/{{ base.name }}/index/">{{ base.name }}</a>
-                                    </li>
-                                    {% endfor %}
-                                    <li>
-                                        <form method="post" url="base/new">
-                                            <div>
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" name="new_base" placeholder="New base">
-                                                    <span class="input-group-btn">
-                                                    <button id="new_base" class="btn btn-default" type="button"><span class="glyphicon glyphicon-arrow-right"></span></button>
-                                                    </span>
-                                                </div>
-                                                <!-- /input-group -->
-                                            </div>
-                                            <!-- /.col-lg-6 -->
-                                        </form>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                        {% endif %}
-                        {% if not user.is_authenticated %}
-                        <ul class="nav navbar-nav navbar-right">
-                            <li class="dropdown">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Shared Bases<b class="caret"></b></a>
-                                <ul class="dropdown-menu">
-                                    {% for name, shared_key in shared_bases.items %}
-                                    <li><a class="{% ifequal active_base base %}active{%endifequal%}"
-                                        href="/fastapp/{{ name }}/index/?shared_key={{ shared_key }}">{{ name }}</a></li>
-                                    {% endfor %}
-                                </ul>
-                            </li>
-                        </ul>
-                        {% endif %}
-                    </div>
-                </div>
-            </nav>
-            {% endblock %}
-
-            {% block fastapp_main %}
-            <!-- /.container -->
-            <div class="container">
-                <div class="row">
-                    <h1>
-                        {{ FASTAPP_NAME }} 
-                        {% if user.is_authenticated %}
-                        <button id="share" type="button" class="btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-share"></span> Share</button>
-
-                        <button id="delete" type="button" class="btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-remove"></span> Delete</button>
-
-                        <button id="rename_base_{{ FASTAPP_NAME }}" type="button" class="btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-pencil"></span> Rename</button>
-
-                        <a id="export" class="btn btn-default btn-xs" href="{% url 'base-export' active_base.id %}">
-                        <span class="glyphicon glyphicon-download-alt"></span> Export</a>
-
-                        {% endif %}
-                    </h1>
-                </div>
-                    <div class="row rendered">
-                        {% block content %}
-                        {% endblock %}
-                    </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div ng-controller="TransportEndpointCtrl">
-                            <h3>Transport</h3>
-                            {% verbatim %}
-                            <div ng-repeat="endpoint in endpoints">
-
-                                    <button ng-click="transport(endpoint, base)" id="transport" type="button" class="btn btn-default btn-xs">
-                                    <span class="glyphicon glyphicon-share"></span> Transport to {{ endpoint.url }}</button>
-                            </div>
-                            {% endverbatim %}
-                        </div>
-                        <h3>User Agent</h3>
-                        <h4>index
-                            <button id="edit_html" type="button" class="btn btn-default btn-xs">
-                            <span class="glyphicon glyphicon-edit"></span> Edit</button>
-                        </h4>
-                        <p>
-                        <form id="edit_html"><textarea id="area_html" name="html">{{ active_base.content }}</textarea></form>
-                        </p>
-                        <script>
-                            /* html */
-                            var editor = CodeMirror.fromTextArea(document.getElementById("area_html"), {
-                              lineNumbers: true,
-                              mode: "application/x-ejs",
-                              indentUnit: 4,
-                              indentWithTabs: true,
-                              lineWrapping: true,
-                              enterMode: "keep",
-                              vimMode: true,
-                              tabMode: "shift",
-                            });
-                            editor.on("blur", function(cm, cmChangeObject){
-                              $.post("/fastapp/{{ active_base.name }}/sync/", {
-                                content: cm.getValue()
-                             })
-                            });
-                        </script>
-                        <div class="table-responsive" ng-controller="SettingsCtrl" ng-init="init()">
-                            <h3>Settings 
-
-                                <button type="button" class="btn btn-default btn-xs" ng-click="addRow()">
-                                <span class="glyphicon glyphicon-plus"></span> Add row</button>
-
-                                <button type="button" class="btn btn-default btn-xs" ng-click="save()">
-                                <span class="glyphicon glyphicon-save"></span> Save</button>
-
-                            </h3>
-
-                            <div class="gridStyle" ng-grid="gridOptions"></div>
-
-                        </div>
-                    </div>
-                    <div class="col-md-6" ng-controller="ExecCtrl" ng-init="init()" ng-model="apys">
-                        <h3>Execs</h3>
-                        {% if user.is_authenticated %}
-
-                        {% verbatim %}
-                        <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</alert>
-                        {% endverbatim %}
-                        
-                        <div>
-                            <p>
-                                <button id="create_exec" type="button" class="btn btn-default btn-xs" ng-click="showNewExec = !showNewExec">
-                                <span class="glyphicon glyphicon-plus"></span> New Exec</button>
-
-                                <div class="row" ng-show="showNewExec"> <div class="col-lg-6"><div class="input-group"> <input type="text" class="form-control" ng-model="new_exec_name"><span class="input-group-btn"> <button class="btn btn-default" type="button" ng-click="create()"><span class="glyphicon glyphicon-save"></span> Save</button> </span> </div></div></div>
-                            </p>
-                            {% verbatim %} 
-                            <div ng-repeat="apy in apys | orderBy:'name':false "> 
-                            <h4>{{ apy.name }} <span class="badge">{{ apy.counter.executed }}</span>&nbsp<span class="badge badge-error">{{ apy.counter.failed }}</span></h4>
-                            <p class="light">
-                                {{ apy.description }}
-                            </p>
-                            <div>
-                                <button id="edit_exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="showApyEditor = !showApyEditor">
-                                <span class="glyphicon glyphicon-edit"></span> Edit</button>
-                                <button id="delete_exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="delete(apy)">
-                                <span class="glyphicon glyphicon-remove" ></span> Delete</button>
-
-                                <button type="button" class="btn btn-default btn-xs" ng-click="save(apy)">
-                                <span class="glyphicon glyphicon-save"></span> Save</button>
-
-
-                                <button id="clone_exec_{{ apy.name }}" class="btn btn-default btn-xs" ng-click="clone(apy)">
-                                <span class="glyphicon glyphicon-chevron-down"></span> Clone</button>
-
-                                <button id="exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="execute(apy)">
-                                <span class="glyphicon glyphicon-fire"></span> Execute</button>
-
-                                <button id="exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="printcurl(apy)">
-                                <span class="glyphicon glyphicon-fire"></span> Curl command</button>
-
-                                <button id="rename_exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="show = !show">
-                                <span class="glyphicon glyphicon-pencil"></span> Rename</button>
-
-                            </div>
-
-                            <div ng-show="show" class="row">
-                                <div class="col-lg-6">
-                                    <div class="input-group">
-                                        <input type="text" value="{{ apy.name }}" class="form-control"> <span class="input-group-btn"> <button class="btn btn-default" type="button" ng-click="rename($event)"><span class="glyphicon glyphicon-save"></span> Save</button> </span> 
-                                    </div>
-                                </div>
-                            </div>
-                            <div ng-show="showApyEditor">
-                            <p>
-                                <form id="edit_execs_description_{{ apy.name}}" class="code">
-                                    <textarea ng-model="apy.description" ng-blur="blur(apy)" class="form-control" id="exec_description_for_{{ apy.name }}" name="exec_description_for_{{ apy.name }}">{{ exec.description }}</textarea>
-                                </form>
- 
-                            <p>
-                                <form id="edit_exec_{{ apy.name }}" class="code">
-                                    <textarea id="exec_code" codemirror="apy"></textarea>
-                                </form>
-                            </p>
-                           </p>
-
-                            </div>
-                            </div>                            
-                            {% endverbatim %}
-                        </div>
-                        {% endif %}
-                        <h3>Transactions (last 30 minutes)</h3>
-                        <div>
-                            <table class="table">
-                                <tr>
-                                    <th>RID</th>
-                                    <th>Async</th>
-                                    <th>State</th>
-                                    <th>APY</th>
-                                    <th>Duration (ms)</th>
-                                    <th>Created</th>
-                                    <th>Modified</th>
-                                    <th>In</th>
-                                    <th>Out</th>
-                                </tr>
-                                {% for transaction in transaction_list %}
-                                <tr>
-                                    <td class="small"> {{ transaction.rid}} </td>
-                                    <td class="small"> {{ transaction.async }} </td>
-                                    <td class="small"> {{ transaction.status }} </td>
-                                    <td class="small"> {{ transaction.apy.name }} </td>
-                                    <td class="small"> {{ transaction.duration}} </td>
-                                    <td class="small"> {{ transaction.created | date:"c" }} </td>
-                                    <td class="small"> {{ transaction.modified | date:"c" }} </td>
-                                    <td class="small"> {{ transaction.tin }} </td>
-                                    <td class="small"> {{ transaction.tout }} </td>
-                                </tr>
-                                    {% for log in transaction.logs.all %}
-                                    <tr class="small">
-                                        <td class="small" colspan="5">&nbsp;</td>
-                                        <td class="small" colspan="8"> {{log.level_verbose}} {{log.msg}} </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% endfor %}
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="container">
-                {% endblock fastapp_main %}
-            </div>
-        </div>
-            <div class="navbar-fixed-bottom footer">
-                <div class="container">
-               <div class="row">
-                <div class="col-md-6" id="messages"/>
-             </div>
-             </div>
-            </div>
-        <!-- /.container -->
-        <!-- JavaScript -->
-        <script src="{{ STATIC_URL }}bare/js/bootstrap.js"></script>
-    </body>
-</html>
+{% block js_end_body %}
+<script src="{{ STATIC_URL }}bare/js/bootstrap.js"></script>
+{% endblock %}
