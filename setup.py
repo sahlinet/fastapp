@@ -21,7 +21,8 @@ setup(name='django-fastapp',
 		'configobj==5.0.5',
 		'pyOpenSSL==0.14',
 		'ndg-httpsclient==0.3.2',
-		'pyasn1==0.1.7'
+		'pyasn1==0.1.7',
+		'python-tutum==0.12.6'
 	],
     packages = find_packages(),
     package_data = {'fastapp': ['fastapp/templates/*']},
