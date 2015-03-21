@@ -29,8 +29,6 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
-from plans.quota import get_user_quota
-
 from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 
@@ -44,6 +42,11 @@ User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
+use_plans = True
+try:
+	from plans.quota import get_user_quota
+except ImportError:
+	use_plans = False
 
 class CockpitView(TemplateView):
 
@@ -470,8 +473,9 @@ class DjendBaseCreateView(View):
     def post(self, request, *args, **kwargs):
 
         # TODO: should be in planet project and not fastapp
-        if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count(): 
-            return HttpResponseForbidden("Too many bases for your plan.")
+	if use_plans:
+		if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count(): 
+		    return HttpResponseForbidden("Too many bases for your plan.")
 
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
