@@ -160,7 +160,7 @@ class Base(models.Model):
 		    zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
 		except Exception, e:
 		    logger.warn(e)
-	except RelatedObjectDoesNotExist, e:
+	except AuthProfile.DoesNotExist, e:
 		logger.warn(e)
 
         # add config
