@@ -153,12 +153,15 @@ class Base(models.Model):
             zf.writestr("%s.py" % apy.name, apy.module.encode("utf-8"))
 
         # add static files
-        dropbox_connection = Connection(self.auth_token)
+	try:
+		dropbox_connection = Connection(self.auth_token)
 
-        try:
-            zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
-        except Exception, e:
-            logger.warn(e)
+		try:
+		    zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
+		except Exception, e:
+		    logger.warn(e)
+	except RelatedObjectDoesNotExist, e:
+		logger.warn(e)
 
         # add config
         zf.writestr("app.config", self.config.encode("utf-8"))
@@ -527,8 +530,8 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
 @receiver(post_delete, sender=Base)
 def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
-    connection = Connection(instance.base.user.authprofile.access_token)
     try:
+        connection = Connection(instance.base.user.authprofile.access_token)
         gevent.spawn(connection.delete_file("%s" % instance.name))
     except Exception, e:
         logger.error("error in base_to_storage_on_delete")
