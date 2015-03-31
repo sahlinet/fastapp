@@ -330,6 +330,9 @@ class SpawnExecutor(BaseExecutor):
 		    env['FASTAPP_WORKER_THREADCOUNT'] = str(load_setting("FASTAPP_WORKER_THREADCOUNT"))
 		    env['FASTAPP_PUBLISH_INTERVAL'] = str(load_setting("FASTAPP_PUBLISH_INTERVAL"))
 		    env['RABBITMQ_HOST'] = str(load_setting("WORKER_RABBITMQ_HOST"))
+		    for p in os.environ['PYTHONPATH'].split(":"):
+		    	env['PYTHONPATH'] = os.path.abspath(p)
+		    logger.info(env['PYTHONPATH'])
 		    settings.SETTINGS_MODULE = "app_worker.settings"
 		    p = subprocess.Popen("%s %s/manage.py start_worker --settings=%s --vhost=%s --base=%s --username=%s --password=%s" % (
 			    python_path, MODELSPY, settings.SETTINGS_MODULE, self.vhost, self.base_name, self.base_name, self.password),

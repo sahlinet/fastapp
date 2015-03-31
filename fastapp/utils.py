@@ -14,6 +14,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.queue import connect_to_queue
 from fastapp import defaults
+#from fastapp.models import Base
 
 import sys
 import _ast
@@ -309,4 +310,6 @@ def load_var_to_file(var):
         else:
             os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
     return fq_file
+
+
 

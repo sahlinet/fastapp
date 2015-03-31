@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import renderers
 
 from fastapp.utils import Connection
+from fastapp.importer import import_base
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from fastapp.models import Base, Apy, Setting, TransportEndpoint
 from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
@@ -258,55 +259,11 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         name = request.POST['name']
         override_public = bool(request.GET.get('override_public', False))
         override_private = bool(request.GET.get('override_private', False))
-        base, created = Base.objects.get_or_create(user=request.user, name=name)
-        if not created:
-            logger.warn("base '%s' did already exist" % name)
-        base.save()
+
         f = request.FILES['file'] 
         zf = zipfile.ZipFile(f)
 
-        # Dropbox connection
-        dropbox_connection = Connection(base.auth_token)
-
-        # read app.config
-        from configobj import ConfigObj
-        appconfig = ConfigObj(zf.open("app.config"))
-
-        # get settings
-        for k, v in appconfig['settings'].items():
-            setting_obj, created = Setting.objects.get_or_create(base=base, key=k)
-            # set if empty
-            if not setting_obj.value:
-                setting_obj.value = v['value']
-            # override_public
-            if setting_obj.public and override_public:
-                setting_obj.value = v['value']
-            # override_private
-            if not setting_obj.public and override_private:
-                setting_obj.value = v['value']
-            setting_obj.save()
-
-        filelist = zf.namelist()
-        for file in filelist:
-            # static
-            print file
-            content = zf.open(file).read()
-            if file == "index.html":
-                base.content = content
-
-            if "static" in file:
-                file = "/%s/%s" % (base.name, file)
-                dropbox_connection.put_file(file, content)
-
-            # Apy
-            if "py" in file:
-                name = file.replace(".py", "")
-                apy, created = Apy.objects.get_or_create(base=base, name=name)
-                apy.module = content
-                description = appconfig['modules'][name]['description']
-                if description:
-                    apy.description = description
-                apy.save()
+	base = import_base(zf, request.user, name, override_public, override_private)
 
         base_queryset = base
         base.save()

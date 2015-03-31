@@ -460,8 +460,8 @@ class DjendSharedView(View, ContextMixin):
         context['active_base'] = base_model
         context['username'] = request.user.username
         context['FASTAPP_NAME'] = base_model.name
-        context['DROPBOX_REDIRECT_URL'] = settings.DROPBOX_REDIRECT_URL
-        context['PUSHER_KEY'] = settings.PUSHER_KEY
+        #context['DROPBOX_REDIRECT_URL'] = settings.DROPBOX_REDIRECT_URL
+        #context['PUSHER_KEY'] = settings.PUSHER_KEY
         context['CHANNEL'] = channel_name_for_user(request)
         context['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
 
@@ -652,8 +652,8 @@ class DjendBaseView(TemplateView, ContextMixin):
             try:
                 context['bases'] = Base.objects.filter(user=request.user.id).order_by('name')
                 context['FASTAPP_NAME'] = base
-                context['DROPBOX_REDIRECT_URL'] = settings.DROPBOX_REDIRECT_URL
-                context['PUSHER_KEY'] = settings.PUSHER_KEY
+                #context['DROPBOX_REDIRECT_URL'] = settings.DROPBOX_REDIRECT_URL
+                #context['PUSHER_KEY'] = settings.PUSHER_KEY
                 context['CHANNEL'] = channel_name_for_user(request)
                 context['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base)
                 context['active_base'] = base_model

@@ -162,6 +162,9 @@ class Base(models.Model):
 		    logger.warn(e)
 	except AuthProfile.DoesNotExist, e:
 		logger.warn(e)
+	except Exception, e:
+		logger.warn(e.__class__)
+		logger.exception(e)
 
         # add config
         zf.writestr("app.config", self.config.encode("utf-8"))
@@ -531,7 +534,7 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
 def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
     try:
-        connection = Connection(instance.base.user.authprofile.access_token)
+        connection = Connection(instance.user.authprofile.access_token)
         gevent.spawn(connection.delete_file("%s" % instance.name))
     except Exception, e:
         logger.error("error in base_to_storage_on_delete")
@@ -550,3 +553,6 @@ def synchronize_to_storage_on_delete(sender, *args, **kwargs):
     except Base.DoesNotExist:
         # if post_delete is triggered from base.delete()
         pass
+    except Exception, e:
+        logger.error("error in synchronize_to_storage_on_delete")
+        logger.exception(e)
