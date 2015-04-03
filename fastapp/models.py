@@ -126,7 +126,7 @@ class Base(models.Model):
                     module_content = connection.get_file_content("%s/%s" % (self.name, module_name))
                 except NotFound:
                     try:
-                        Exec.objects.get(name=module_name, base=self).delete()                    
+                        Exec.objects.get(name=module_name, base=self).delete()
                     except Exec.DoesNotExist, e:
                         self.save()
 
@@ -134,7 +134,7 @@ class Base(models.Model):
                 app_exec_model, created = Apy.objects.get_or_create(base=self, name=name)
                 app_exec_model.module = module_content
                 app_exec_model.save()
-                
+
             # delete old exec
             for local_exec in Apy.objects.filter(base=self).values('name'):
                 if local_exec['name'] in config.sections():
@@ -334,8 +334,8 @@ class Process(models.Model):
 
 class Thread(models.Model):
     STARTED = "SA"
-    STOPPED = "SO" 
-    NOT_CONNECTED = "NC" 
+    STOPPED = "SO"
+    NOT_CONNECTED = "NC"
     HEALTH_STATE_CHOICES = (
         (STARTED, "Started"),
         (STOPPED, "Stopped"),
@@ -344,8 +344,8 @@ class Thread(models.Model):
 
     name = models.CharField(max_length=64, null=True)
     parent = models.ForeignKey(Process, related_name="threads", blank=True, null=True)
-    health = models.CharField(max_length=2, 
-                            choices=HEALTH_STATE_CHOICES, 
+    health = models.CharField(max_length=2,
+                            choices=HEALTH_STATE_CHOICES,
                             default=STOPPED)
 
     def started(self):
@@ -384,9 +384,9 @@ class Executor(models.Model):
         try:
     	   cls = m.__dict__[s_cls]
            return cls(
-               vhost = self.vhost, 
-               base_name = self.base.name, 
-               username = self.base.name, 
+               vhost = self.vhost,
+               base_name = self.base.name,
+               username = self.base.name,
                password = self.password
            )
         except KeyError, e:
@@ -405,7 +405,7 @@ class Executor(models.Model):
             instance = Instance(executor=self)
             instance.save()
             logger.info("Instance created with id %s" % instance.id)
-        
+
         try:
             self.pid = self.implementation.start(self.pid)
         except Exception, e:
@@ -471,14 +471,17 @@ class TransportEndpoint(models.Model):
 def initialize_on_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
     # TODO: If a user connects his dropbox after creating a base, it should be initialized anyway.
-    if not kwargs.get('created'): return
+
+    connection = Connection(instance.user.authprofile.access_token)
+    if not kwargs.get('created'):
+        connection.put_file("%s/index.html" % (instance.name), instance.content)
+        return
 
     try:
-        connection = Connection(instance.user.authprofile.access_token)
         connection.create_folder("%s" % instance.name)
-
+    except Exception, e:
+        logger.exception(e)
         connection.put_file("%s/app.config" % (instance.name), instance.config)
-        connection.put_file("%s/index.html" % (instance.name), index_template)
     except Exception, e:
         logger.exception(e)
 
@@ -501,9 +504,9 @@ def synchronize_to_storage(sender, *args, **kwargs):
         counter.save()
 
     if instance.base.state:
-        distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]), 
-            generate_vhost_configuration(instance.base.user.username, instance.base.name), 
-            instance.base.name, 
+        distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]),
+            generate_vhost_configuration(instance.base.user.username, instance.base.name),
+            instance.base.name,
             instance.base.executor.password
         )
 
@@ -511,9 +514,9 @@ def synchronize_to_storage(sender, *args, **kwargs):
 def send_to_workers(sender, *args, **kwargs):
     instance = kwargs['instance']
     if instance.base.state:
-        distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}), 
+        distribute(SETTINGS_EVENT, json.dumps({instance.key: instance.value}),
             generate_vhost_configuration(instance.base.user.username, instance.base.name),
-            instance.base.name, 
+            instance.base.name,
             instance.base.executor.password
         )
 
@@ -528,7 +531,7 @@ def synchronize_base_to_storage(sender, *args, **kwargs):
         logger.debug("create executor for base %s" % instance)
         executor = Executor(base=instance)
         executor.save()
-                
+
 
 @receiver(post_delete, sender=Base)
 def base_to_storage_on_delete(sender, *args, **kwargs):

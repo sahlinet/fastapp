@@ -44,9 +44,10 @@ logger = logging.getLogger(__name__)
 
 use_plans = True
 try:
-	from plans.quota import get_user_quota
+    from plans.quota import get_user_quota
 except ImportError:
-	use_plans = False
+    use_plans = False
+
 
 class CockpitView(TemplateView):
 
@@ -54,7 +55,7 @@ class CockpitView(TemplateView):
         context = super(CockpitView, self).get_context_data(**kwargs)
         qs = Executor.objects.all().order_by('base__name')
         if not self.request.user.is_superuser:
-            qs=qs.filter(base__user=self.request.user)
+            qs = qs.filter(base__user=self.request.user)
         context['executors'] = qs.order_by('base__name')
         context['process_list'] = Process.objects.all().order_by('-running')
         context['threads'] = Thread.objects.all().order_by('parent__name', 'name')
@@ -68,10 +69,11 @@ class ResponseUnavailableViewMixing():
             if "html" in request.META['HTTP_ACCEPT']:
                 response.content_type = "text/html"
                 response.content = "Base is not available"
-            response.status_code=503
+            response.status_code = 503
             return response
         else:
             return None
+
 
 class DjendStaticView(ResponseUnavailableViewMixing, View):
 
@@ -83,7 +85,6 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         c = Context(kwargs)
         return t.render(c)
 
-
     @never_cache
     def get(self, request, *args, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
@@ -93,7 +94,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
 
         base_model = Base.objects.get(name=kwargs['base'])
 
-        #if not base_model.state:
+        # if not base_model.state:
         #    response = HttpResponse()
         #    if "html" in request.META['HTTP_ACCEPT']:
         #        response.content_type = "text/html"
@@ -136,9 +137,9 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     response_data = get_static(
                         json.dumps({"base_name": base_model.name, "path": static_path}),
                         generate_vhost_configuration(
-                            base_model.user.username, 
-                            base_model.name), 
-                            base_model.name, 
+                            base_model.user.username,
+                            base_model.name),
+                            base_model.name,
                             base_model.executor.password
                         )
                     data = json.loads(response_data)
@@ -217,22 +218,23 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
     STATE_TIMEOUT = "TIMEOUT"
 
     def _prepare_request(self, request, exec_model):
-        apy_data = serializers.serialize("json", [exec_model], fields=('base_id', 'name'))
+        apy_data = serializers.serialize("json", [exec_model],
+                                         fields=('base_id', 'name'))
         struct = json.loads(apy_data)
         apy_data = json.dumps(struct[0])
         request_data = {}
-        request_data.update({'model': apy_data, 
-                'base_name': exec_model.base.name,
-            })
+        request_data.update({'model': apy_data,
+                             'base_name': exec_model.base.name})
         get_dict = copy.deepcopy(request.GET)
         post_dict = copy.deepcopy(request.POST)
         for key in ["json", "shared_key"]:
             if request.method == "GET":
-                if get_dict.has_key(key): del get_dict[key]
+                if key in get_dict:
+                    del get_dict[key]
             if request.method == "POST":
-                if post_dict.has_key(key): del get_dict[key]
-        request_data.update({'request': 
-                { 
+                if key in post_dict:
+                    del get_dict[key]
+        request_data.update({'request': {
                 'method': request.method,
                 'content_type': request.META.get('Content-Type'),
                 'GET': get_dict.dict(),
@@ -240,7 +242,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 'user': {'username': request.user.username},
                 'UUID': exec_model.base.uuid,
                 'REMOTE_ADDR': request.META.get('REMOTE_ADDR')
-                }
+            }
             })
         logger.debug("REQUEST-data: %s" % request_data)
         return request_data
@@ -250,11 +252,11 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             # _do on remote
             start = int(round(time.time() * 1000))
             request_data.update({'rid': rid})
-            response_data = call_rpc_client(json.dumps(request_data), 
+            response_data = call_rpc_client(json.dumps(request_data),
                 generate_vhost_configuration(
-                    base_model.user.username, 
-                    base_model.name), 
-                    base_model.name, 
+                    base_model.user.username,
+                    base_model.name),
+                    base_model.name,
                     base_model.executor.password
                     )
             end = int(round(time.time() * 1000))
@@ -276,11 +278,11 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
         try:
             # _do on remote
             request_data.update({'rid': rid})
-            call_rpc_client(json.dumps(request_data), 
+            call_rpc_client(json.dumps(request_data),
                 generate_vhost_configuration(
-                    base_model.user.username, 
-                    base_model.name), 
-                    base_model.name, 
+                    base_model.user.username,
+                    base_model.name),
+                    base_model.name,
                     base_model.executor.password,
                     async=True
                     )
@@ -322,12 +324,12 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
 
             # send counter to client
             cdata = {
-                'counter': 
+                'counter':
                     {
-                    'executed': str(Apy.objects.get(id=exec_model.id).counter.executed), 
+                    'executed': str(Apy.objects.get(id=exec_model.id).counter.executed),
                     'failed': str(Apy.objects.get(id=exec_model.id).counter.failed)
                     },
-                'apy_id': exec_model.id 
+                'apy_id': exec_model.id
             }
             user = channel_name_for_user(request)
             send_client(user, "counter", cdata)
@@ -403,7 +405,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 # execute async
                 transaction.tin = json.dumps(request_data)
                 transaction.status = RUNNING
-                transaction.async = True 
+                transaction.async = True
                 transaction.save()
                 data = self._execute_async(request, request_data, base_model, transaction.rid)
                 redirect_to = request.get_full_path()+"&rid=%s" % transaction.rid
@@ -473,9 +475,9 @@ class DjendBaseCreateView(View):
     def post(self, request, *args, **kwargs):
 
         # TODO: should be in planet project and not fastapp
-	if use_plans:
-		if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count(): 
-		    return HttpResponseForbidden("Too many bases for your plan.")
+        if use_plans:
+            if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count():
+                return HttpResponseForbidden("Too many bases for your plan.")
 
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
@@ -561,7 +563,7 @@ class DjendExecDeleteView(View):
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
-        return super(DjendExecRenameView, self).dispatch(*args, **kwargs) 
+        return super(DjendExecRenameView, self).dispatch(*args, **kwargs)
 
 class DjendBaseRenameView(View):
 
@@ -574,7 +576,7 @@ class DjendBaseRenameView(View):
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
-        return super(DjendBaseRenameView, self).dispatch(*args, **kwargs) 
+        return super(DjendBaseRenameView, self).dispatch(*args, **kwargs)
 
 class DjendBaseSaveView(View):
 
@@ -590,7 +592,7 @@ class DjendBaseSaveView(View):
             if len(content) > 8200:
                 pass
                 #error(channel_name_for_user(request), "Exec '%s' is to big." % exec_name)
-            else:    
+            else:
                 e.module = content
                 e.description = request.POST.get('exec_description')
                 e.save()
@@ -686,10 +688,13 @@ class DjendView(TemplateView):
         context = super(DjendView, self).get_context_data(**kwargs)
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
-        #context['VERSION'] = version
-    	#try:
+
+        context['FASTAPP_VERSION'] = version
+        import planet
+        context['PLANET_VERSION'] = planet.__VERSION__
+        #try:
         #    token = self.request.user.auth_token
-    	#except Token.DoesNotExist:
+        #except Token.DoesNotExist:
         #    token = Token.objects.create(user=self.request.user)
         #context['TOKEN'] = token
         return context
@@ -747,10 +752,10 @@ def process_user(uid):
     auth_profile = AuthProfile.objects.filter(dropbox_userid=uid)[0]
     token = auth_profile.access_token
     user = auth_profile.user
-    logger.info("Process notfications fro user: %s" % user.username)
+    logger.info("Process change notfication for user: %s" % user.username)
     cursor = cache.get("cursor-%s" % uid)
 
-    client = Connection(token) 
+    client = Connection(token)
 
     has_more = True
 
@@ -760,14 +765,18 @@ def process_user(uid):
         for path, metadata in result['entries']:
 
             # Handle only files ending with ".py"
-            if not path.endswith("py") or not metadata:
+            if not path.endswith("py") or not metadata or "/." in path:
+                logger.debug("Ignore path: %s" % path)
                 continue
-            logger.info("%s got change notification (user: %s)" % (path, user.username))
 
-            regex = re.compile("/(.*)/(.*).py")
+            regex = re.compile("/(.*)/([a-zA-Z-_0-9]*).py")
             r = regex.search(path)
-            base_name = r.groups()[0]
-            apy_name = r.groups()[1]
+            if not r:
+                logger.warn("regex '/(.*)/(.*).py' no results in '%s'" % path)
+                continue
+            names = r.groups()
+            base_name = names[0]
+            apy_name = names[1]
             logger.debug("base_name: %s, apy_name: %s, user: %s" % (base_name, apy_name, user))
 
             try:
@@ -781,7 +790,7 @@ def process_user(uid):
             if apy.rev == new_rev:
                 logger.debug("no changes")
             else:
-                logger.debug("load changes")
+                logger.info("load changes for %s" % path)
 
                 content, rev = client.get_file_content_and_rev("%s" % path)
                 apy.module = content
@@ -796,6 +805,7 @@ def process_user(uid):
         # Repeat only if there's more to do
         has_more = result['has_more']
 
+
 class DropboxNotifyView(View):
 
     def get(self, request):
@@ -807,14 +817,13 @@ class DropboxNotifyView(View):
 
         # get delta for user
         for uid in json.loads(request.body)['delta']['users']:
-             threading.Thread(target=process_user, args=(uid,)).start()
-
+            threading.Thread(target=process_user, args=(uid,)).start()
 
         return HttpResponse()
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
-        return super(DropboxNotifyView, self).dispatch(*args, **kwargs) 
+        return super(DropboxNotifyView, self).dispatch(*args, **kwargs)
 
 
 @csrf_exempt
@@ -826,7 +835,7 @@ def login_or_sharedkey(function):
         # if logged in
         if user.is_authenticated():
             return function(request, *args, **kwargs)
-            
+
         # if shared key in query string
         base_name = kwargs.get('base')
         if request.GET.has_key('shared_key'):
@@ -846,4 +855,3 @@ def login_or_sharedkey(function):
             return HttpResponseNotFound('Ups, wrong URL?')
         return HttpResponseRedirect("/admin/")
     return wrapper
-

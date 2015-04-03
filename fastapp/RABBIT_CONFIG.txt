@@ -1,5 +1,0 @@
-/usr/local/sbin/rabbitmqctl add_vhost philipsahli-aa
-/usr/local/sbin/rabbitmqctl list_users
-
-/usr/local/sbin/rabbitmqctl add_user philipsahli changeit
-/usr/local/sbin/rabbitmqctl set_permissions -p philipsahli-aa philipsahli "^philipsahli-.*" ".*" ".*"

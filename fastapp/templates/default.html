@@ -52,7 +52,7 @@
                 <!-- <li><a class="nav-link current" href="#/start">Start</a></li> -->
                 <li><a class="nav-link" href="/docs">Documentation</a></li>
                 <li><a class="nav-link" href="/fastapp">Console</a></li>
-                
+
                 {% if user.is_authenticated %}
                   <li><a class="nav-link" href="/profile/"><img class="img-circle" src="{% gravatar_url user.email 20 %}"/>&nbsp;Profile</a></li>
                   <li><button type="button" class="btn btn-warning navbar-btn btn-margin-left" onclick="window.location='/logout/'">Logout</button></li>
@@ -62,7 +62,7 @@
             </div>
           </div>
         </nav>
-       {% block hugetron %}{% endblock %} 
+       {% block hugetron %}{% endblock %}
       </div>
       {% block main %}
       {% endblock %}
@@ -73,7 +73,7 @@
           {% endblock %}
         <div class="copyright clearfix">
           <hr class="dashed" />
-          <p><b>skyblue/cloud</b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="/">Start</a>&nbsp;&bull;&nbsp;<a href="/docs/">Docs</a>&nbsp;&bull;&nbsp;{{ FASTAPP_VERSION }}</p>
+          <p><b>skyblue/cloud</b>&nbsp;&nbsp;&nbsp;&nbsp;<a href="/">Start</a>&nbsp;&bull;&nbsp;<a href="/docs/">Docs</a>&nbsp;&bull;&nbsp;{{ PLANET_VERSION }} {{ FASTAPP_VERSION }}</p>
           <p>&copy; 2014 <a href="http://bit.ly/11gbFZI" target="_blank">sahli.net</a>&nbsp;&bull;&nbsp; the core of skyblue/planet is <a href="http://en.wikipedia.org/wiki/MIT_License">MIT licensed</a></p>
         </div>
       </div>
