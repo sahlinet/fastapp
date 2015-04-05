@@ -1,6 +1,6 @@
 {
   "name": "Bootflat",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "homepage": "http://bootflat.github.io",
   "authors": [
     "flathemes <info@flathemes.com>"
@@ -41,14 +41,13 @@
     "test",
     "tests"
   ],
-  "_release": "2.0.3",
+  "_release": "2.0.4",
   "_resolution": {
     "type": "version",
-    "tag": "v2.0.3",
-    "commit": "4643290934d58f7958892a43699b1140d7eb2af3"
+    "tag": "v2.0.4",
+    "commit": "3fa37732cd5b2b97d4f8d101e0c1fcd4db39bf32"
   },
   "_source": "git://github.com/bootflat/bootflat.github.io.git",
   "_target": "~2.0.3",
-  "_originalSource": "Bootflat",
-  "_direct": true
+  "_originalSource": "Bootflat"
 }
