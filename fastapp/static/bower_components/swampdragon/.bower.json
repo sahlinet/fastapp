@@ -1,0 +1,35 @@
+{
+  "name": "swampdragon",
+  "authors": [
+    "https://github.com/jonashagstedt/swampdragon-bower"
+  ],
+  "description": "SwampDragon is a powerful platform making it easy to build real time web applications, combining the power of Django and Tornado",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "real-time",
+    "redis",
+    "django",
+    "swampdragon"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/jonashagstedt/swampdragon-bower",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "613963d366",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "613963d36652562112e16e0938da11ffcc0a1e35"
+  },
+  "_source": "git://github.com/inaffect-ag/swampdragon.git",
+  "_target": "*",
+  "_originalSource": "swampdragon",
+  "_direct": true
+}
