@@ -16,7 +16,7 @@ from fastapp.utils import Connection
 from fastapp.importer import import_base
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from fastapp.models import Base, Apy, Setting, TransportEndpoint
-from fastapp.serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
+from fastapp.api_serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
 from fastapp.utils import info, check_code
 from django.db import transaction
 from django.core.management import call_command
@@ -211,7 +211,7 @@ class BaseViewSet(viewsets.ModelViewSet):
     @link()
     def apy(self, request, pk=None):
         queryset = Apy.objects.filter(base__pk=pk)
-        serializer = ApySerializer(queryset, 
+        serializer = ApySerializer(queryset,
                 context={'request': request}, many=True)
         return Response(serializer.data)
 
@@ -260,14 +260,14 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         override_public = bool(request.GET.get('override_public', False))
         override_private = bool(request.GET.get('override_private', False))
 
-        f = request.FILES['file'] 
+        f = request.FILES['file']
         zf = zipfile.ZipFile(f)
 
 	base = import_base(zf, request.user, name, override_public, override_private)
 
         base_queryset = base
         base.save()
-        serializer = BaseSerializer(base_queryset, 
+        serializer = BaseSerializer(base_queryset,
                 context={'request': request}, many=False)
         response = Response(serializer.data, status=201)
         return response

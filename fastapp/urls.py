@@ -1,10 +1,13 @@
 from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from fastapp.views import DjendBaseView, DjendBaseDeleteView, DjendBaseSaveView, \
-                DjendBaseCreateView, DjendExecDeleteView, DjendExecView, DjendStaticView, \
-                login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, dropbox_auth_disconnect, DjendView, \
-                DjendBaseRenameView, CockpitView, DropboxNotifyView
+from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
+        DjendBaseSaveView, \
+        DjendBaseCreateView, \
+        DjendExecDeleteView, \
+        DjendExecView, DjendStaticView, \
+        login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, dropbox_auth_disconnect, DjendView, \
+        DjendBaseRenameView, CockpitView, DropboxNotifyView
 from rest_framework import routers
 
 from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
@@ -69,7 +72,7 @@ urlpatterns = patterns('',
     url(r'^api-token-auth/', 'rest_framework.authtoken.views.obtain_auth_token'),
 
     # home
-    url(r'^$', DjendView.as_view(template_name="fastapp/base_list.html")),
+    url(r'^$', DjendView.as_view(template_name="fastapp/base_list.html"), name="console"),
 )
 
 from rest_framework.urlpatterns import format_suffix_patterns

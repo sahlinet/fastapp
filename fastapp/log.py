@@ -5,9 +5,11 @@ from fastapp.models import Transaction
 
 logger = logging.getLogger(__name__)
 
+
 class LogReceiverThread(CommunicationThread):
 
     def on_message(self, ch, method, props, body):
+        logger.info("Message received")
         try:
             data = json.loads(body)
             level = data['level']

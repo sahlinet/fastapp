@@ -30,7 +30,7 @@ Add fastapp to your urls.py
 	FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT = 10       # How many heartbeat listener threads are started
 	FASTAPP_ASYNC_LISTENER_THREADCOUNT = 2			  # How many asynchronous response threads are started
 	FASTAPP_LOG_LISTENER_THREADCOUNT = 2			  # How many log listener threads are started
-	FASTAPP_CONSOLE_SENDER_THREADCOUNT = 2            # How many console threads are started 
+	FASTAPP_CONSOLE_SENDER_THREADCOUNT = 2            # How many console threads are started
 
 	# Client
 	FASTAPP_WORKER_THREADCOUNT = 30                   # How many worker threads are started
@@ -102,7 +102,7 @@ Workers are started in a Docker container running on [Tutum.co](https://www.tutu
     FASTAPP_DOCKER_CPU_SHARES = 512
 
     FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
-    
+
 ## Cache
 
 Configure a cache backend.
@@ -151,14 +151,6 @@ Development only (runserver) for loading static files, root path used for loadin
 	FASTAPP_REPOSITORIES_PATH = "/Users/fatrix/Dropbox/Repositories"
 	FASTAPP_DEV_STORAGE_DROPBOX_PATH="/Users/fatrix/Dropbox/Apps/planet dev"
 
-## Optional
-
-### Push events (http://pusher.com/)
-
-	# pusher for websockets
-	PUSHER_KEY = "xxxxxxx"
-	PUSHER_SECRET = "xxxxxx"
-	PUSHER_APP_ID = "xxxxxx"
 
 # Running
 

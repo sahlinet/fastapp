@@ -59,7 +59,7 @@ def distribute(event, body, vhost, username, password):
         def __init__(self, vhost, event, username, password):
             # get needed stuff
             self.vhost = vhost
-            self.event = event 
+            self.event = event
             self.username = username
             self.password = password
             logger.debug("exchanging message to vhost : %s" % self.vhost)
@@ -107,7 +107,7 @@ def call_rpc_client(apy, vhost, username, password, async=False):
                     username=username,
                     password=password,
 		            port=settings.RABBITMQ_PORT
-                ) 
+                )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
 
@@ -201,9 +201,9 @@ class ExecutorServerThread(CommunicationThread):
 
     @property
     def state(self):
-        return {'name': self.name, 
-           'count_settings': len(self.settings), 
-           'count_functions': len(self.functions), 
+        return {'name': self.name,
+           'count_settings': len(self.settings),
+           'count_functions': len(self.functions),
            'settings': self.settings.keys(),
            'functions': self.functions.keys(),
            'connected': self.is_connected
@@ -230,7 +230,7 @@ class ExecutorServerThread(CommunicationThread):
                     self.settings.update(json_body)
                     logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
-                    logger.error("Invalid event arrived (%s)" % props.app_id)  
+                    logger.error("Invalid event arrived (%s)" % props.app_id)
 
             if method.routing_key == RPC_QUEUE:
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
@@ -285,31 +285,41 @@ class ApyError(Exception):
     pass
 
 from fastapp.queue import connect_to_queue
+
 def log_to_queue(tid, level, msg):
+    logger.info("Send log message")
     host = settings.RABBITMQ_HOST
     port = settings.RABBITMQ_PORT
-    user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
-    password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
+    vhost = load_setting("CORE_VHOST")
+    username = load_setting("CORE_SENDER_USERNAME")
+    password = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
+    log_queue_name = load_setting("LOGS_QUEUE")
 
-    #channel = pusher
-    channel = connect_to_queue(host, 'pusher_events', "/", username=user, password=password, port=port)
+    channel = connect_to_queue(host, log_queue_name, vhost, username=username, password=password, port=port)
+
+    logger.info(vhost)
+    logger.info(log_queue_name)
+    logger.info(username)
+    logger.info(password)
+    logger.info(host)
+    logger.info(port)
     payload = {
-        #'channel': "logentries", 
-        'rid': tid, 
-        'level': level, 
-        'msg': msg, 
+        'rid': tid,
+        'level': level,
+        'msg': msg,
     }
 
     channel.basic_publish(exchange='',
-                          routing_key='logentries',
+                          routing_key=log_queue_name,
                           body=json.dumps(payload),
                           properties=pika.BasicProperties(
                             delivery_mode=1,
                          ),
                         )
+    logger.info(channel)
     channel.close()
     channel.connection.close()
-    del channel.connection 
+    del channel.connection
     del channel
 
 def info(tid, msg):
@@ -372,10 +382,10 @@ def _do(data, functions=None, settings=None):
                 func.responses = responses
 
                 # attach log functions
-                func.info = info 
-                func.debug = debug 
-                func.warn = warning 
-                func.error = error 
+                func.info = info
+                func.debug = debug
+                func.warn = warning
+                func.error = error
 
                 # attatch settings
                 setting_dict = settings
@@ -388,7 +398,7 @@ def _do(data, functions=None, settings=None):
                 # execution
                 returned = func(func)
                 if isinstance(returned, responses.Response):
-                    # serialize 
+                    # serialize
                     response_class = returned.__class__.__name__
                     returned = str(returned)
 
@@ -420,7 +430,7 @@ def get_static(path, vhost, username, password, async=False):
                     username=username,
                     password=password,
                     port=settings.RABBITMQ_PORT
-                ) 
+                )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
 
@@ -540,4 +550,4 @@ class StaticServerThread(CommunicationThread):
                     logger.info("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
-            logger.exception(e) 
+            logger.exception(e)

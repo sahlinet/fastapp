@@ -8,10 +8,13 @@ setup(name='django-fastapp',
 	url="https://github.com/fatrix/django-fastapp",
 	author="Philip Sahli",
 	author_email="philip@sahli.net",
-    install_requires=['dropbox==1.6', 
-		'djangorestframework==2.4.2', 
-		'requests==2.4.1', 
-		'django_extensions==1.3.5', 
+	dependency_links=[
+		'https://github.com/sahlinet/swampdragon/tarball/master#egg=SwampDragon-0.4.1.2'
+	],
+	install_requires=['dropbox==1.6',
+		'djangorestframework==2.4.2',
+		'requests==2.4.1',
+		'django_extensions==1.3.5',
 		'pusher==0.8',
 		'bunch==1.0.1',
 		'gevent==1.0',
@@ -22,10 +25,12 @@ setup(name='django-fastapp',
 		'pyOpenSSL==0.14',
 		'ndg-httpsclient==0.3.2',
 		'pyasn1==0.1.7',
-		'python-tutum==0.12.6'
+		'python-tutum==0.12.6',
+		'SwampDragon>=0.4.1.2',
+		'SwampDragon-auth==0.1.3'
 	],
-    packages = find_packages(),
-    package_data = {'fastapp': ['fastapp/templates/*']},
-    include_package_data=True,
-    license ='MIT'
+	packages = find_packages(),
+	package_data = {'fastapp': ['fastapp/templates/*']},
+	include_package_data=True,
+	license ='MIT'
 )

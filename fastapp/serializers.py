@@ -1,39 +1,23 @@
-from rest_framework import serializers
-from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint
+from swampdragon.serializers.model_serializer import ModelSerializer
 
-class CounterSerializer(serializers.ModelSerializer):
+
+class ApySocketSerializer(ModelSerializer):
+    class Meta:
+        model = 'fastapp.Apy'
+        publish_fields = ('name')
+
+
+class TransactionSerializer(ModelSerializer):
+    apy = "app.ApySocketSerializer"
 
     class Meta:
-        model = Counter
-        fields = ('executed', 'failed')
+        model = 'fastapp.Transaction'
+        publish_fields = ('rid', 'async', 'created', 'modified', 'apy')
 
-class ApySerializer(serializers.ModelSerializer):
-    counter = CounterSerializer(many=False, read_only=True)
 
-    class Meta:
-        model = Apy
-        fields = ('id', 'name', 'module', 'counter', 'description')
-        #fields = ('id', 'name', 'module' )
-
-    #def get_counter(self, obj):
-    #    return obj.counter.executed
-
-class SettingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Setting
-        fields = ('id', 'key', 'value', 'public')
-
-class TransportEndpointSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransportEndpoint
-        fields = ('id', 'url', 'override_settings_priv', 'override_settings_pub', 'token')
-
-class BaseSerializer(serializers.ModelSerializer):
-    apy = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    state = serializers.Field()
-    pids = serializers.Field()
+class LogEntrySerializer(ModelSerializer):
+    apy = "app.LogEntry"
 
     class Meta:
-        model = Base
-        #fields = ('id', 'name', 'uuid')
-        fields = ('id', 'name', 'state', 'uuid', 'pids', 'content')
+        model = 'fastapp.LogEntry'
+        publish_fields = ('tid', 'created', 'level', 'slevel', 'msg')

@@ -1,24 +1,28 @@
+div pre {
+	font-size: 0.8em;
+}
 div#messages {
-	background-color: black;
+	/*background-color: black;*/
+	background-color: white !important;
 	font-family: "Lucida Console", Monaco, monospace;
 	font-size: 0.8em;
-	margin: 10px;
-	width: 100%;
+	/*margin: 10px;*/
+	/*width: 100%;*/
 }
-div#messages p {
-	line-height: 1em;	
+div#messages p, td {
+	line-height: 1em;
 	margin: 0 0 1px !important;
 }
-div#messages p.debug {
+div#messages .debug {
 	color: grey;
 }
-div#messages p.error {
+div#messages .error {
 	color: red;
 }
-div#messages p.info {
+div#messages .info {
 	color: green;
 }
-div#messages p.warn {
+div#messages .warn {
 	color: orange;
 }
 li a.active {
@@ -78,7 +82,7 @@ div.bases {
 /* Grid */
 .gridStyle {
     border: 1px solid rgb(212,212,212);
-    width: 100%; 
+    width: 100%;
     height: 300px;
 }
 .light {
@@ -108,7 +112,7 @@ div.bases {
 }
 .ngGrid input[type="checkbox"] {
     margin-top: 7px !important;
-    margin-left: 10px !important; 
+    margin-left: 10px !important;
 }
 div.ngCell > div > button {
   margin-left: 7px !important;

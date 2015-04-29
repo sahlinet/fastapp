@@ -29,6 +29,9 @@ from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
 from fastapp.utils import Connection
 
+from swampdragon.models import SelfPublishModel
+from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -36,6 +39,7 @@ index_template = """{% extends "fastapp/base.html" %}
 {% block content %}
 {% endblock %}
 """
+
 
 class AuthProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="authprofile")
@@ -219,10 +223,10 @@ class Apy(models.Model):
     description = models.CharField(max_length=1024, blank=True, null=True)
     rev = models.CharField(max_length=32, blank=True, null=True)
 
+    serializer_class = ApySocketSerializer
+
     def mark_executed(self):
         with transaction.atomic():
-        #commit_on_success()
-
             self.counter.executed = F('executed')+1
             self.counter.save()
 
@@ -233,8 +237,9 @@ class Apy(models.Model):
     def get_exec_url(self):
         return "/fastapp/base/%s/exec/%s/?json=" % (self.base.name, self.name)
 
+
 class Counter(models.Model):
-    apy= models.OneToOneField(Apy, related_name="counter")
+    apy = models.OneToOneField(Apy, related_name="counter")
     executed = models.IntegerField(default=0)
     failed = models.IntegerField(default=0)
 
@@ -254,16 +259,18 @@ def create_random():
 
 from django.utils import timezone
 
-class Transaction(models.Model):
+
+class Transaction(SelfPublishModel, models.Model):
     rid = models.IntegerField(primary_key=True, default=create_random)
     apy = models.ForeignKey(Apy, related_name="transactions")
     status = models.CharField(max_length=1, choices=TRANSACTION_STATE_CHOICES, default=RUNNING)
-    #created = models.DateTimeField(auto_now_add=True, null=True)
     created = models.DateTimeField(default=timezone.now, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
     tin = JSONField(blank=True, null=True)
     tout = JSONField(blank=True, null=True)
     async = models.BooleanField(default=False)
+
+    serializer_class = TransactionSerializer
 
     @property
     def duration(self):
@@ -276,6 +283,10 @@ class Transaction(models.Model):
         logentry.level = str(level)
         logentry.save()
 
+    def save(self, *args, **kwargs):
+        super(self.__class__, self).save(*args, **kwargs)
+        logger.info(self.action)
+
 LOG_LEVELS = (
     ("10", 'DEBUG'),
     ("20", 'INFO'),
@@ -284,20 +295,33 @@ LOG_LEVELS = (
     ("50", 'CRITICAL')
 )
 
-class LogEntry(models.Model):
+
+class LogEntry(SelfPublishModel, models.Model):
     transaction = models.ForeignKey(Transaction, related_name="logs")
     created = models.DateTimeField(auto_now_add=True, null=True)
     level = models.CharField(max_length=2, choices=LOG_LEVELS)
     msg = models.TextField()
 
+    serializer_class = LogEntrySerializer
+
     def level_verbose(self):
         return dict(LOG_LEVELS)[self.level]
+
+    @property
+    def slevel(self):
+        return self.level_verbose()
+
+    @property
+    def tid(self):
+        return self.transaction.rid
+
 
 class Setting(models.Model):
     base = models.ForeignKey(Base, related_name="setting")
     key = models.CharField(max_length=128)
     value = models.CharField(max_length=8192)
     public = models.BooleanField(default=False, null=False, blank=False)
+
 
 class Instance(models.Model):
     is_alive = models.BooleanField(default=False)
@@ -311,6 +335,7 @@ class Instance(models.Model):
 
     def __str__(self):
         return "Instance: %s" % (self.executor.base.name)
+
 
 class Host(models.Model):
     name = models.CharField(max_length=50)
@@ -360,6 +385,7 @@ class Thread(models.Model):
 
 def default_pass():
     return get_user_model().objects.make_random_password()
+
 
 class Executor(models.Model):
     base = models.OneToOneField(Base, related_name="executor")
@@ -459,6 +485,7 @@ class Executor(models.Model):
 
     def __str__(self):
         return "Executor %s-%s" % (self.base.user.username, self.base.name)
+
 
 class TransportEndpoint(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)

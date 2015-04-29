@@ -79,21 +79,21 @@ class Command(BaseCommand):
 
 
         # log receiver
-#        LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
-#        log_queue_name = load_setting("LOGS_QUEUE")
-#        queues_consume_async = [[log_queue_name, True]]
-#        log_threads = []
-#        for c in range(0, LOG_THREAD_COUNT):
-#            name = "LogReceiverThread-%s" % c
-#
-#            thread = LogReceiverThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_async, ttl=3000)
-#            log_threads.append(thread)
-#            thread.daemon = True
-#            thread.start()
+        LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
+        log_queue_name = load_setting("LOGS_QUEUE")
+        queues_consume_log = [[log_queue_name, True]]
+        log_threads = []
+        for c in range(0, LOG_THREAD_COUNT):
+            name = "LogReceiverThread-%s" % c
+
+            thread = LogReceiverThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_log, ttl=10000)
+            log_threads.append(thread)
+            thread.daemon = True
+            thread.start()
 
 
 #        for t in threads+async_threads+log_threads:
-        for t in threads+async_threads:
+        for t in [inactivate_thread]+threads+async_threads:
             try:
                 logger.info("Thread started")
                 t.join(1000)

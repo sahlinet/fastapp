@@ -1,4 +1,9 @@
 {% extends "fastapp/index.html" %}
+{% block fastapp_header %}
+{{ block.super }}
+
+
+{% endblock %}
     {% block ngapp %} ng-app="execApp" {% endblock %}
 
             {% block main %}
@@ -6,7 +11,7 @@
             <div class="container">
                 <div class="row">
                     <h1>
-                        {{ FASTAPP_NAME }} 
+                        {{ FASTAPP_NAME }}
                         {% if user.is_authenticated %}
                         <button id="share" type="button" class="btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-share"></span> Share</button>
@@ -69,7 +74,7 @@
                             });
                         </script>
                         <div class="table-responsive" ng-controller="SettingsCtrl" ng-init="init()">
-                            <h3>Settings 
+                            <h3>Settings
 
                                 <button type="button" class="btn btn-default btn-xs" ng-click="addRow()">
                                 <span class="glyphicon glyphicon-plus"></span> Add row</button>
@@ -90,7 +95,7 @@
                         {% verbatim %}
                         <alert ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">{{alert.msg}}</alert>
                         {% endverbatim %}
-                        
+
                         <div>
                             <p>
                                 <button id="create_exec" type="button" class="btn btn-default btn-xs" ng-click="showNewExec = !showNewExec">
@@ -98,8 +103,8 @@
 
                                 <div class="row" ng-show="showNewExec"> <div class="col-lg-6"><div class="input-group"> <input type="text" class="form-control" ng-model="new_exec_name"><span class="input-group-btn"> <button class="btn btn-default" type="button" ng-click="create()"><span class="glyphicon glyphicon-save"></span> Save</button> </span> </div></div></div>
                             </p>
-                            {% verbatim %} 
-                            <div ng-repeat="apy in apys | orderBy:'name':false "> 
+                            {% verbatim %}
+                            <div ng-repeat="apy in apys | orderBy:'name':false ">
                             <h4>{{ apy.name }} <span class="badge">{{ apy.counter.executed }}</span>&nbsp<span class="badge badge-error">{{ apy.counter.failed }}</span></h4>
                             <p class="light">
                                 {{ apy.description }}
@@ -131,7 +136,7 @@
                             <div ng-show="show" class="row">
                                 <div class="col-lg-6">
                                     <div class="input-group">
-                                        <input type="text" value="{{ apy.name }}" class="form-control"> <span class="input-group-btn"> <button class="btn btn-default" type="button" ng-click="rename($event)"><span class="glyphicon glyphicon-save"></span> Save</button> </span> 
+                                        <input type="text" value="{{ apy.name }}" class="form-control"> <span class="input-group-btn"> <button class="btn btn-default" type="button" ng-click="rename($event)"><span class="glyphicon glyphicon-save"></span> Save</button> </span>
                                     </div>
                                 </div>
                             </div>
@@ -140,7 +145,7 @@
                                 <form id="edit_execs_description_{{ apy.name}}" class="code">
                                     <textarea ng-model="apy.description" ng-blur="blur(apy)" class="form-control" id="exec_description_for_{{ apy.name }}" name="exec_description_for_{{ apy.name }}">{{ exec.description }}</textarea>
                                 </form>
- 
+
                             <p>
                                 <form id="edit_exec_{{ apy.name }}" class="code">
                                     <textarea id="exec_code" codemirror="apy"></textarea>
@@ -149,10 +154,12 @@
                            </p>
 
                             </div>
-                            </div>                            
+                            </div>
                             {% endverbatim %}
                         </div>
                         {% endif %}
+
+                        {% comment %}
                         <h3>Transactions (last 30 minutes)</h3>
                         <div>
                             <table class="table">
@@ -169,14 +176,14 @@
                                 </tr>
                                 {% for transaction in transaction_list %}
                                 <tr>
-                                    <td class="small"> {{ transaction.rid}} </td>
+                                    <td class="small"> {{ transaction.rid }} </td>
                                     <td class="small"> {{ transaction.async }} </td>
                                     <td class="small"> {{ transaction.status }} </td>
                                     <td class="small"> {{ transaction.apy.name }} </td>
                                     <td class="small"> {{ transaction.duration}} </td>
                                     <td class="small"> {{ transaction.created | date:"c" }} </td>
                                     <td class="small"> {{ transaction.modified | date:"c" }} </td>
-                                    <td class="small"> {{ transaction.tin }} </td>
+                                    <td class="small"> {{ transaction.tin_nice }} </td>
                                     <td class="small"> {{ transaction.tout }} </td>
                                 </tr>
                                     {% for log in transaction.logs.all %}
@@ -188,7 +195,79 @@
                                 {% endfor %}
                             </table>
                         </div>
+
+                        {% endcomment %}
                     </div>
                 </div>
             </div>
+<div class="container">
+	<div class="row clearfix">
+		<div class="col-md-12 column">
+			<div class="page-header">
+				<h2>
+					Live Transactions <small>Subtext for header</small>
+				</h2>
+                <!--<span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="...">
+                      <button type="button" class="btn btn-default ">Hide finished</button>
+                      <button type="button" class="btn btn-default">Error only</button>
+                    </div>
+                </span>
+            -->
+			</div>
+		</div>
+	</div>
+</div>
+<div class="container" ng-controller="TransactionCtrl">
+                {% verbatim %}
+	<div class="row" ng-repeat="transaction in transactions | reverse">
+		<div class="col-md-4">
+            <div class="row">
+				<div class="col-md-12 column">
+                    <p>
+					 <span class="label label-default">init</span>
+					 <span class="label label-default">{{ transaction.id }}</span>
+					 <span class="label label-default">{{ transaction.status }}</span>
+                     <span class="label label-default">async:{{ transaction.async }}</span>
+                 </p>
+                    <p>
+                     Start <span class="label label-default">{{ transaction.created }}</span>
+                 </p>
+                 <p>
+                    Updated <span class="label label-default">{{ transaction.modified }}</span>
+
+                </p>
+                </p>
+                </div>
+            </div>
+		</div>
+		<div class="col-md-8">
+    		<div class="row">
+    			<h4> IN <span class="label label-default">POST</span></h4>
+    			<pre>{{ transaction.tin_object | json:4 }}</pre>
+    		</div>
+
+		<div class="row">
+    		<h4> Logs </h4>
+    		<div id="messages">
+                <table class="table table-condensed">
+                    <tr class="{{ log.slevel | lowercase }}" ng-repeat="log in  logentries | filter:transaction.id">
+                        <td class="col-md-4">{{ log.created }}</td>
+                        <td class="col-md-1 ">{{ log.slevel }}</td>
+                        <td>{{ log.msg }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    		<div class="row">
+    			<h4> OUT <span class="label label-default">HTML</span></h4>
+    			<pre>{{ transaction.tout_object | json:4 }}</pre>
+    			<p>
+    		</div>
+        </div>
+
+	</div>
+
+                {% endverbatim %}
+</div>
         {% endblock main %}

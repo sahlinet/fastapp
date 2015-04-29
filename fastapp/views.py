@@ -61,6 +61,10 @@ class CockpitView(TemplateView):
         context['threads'] = Thread.objects.all().order_by('parent__name', 'name')
         return context
 
+    def dispatch(self, *args, **kwargs):
+        if not self.request.user.is_superuser:
+            return HttpResponseNotFound()
+        return super(DjendExecView, self).dispatch(*args, **kwargs)
 
 class ResponseUnavailableViewMixing():
     def verify(self, request, base_model):
@@ -222,6 +226,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                                          fields=('base_id', 'name'))
         struct = json.loads(apy_data)
         apy_data = json.dumps(struct[0])
+
         request_data = {}
         request_data.update({'model': apy_data,
                              'base_name': exec_model.base.name})
@@ -378,7 +383,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
         try:
             exec_model = base_model.apys.get(name=kwargs['id'])
         except Apy.DoesNotExist:
-            warning(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
+            #warning(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
             return HttpResponseNotFound("404 on %s"     % request.META['PATH_INFO'])
 
         rid = request.GET.get('rid', None)
@@ -395,24 +400,21 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 redirect_to = request.get_full_path()
                 data.update({'url': redirect_to})
         else:
-            transaction = Transaction(apy=exec_model)
-            transaction.save()
-            #user = channel_name_for_user(request)
-            #debug(user, "%s-Request received, URI %s, RID %s" % (request.method, request.path, transaction.rid))
             request_data = self._prepare_request(request, exec_model)
+            transaction = Transaction(apy=exec_model)
+            transaction.tin = json.dumps(request_data)
+            transaction.status = RUNNING
+            transaction.save()
 
             if request.GET.has_key('async') or request.POST.has_key('async'):
-                # execute async
-                transaction.tin = json.dumps(request_data)
-                transaction.status = RUNNING
                 transaction.async = True
                 transaction.save()
+                # execute async
                 data = self._execute_async(request, request_data, base_model, transaction.rid)
                 redirect_to = request.get_full_path()+"&rid=%s" % transaction.rid
                 return HttpResponsePermanentRedirect(redirect_to)
             else:
                 # execute
-                transaction.tin = json.dumps(request_data)
                 data = self._execute(request, request_data, base_model, transaction.rid)
                 transaction.tout = json.dumps(data)
                 transaction.status = FINISHED
@@ -476,14 +478,14 @@ class DjendBaseCreateView(View):
 
         # TODO: should be in planet project and not fastapp
         if use_plans:
-            if get_user_quota(request.user).get('MA_BASES_PER_USER') <= request.user.bases.count():
+            if get_user_quota(request.user).get('MAX_BASES_PER_USER') <= request.user.bases.count():
                 return HttpResponseForbidden("Too many bases for your plan.")
 
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
             return HttpResponseBadRequest("A base with this name does already exist.")
         base.save()
-        from fastapp.serializers import BaseSerializer
+        from fastapp.api_serializers import BaseSerializer
         base_data = BaseSerializer(base)
         response_data = base_data.data
         return HttpResponse(json.dumps(response_data), content_type="application/json")

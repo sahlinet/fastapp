@@ -36,6 +36,7 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
+            logger.info("inactivate")
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
@@ -45,7 +46,7 @@ def inactivate():
 
             # start if is_started and not running
             try:
-                  for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
+                for base in Base.objects.select_for_update(nowait=True).filter(executor__started=True):
                 #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
                     if not base.executor.is_running():
                         # log start with last beat datetime
@@ -66,7 +67,7 @@ def update_status(parent_name, thread_count, threads):
         while True:
             time.sleep(0.1)
             alive_thread_count = 0
-            
+
             pid = os.getpid()
             args = ["ps", "-p", str(pid), "-o", "rss="]
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -192,7 +193,7 @@ class HeartbeatThread(CommunicationThread):
             # verify and warn for incomplete threads
             base_obj = Base.objects.get(name=base)
             for thread in data['threads']['list']:
-                try: 
+                try:
                     thread_obj, created = Thread.objects.get_or_create(name=thread['name'], parent=process)
                     if thread['connected']:
                         thread_obj.health = Thread.STARTED
@@ -214,7 +215,7 @@ class HeartbeatThread(CommunicationThread):
             if not data['in_sync']:
                 from fastapp.models import Apy, Setting
                 for instance in Apy.objects.filter(base__name=base):
-                    distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]), 
+                    distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]),
                         vhost,
                         instance.base.name,
                         instance.base.executor.password
@@ -223,7 +224,7 @@ class HeartbeatThread(CommunicationThread):
                 for instance in Setting.objects.filter(base__name=base):
                     distribute(SETTING_QUEUE, json.dumps({
                         instance.key: instance.value
-                        }), 
+                        }),
                         vhost,
                         instance.base.name,
                         instance.base.executor.password
@@ -237,7 +238,7 @@ class HeartbeatThread(CommunicationThread):
                     url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.name})
 
                     request_factory = RequestFactory()
-                    request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name}) 
+                    request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name})
                     # TODO: fails if user admin is not created
                     request.user = get_user_model().objects.get(username='admin')
 
@@ -254,7 +255,7 @@ class HeartbeatThread(CommunicationThread):
 
         except Exception, e:
             logger.exception(e)
-        time.sleep(0.1)        
+        time.sleep(0.1)
 
 
 
@@ -282,4 +283,4 @@ class AsyncResponseThread(CommunicationThread):
 
         except Exception, e:
             logger.exception(e)
-        time.sleep(0.1)        
+        time.sleep(0.1)

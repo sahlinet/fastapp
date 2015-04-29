@@ -51,7 +51,7 @@
               <ul class="nav navbar-nav navbar-right">
                 <!-- <li><a class="nav-link current" href="#/start">Start</a></li> -->
                 <li><a class="nav-link" href="/docs">Documentation</a></li>
-                <li><a class="nav-link" href="/fastapp">Console</a></li>
+                <li><a class="nav-link" href="{% url 'console' %}">Console</a></li>
 
                 {% if user.is_authenticated %}
                   <li><a class="nav-link" href="/profile/"><img class="img-circle" src="{% gravatar_url user.email 20 %}"/>&nbsp;Profile</a></li>
