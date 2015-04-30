@@ -38,21 +38,39 @@ Add fastapp to your urls.py
 
 ### Worker
 
+
 #### Spawn Process
 
-Workers are spawned from within server process.
+Workers are spawned from server process.
 
-> This can be a serious security whole if you have untrusted users!
+>  !!!!
+
+> This can be a serious security hole if untrusted users can login your web application!
+
+>  !!!!
 
     FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.SpawnExecutor"
 
 or
 
-#### Docker on local machine
+#### Docker on local machine (boot2docker)
 
-Workers are started in a Docker container, Docker environment must be available. Thus `kwargs_from_env()` from docker-py must work.
+Workers are started in a Docker container, Docker environment must be set. Thus `kwargs_from_env()` from docker-py must work. Testsed with boot2docker.
 
     FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerExecutor"
+    FASTAPP_DOCKER_MEM_LIMIT = "128m"
+    FASTAPP_DOCKER_CPU_SHARES = 512
+
+    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+or
+
+
+#### Docker on local machine (unix://var/run/docker.sock)
+
+The server process has access to the docker.sock file. Either because the server is running on the docker host or the socket file ist added as volume to the server container with `-v /var/run/docker.sock:/var/run/docker.sock`
+
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerSocketExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
@@ -136,6 +154,8 @@ Following credentials are used for heartbeating between workers and server.
 
     FASTAPP_CORE_SENDER_PASSWORD = "asdf"
     FASTAPP_CORE_RECEIVER_PASSWORD = "asdf"
+
+Specify on the server the setting `WORKER_RABBITMQ_HOST` and `WORKER_RABBITMQ_PORT` on how the worker can connect to RabbitMQ.
 
 ### Dropbox Storage
 

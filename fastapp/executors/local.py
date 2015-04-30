@@ -22,7 +22,9 @@ class ContainerNotFound(Exception):
 
 MEM_LIMIT = "128m"
 CPU_SHARES = 512
-DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
+DOCKER_IMAGE = settings.FASTAPP_DOCKER_IMAGE
+
 
 class BaseExecutor(object):
     def __init__(self, *args, **kwargs):
@@ -167,9 +169,8 @@ class TutumExecutor(BaseExecutor):
         return (service.state == "Running")
 
 
-class DockerExecutor(BaseExecutor):
 
-    DOCKER_IMAGE = "philipsahli/skyblue-planet-worker:develop"
+class DockerExecutor(BaseExecutor):
 
     def __init__(self, *args, **kwargs):
 
@@ -188,7 +189,7 @@ class DockerExecutor(BaseExecutor):
             logger.info("Create container for %s" % self.vhost)
 
             container = self.api.create_container(
-                image = self.__class__.DOCKER_IMAGE,
+                image = DOCKER_IMAGE,
                 name=self.name,
                 detach = True,
                 mem_limit = MEM_LIMIT,
@@ -262,9 +263,17 @@ class DockerExecutor(BaseExecutor):
         return start_command.split(" ")
         #return start_command
 
+
+class DockerSocketExecutor(DockerExecutor):
+
+    def __init__(self, *args, **kwargs):
+        self.api = Client(base_url='unix://var/run/docker.sock')
+
+        BaseExecutor.__init__(self, *args, **kwargs)
+
+
 class RemoteDockerExecutor(DockerExecutor):
 
-    DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
 
     def __init__(self, *args, **kwargs):
         """

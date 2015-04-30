@@ -64,7 +64,7 @@ class CockpitView(TemplateView):
     def dispatch(self, *args, **kwargs):
         if not self.request.user.is_superuser:
             return HttpResponseNotFound()
-        return super(DjendExecView, self).dispatch(*args, **kwargs)
+        return super(CockpitView, self).dispatch(*args, **kwargs)
 
 class ResponseUnavailableViewMixing():
     def verify(self, request, base_model):
