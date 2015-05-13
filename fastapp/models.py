@@ -53,9 +53,13 @@ class AuthProfile(models.Model):
 class Base(models.Model):
     name = models.CharField(max_length=32)
     uuid = UUIDField(auto=True)
-    content = models.CharField(max_length=16384, blank=True, default=index_template)
+    content = models.CharField(max_length=16384,
+                               blank=True,
+                               default=index_template)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='bases')
     public = models.BooleanField(default=False)
+
+    foreign_apys = models.ManyToManyField("Apy", related_name="foreign_base")
 
     @property
     def url(self):
@@ -63,7 +67,9 @@ class Base(models.Model):
 
     @property
     def shared(self):
-        return "/fastapp/%s/index/?shared_key=%s" % (self.name, urllib.quote(self.uuid))
+        return "/fastapp/%s/index/?shared_key=%s" % (
+            self.name,
+            urllib.quote(self.uuid))
 
     @property
     def auth_token(self):
@@ -73,11 +79,11 @@ class Base(models.Model):
     def config(self):
         config_string = StringIO.StringIO()
         config = ConfigObj()
-        #config.file = config_string
         config['modules'] = {}
         for texec in self.apys.all():
             config['modules'][texec.name] = {}
             config['modules'][texec.name]['module'] = texec.name+".py"
+            config['modules'][texec.name]['public'] = texec.public
             if texec.description:
                 config['modules'][texec.name]['description'] = texec.description
             else:
@@ -98,15 +104,9 @@ class Base(models.Model):
         config.write(config_string)
         return config_string.getvalue()
 
-
     def refresh(self, put=False):
         connection = Connection(self.user.authprofile.access_token)
         template_name = "%s/index.html" % self.name
-        #if put:
-        #    template_content = connection.put_file(template_name, self.content)
-        #else:
-        #    template_content = connection.get_file_content(template_name)
-        #    self.content = template_content
         template_content = connection.get_file_content(template_name)
         self.content = template_content
 
@@ -157,18 +157,18 @@ class Base(models.Model):
             zf.writestr("%s.py" % apy.name, apy.module.encode("utf-8"))
 
         # add static files
-	try:
-		dropbox_connection = Connection(self.auth_token)
+        try:
+            dropbox_connection = Connection(self.auth_token)
 
-		try:
-		    zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
-		except Exception, e:
-		    logger.warn(e)
-	except AuthProfile.DoesNotExist, e:
-		logger.warn(e)
-	except Exception, e:
-		logger.warn(e.__class__)
-		logger.exception(e)
+            try:
+                zf = dropbox_connection.directory_zip("%s/static" % self.name, zf)
+            except Exception, e:
+                logger.warn(e)
+        except AuthProfile.DoesNotExist, e:
+            logger.warn(e)
+        except Exception, e:
+            logger.warn(e.__class__)
+            logger.exception(e)
 
         # add config
         zf.writestr("app.config", self.config.encode("utf-8"))
@@ -221,6 +221,7 @@ class Apy(models.Model):
     module = models.CharField(max_length=16384, default=MODULE_DEFAULT_CONTENT)
     base = models.ForeignKey(Base, related_name="apys", blank=True, null=True)
     description = models.CharField(max_length=1024, blank=True, null=True)
+    public = models.BooleanField(default=False)
     rev = models.CharField(max_length=32, blank=True, null=True)
 
     serializer_class = ApySocketSerializer
@@ -491,8 +492,9 @@ class TransportEndpoint(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     url = models.CharField(max_length=200, blank=False, null=False)
     token = models.CharField(max_length=200, blank=False, null=False)
-    override_settings_priv= models.BooleanField(default=False)
-    override_settings_pub= models.BooleanField(default=True)
+    override_settings_priv = models.BooleanField(default=False)
+    override_settings_pub = models.BooleanField(default=True)
+
 
 @receiver(post_save, sender=Base)
 def initialize_on_storage(sender, *args, **kwargs):
@@ -511,6 +513,7 @@ def initialize_on_storage(sender, *args, **kwargs):
         connection.put_file("%s/app.config" % (instance.name), instance.config)
     except Exception, e:
         logger.exception(e)
+
 
 @receiver(post_save, sender=Apy)
 def synchronize_to_storage(sender, *args, **kwargs):
@@ -532,10 +535,12 @@ def synchronize_to_storage(sender, *args, **kwargs):
 
     if instance.base.state:
         distribute(CONFIGURATION_EVENT, serializers.serialize("json", [instance,]),
-            generate_vhost_configuration(instance.base.user.username, instance.base.name),
-            instance.base.name,
-            instance.base.executor.password
+                   generate_vhost_configuration(instance.base.user.username,
+                                                instance.base.name),
+                   instance.base.name,
+                   instance.base.executor.password
         )
+
 
 @receiver(post_save, sender=Setting)
 def send_to_workers(sender, *args, **kwargs):
@@ -569,6 +574,7 @@ def base_to_storage_on_delete(sender, *args, **kwargs):
     except Exception, e:
         logger.error("error in base_to_storage_on_delete")
         logger.exception(e)
+
 
 @receiver(post_delete, sender=Apy)
 def synchronize_to_storage_on_delete(sender, *args, **kwargs):

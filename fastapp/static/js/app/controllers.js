@@ -1,6 +1,7 @@
   function add_client_message(message) {
   	data = {};
   	data.message = message;
+
   	var now = NDateTime.Now();
   	data.datetime = now.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
   	data.class = "info";
@@ -16,18 +17,10 @@
 
 
   window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource',
-  	'baseServices', 'doowb.angular-pusher', 'angularFileUpload', 'ngCookies',
+  	'baseServices', 'angularFileUpload', 'ngCookies',
   	'ui.bootstrap', 'xeditable', 'SwampDragonServices'
-  ]).
-  config(['PusherServiceProvider',
-  	function(PusherServiceProvider) {
-  		PusherServiceProvider
-  			.setToken(window.pusher_key)
-  			.setOptions({
-  				encrypted: true
-  			});
-  	}
   ]);
+
 
   window.app.run(function(editableOptions) {
   	editableOptions.theme = 'bs3';
@@ -56,8 +49,10 @@
   });
 
   window.app.controller('BasesCtrl', ['$scope', 'Bases', 'Base', 'Apy',
+  	'PublicApy',
   	'$upload', '$cookies', '$window', '$http', '$document',
-  	function($scope, Bases, Base, Apy, $upload, $cookies, $window, $http,
+  	function($scope, Bases, Base, Apy, PublicApy, $upload, $cookies, $window,
+  		$http,
   		$document) {
   		console.warn("BasesCtrl");
   		$scope.init = function() {
@@ -72,11 +67,41 @@
   			});
   		};
 
+  		$scope.public_apys = PublicApy.all();
+
+
+  		$scope.$watch("bases", function(newvalue) {
+  			console.log("Changed to " + newvalue);
+  		});
+
+
+  		$scope.relate = function(apy) {
+  			console.info(apy);
+  			console.info($scope.base);
+  			if ($scope.base.foreign_apys.indexOf(apy.url) == -1) {
+  				$scope.base.foreign_apys.push(apy.url);
+  			} else {
+  				var index = $scope.base.foreign_apys.indexOf(apy.url);
+  				$scope.base.foreign_apys.splice(index, 1);
+  			}
+
+  			$scope.base.$update({
+  				'baseId': $scope.base.id
+  			});
+
+  		}
+
+  		$scope.is_related = function(apy) {
+  			return !($scope.base.foreign_apys.indexOf(apy.url) == -1);
+  		}
+
   		//if (!angular.isUndefined(window.active_base_id)) {
   		if (window.active_base_id.length !== 0) {
   			$scope.base = Base.get({
   				'baseId': window.active_base_id
   			});
+  			console.log("$scope.base");
+  			console.log($scope.base);
   		}
 
   		$scope.creation_running = function() {
@@ -147,6 +172,7 @@
   			}
   		};
 
+
   		$scope.onFileSelect = function($files) {
   			//$files: an array of files selected, each file has name, size, and type.
   			for (var i = 0; i < $files.length; i++) {
@@ -192,18 +218,19 @@
   ]);
 
 
-  window.app.controller('ExecCtrl', ['$rootScope', '$scope', '$http', '$base64',
-  	'Apy', 'Apy1', 'Pusher',
-  	function($rootScope, $scope, $http, $base64, Apy, Apy1, Pusher) {
+  window.app.controller('ExecCtrl', ['$rootScope', '$scope', '$http',
+  	'$base64',
+  	'Apy', 'PublicApy', 'Apy1',
+  	function($rootScope, $scope, $http, $base64, Apy, PublicApy, Apy1) {
   		$scope.new_exec_name = "";
   		$scope.apys = [];
+
 
   		$scope.alerts = [];
 
   		$scope.closeAlert = function(index) {
   			$scope.alerts.splice(index, 1);
   		};
-
 
   		$scope.init = function() {
   			var apys = Apy.all({
@@ -220,7 +247,9 @@
   				});
   			});
 
+
   			// setup pusher for listening to counter events
+  			/*
   			Pusher.subscribe(window.channel, "counter", function(item) {
   				console.log(item);
   				$scope.apys.map(function(apy) {
@@ -236,16 +265,17 @@
   					console.log(members);
   					add_client_message("Subscription succeeded.");
   				});
+                  */
   		};
 
+  		/*
   		Pusher.subscribe(window.channel, 'console_msg', function(data) {
   			data.source = "Server";
   			add_message(data);
   		});
+          */
 
   		$scope.blur = function(apy, $event) {
-  			console.log(event);
-  			console.log(apy);
   			$scope.save(apy);
   		};
 
@@ -331,7 +361,8 @@
   				parser.host + "/fastapp/" + window.active_base + "/exec/" + apy.name +
   				"/?json=\"");
   			shared_key = window.shared_key_link.split("?")[1];
-  			add_client_message("anonym: curl \"" + parser.protocol + "//" + parser.host +
+  			add_client_message("anonym: curl \"" + parser.protocol + "//" + parser
+  				.host +
   				"/fastapp/base/" + window.active_base + "/exec/" + apy.name +
   				"/?json=&" + shared_key + "\"");
   		};
@@ -341,109 +372,96 @@
   				'input').first().val();
   			this.apy.name = new_exec_name;
   			this.apy.$save();
-  			//$scope.save(this.apy);
-  			//$scope.save(this.apy).success(function() {
-  			//  console.log(this);
-  			//  console.log($event);
-  			//  this.show = false;
-  			//});
   		};
-
-
-  		/*$scope.$watch('apy.module', function(oldVal,newVal){
-  		  console.log(oldVal);
-  		  console.log(newVal);
-  		  console.log("changed");
-  		});*/
-
   	}
   ]);
 
   var removeTemplate =
   	'<button type="button" class="btn btn-default btn-xs" ng-click="delete()"><span class="glyphicon glyphicon-remove"></span> Delete</button>';
-  window.app.controller('SettingsCtrl', ['$scope', '$http', '$base64',
-  	'Settings', 'Setting',
-  	function($scope, $http, $base64, Settings, Setting) {
-  		$scope.myData = [];
-  		//$scope.publicSelectEditableTemplate = '<select ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" ng-options="id as name for (id, name) in statuses" ng-blur="updateEntity(row)" />';
-  		//$scope.publicSelectEditableTemplate = '<input type="checkbox" ng-model="row.entity.public" ng-true-value="\'true\'" ng-false-value="\'false\'">';
-  		$scope.publicSelectEditableTemplate =
-  			'<input type="checkbox" ng-model="row.entity.public">';
-  		$scope.gridOptions = {
-  			data: 'myData',
-  			selectedItems: [],
-  			enableSorting: true,
-  			//sortInfo: {fields: ['key', 'value'], directions: ['asc']},
-  			//enableCellSelection: true,
-  			enableRowSelection: false,
-  			//enableCellEditOnFocus: false,
-  			columnDefs: [{
-  				field: 'key',
-  				displayName: 'Key',
-  				enableCellEdit: true,
-  				width: 120
-  			}, {
-  				field: 'value',
-  				displayName: 'Value',
-  				enableCellEdit: true,
-  				editableCellTemplate: '<textarea row="1"  ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" />'
-  			}, {
-  				field: 'public',
-  				displayName: 'Public',
-  				cellTemplate: $scope.publicSelectEditableTemplate
-  			}, {
-  				field: 'actions',
-  				displayName: '',
-  				enableCellEdit: false,
-  				cellTemplate: removeTemplate
-  			}]
-  		};
+  window
+  	.app.controller('SettingsCtrl', ['$scope', '$http', '$base64',
+  		'Settings', 'Setting',
+  		function($scope, $http, $base64, Settings, Setting) {
+  			$scope.myData = [];
+  			//$scope.publicSelectEditableTemplate = '<select ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" ng-options="id as name for (id, name) in statuses" ng-blur="updateEntity(row)" />';
+  			//$scope.publicSelectEditableTemplate = '<input type="checkbox" ng-model="row.entity.public" ng-true-value="\'true\'" ng-false-value="\'false\'">';
+  			$scope.publicSelectEditableTemplate =
+  				'<input type="checkbox" ng-model="row.entity.public">';
+  			$scope.gridOptions = {
+  				data: 'myData',
+  				selectedItems: [],
+  				enableSorting: true,
+  				//sortInfo: {fields: ['key', 'value'], directions: ['asc']},
+  				//enableCellSelection: true,
+  				enableRowSelection: false,
+  				//enableCellEditOnFocus: false,
+  				columnDefs: [{
+  					field: 'key',
+  					displayName: 'Key',
+  					enableCellEdit: true,
+  					width: 120
+  				}, {
+  					field: 'value',
+  					displayName: 'Value',
+  					enableCellEdit: true,
+  					editableCellTemplate: '<textarea row="1"  ng-class="\'colt\' + col.index" ng-input="COL_FIELD" ng-model="COL_FIELD" />'
+  				}, {
+  					field: 'public',
+  					displayName: 'Public',
+  					cellTemplate: $scope.publicSelectEditableTemplate
+  				}, {
+  					field: 'actions',
+  					displayName: '',
+  					enableCellEdit: false,
+  					cellTemplate: removeTemplate
+  				}]
+  			};
 
-  		$scope.init = function() {
-  			$scope.myData = Settings.all({
-  				'baseId': window.active_base_id
-  			});
-  		};
+  			$scope.init = function() {
+  				$scope.myData = Settings.all({
+  					'baseId': window.active_base_id
+  				});
+  			};
 
-  		$scope.addRow = function() {
-  			$scope.myData.push({
-  				key: "key",
-  				value: "value"
-  			});
-  		};
+  			$scope.addRow = function() {
+  				$scope.myData.push({
+  					key: "key",
+  					value: "value"
+  				});
+  			};
 
-  		$scope.save = function() {
-  			// base64 output
-  			$scope.myData.map(function(item) {
-  				if (item.id === undefined) {
-  					new_item = Settings.create({
-  						'baseId': window.active_base_id
-  					}, item, function() {
-  						if (new_item['id'] !== undefined) {
-  							item.id = new_item['id'];
-  						}
-  					});
+  			$scope.save = function() {
+  				// base64 output
+  				$scope.myData.map(function(item) {
+  					if (item.id === undefined) {
+  						new_item = Settings.create({
+  							'baseId': window.active_base_id
+  						}, item, function() {
+  							if (new_item['id'] !== undefined) {
+  								item.id = new_item['id'];
+  							}
+  						});
 
-  				} else {
-  					Setting.update({
-  						'baseId': window.active_base_id,
-  						'id': item.id
-  					}, item);
-  				}
-  			});
-  		};
+  					} else {
+  						Setting.update({
+  							'baseId': window.active_base_id,
+  							'id': item.id
+  						}, item);
+  					}
+  				});
+  			};
 
-  		$scope.delete = function() {
-  			var index = this.row.rowIndex;
-  			$scope.gridOptions.selectItem(index, false);
-  			removed = $scope.myData.splice(index, 1)[0];
-  			Setting.delete({
-  				'baseId': window.active_base_id,
-  				'id': removed.id
-  			});
-  		};
-  	}
-  ]);
+  			$scope.delete = function() {
+  				var index = this.row.rowIndex;
+  				$scope.gridOptions.selectItem(index, false);
+  				removed = $scope.myData.splice(index, 1)[0];
+  				Setting.delete({
+  					'baseId': window.active_base_id,
+  					'id': removed.id
+  				});
+  			};
+  		}
+  	]);
 
   window.app.directive('codemirror', function() {
   	return {

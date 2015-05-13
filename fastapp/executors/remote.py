@@ -20,12 +20,15 @@ logger = logging.getLogger(__name__)
 RESPONSE_TIMEOUT = 30
 CONFIGURATION_QUEUE = "configuration"
 CONFIGURATION_EVENT = CONFIGURATION_QUEUE
-SETTINGS_EVENT = "setting"
+FOREIGN_CONFIGURATION_QUEUE = "fconfiguration"
+FOREIGN_CONFIGURATION_EVENT = CONFIGURATION_QUEUE
 
-CONFIGURATION_QUEUE = "configuration"
-SETTING_QUEUE = "setting"
+SETTINGS_EVENT = "setting"
+SETTING_QUEUE = SETTINGS_EVENT
+
 RPC_QUEUE = "rpc_queue"
 STATIC_QUEUE = "static_queue"
+
 
 class Worker():
 
@@ -47,6 +50,7 @@ class Worker():
     def execute(self):
         pass
 
+
 def distribute(event, body, vhost, username, password):
     logger.debug("distribute called")
 
@@ -66,35 +70,40 @@ def distribute(event, body, vhost, username, password):
             logger.debug("exchanging message to vhost username: %s" % self.username)
             logger.debug("exchanging message to vhost password: %s" % self.password)
             self.connection = connect_to_queuemanager(
-            		host=settings.RABBITMQ_HOST,
-                    vhost=vhost,
-                    username=username,
-                    password=password,
-            		port=settings.RABBITMQ_PORT,
-                )
+                host=settings.RABBITMQ_HOST,
+                vhost=vhost,
+                username=username,
+                password=password,
+                port=settings.RABBITMQ_PORT,
+            )
 
             self.channel = self.connection.channel()
             self.channel.exchange_declare(exchange=CONFIGURATION_QUEUE, type='fanout')
+            self.channel.exchange_declare(exchange=FOREIGN_CONFIGURATION_QUEUE, type='fanout')
 
 
         def call(self, body):
-            self.channel.basic_publish(exchange=CONFIGURATION_QUEUE,
-                                       routing_key='',
-                                       body=body,
-                                       properties=pika.BasicProperties(app_id=event))
+            self.channel.basic_publish(
+                exchange=CONFIGURATION_QUEUE,
+                routing_key='',
+                body=body,
+                properties=pika.BasicProperties(app_id=event)
+            )
 
             self.connection.close()
 
     executor = ExecutorClient(vhost, event, username, password)
     executor.call(body)
 
-    return  True
+    return True
+
 
 def call_rpc_client(apy, vhost, username, password, async=False):
 
     class ExecutorClient(object):
         """
-        Gets the apy (id, name, module) and sets them on the _do function.__add__ .
+        Gets the apy (id, name, module) and sets them on
+        the _do function.__add__ .
         Then the client is ready to response for execution requests.
 
         """
@@ -102,12 +111,12 @@ def call_rpc_client(apy, vhost, username, password, async=False):
             # get needed stuff
             self.vhost = vhost
             self.connection = connect_to_queuemanager(
-    		        host=settings.RABBITMQ_HOST,
-                    vhost=vhost,
-                    username=username,
-                    password=password,
-		            port=settings.RABBITMQ_PORT
-                )
+                host=settings.RABBITMQ_HOST,
+                vhost=vhost,
+                username=username,
+                password=password,
+                port=settings.RABBITMQ_PORT
+            )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
 
@@ -146,16 +155,18 @@ def call_rpc_client(apy, vhost, username, password, async=False):
             self.corr_id = str(uuid.uuid4())
             expire = 5000
             logger.debug("Message expiration set to %s ms" % str(expire))
+            properties = pika.BasicProperties(
+                reply_to=self.callback_queue,
+                delivery_mode=1,
+                correlation_id=self.corr_id,
+                expiration=str(expire)
+            )
             self.channel.basic_publish(exchange='',
                                        routing_key=RPC_QUEUE,
-                                       properties=pika.BasicProperties(
-                                             reply_to = self.callback_queue,
-                                             delivery_mode=1,
-                                             correlation_id = self.corr_id,
-                                             expiration=str(expire)
-                                             ),
+                                       properties=properties,
                                        body=str(n))
-            logger.info("Message published to: %s:%s" % (self.vhost, RPC_QUEUE))
+            logger.info("Message published to: %s:%s" %
+                        (self.vhost, RPC_QUEUE))
             while self.response is None and not self.async:
                 self.connection.process_data_events()
             return self.response
@@ -169,15 +180,22 @@ def call_rpc_client(apy, vhost, username, password, async=False):
     if not async:
         executor = ExecutorClient(vhost, username, password)
     else:
-        executor = ExecutorClient(vhost, load_setting("CORE_RECEIVER_USERNAME"), load_setting("FASTAPP_CORE_RECEIVER_PASSWORD"), async=async)
-
+        executor = ExecutorClient(
+            vhost,
+            load_setting("CORE_RECEIVER_USERNAME"),
+            load_setting("FASTAPP_CORE_RECEIVER_PASSWORD"),
+            async=async
+            )
 
     try:
         response = executor.call(apy)
-        #import pdb; pdb.set_trace()
     except Exception, e:
         logger.warn(e)
-        response = json.dumps({u'status': u'TIMEOUT', u'exception': None, u'returned': None, 'id': u'cannot_import'})
+        response = json.dumps(
+            {u'status': u'TIMEOUT',
+                u'exception': None,
+                u'returned': None,
+                'id': u'cannot_import'})
     finally:
         executor.end()
     return response
@@ -190,11 +208,11 @@ STATE_NOT_FOUND = "NOT_FOUND"
 threads = []
 
 
-
-
 class ExecutorServerThread(CommunicationThread):
+
     def __init__(self, *args, **kwargs ):
         self.functions = {}
+        self.foreign_functions = {}
         self.settings = {}
 
         return super(ExecutorServerThread, self).__init__(*args, **kwargs)
@@ -202,12 +220,12 @@ class ExecutorServerThread(CommunicationThread):
     @property
     def state(self):
         return {'name': self.name,
-           'count_settings': len(self.settings),
-           'count_functions': len(self.functions),
-           'settings': self.settings.keys(),
-           'functions': self.functions.keys(),
-           'connected': self.is_connected
-        }
+                'count_settings': len(self.settings),
+                'count_functions': len(self.functions),
+                'settings': self.settings.keys(),
+                'functions': self.functions.keys(),
+                'connected': self.is_connected
+                }
 
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
@@ -218,6 +236,16 @@ class ExecutorServerThread(CommunicationThread):
                     try:
                         exec fields['module'] in globals(), locals()
                         self.functions.update({
+                            fields['name']: func,
+                            })
+                        logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
+                    except Exception, e:
+                        traceback.print_exc()
+		elif props.app_id == "fconfiguration":
+                    fields = json.loads(body)[0]['fields']
+                    try:
+                        exec fields['module'] in globals(), locals()
+                        self.foreign_functions.update({
                             fields['name']: func,
                             })
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
@@ -236,7 +264,7 @@ class ExecutorServerThread(CommunicationThread):
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
                 try:
                     response_data = {}
-                    response_data = _do(json.loads(body), self.functions, self.settings)
+                    response_data = _do(json.loads(body), self.functions, self.foreign_functions, self.settings)
                 except Exception, e:
                     logger.exception(e)
                 finally:
@@ -322,20 +350,24 @@ def log_to_queue(tid, level, msg):
     del channel.connection
     del channel
 
+
 def info(tid, msg):
     log_to_queue(tid, logging.INFO, msg)
+
 
 def warning(tid, msg):
     log_to_queue(tid, logging.WARNING, msg)
 
+
 def debug(tid, msg):
     log_to_queue(tid, logging.DEBUG, msg)
+
 
 def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
 
 
-def _do(data, functions=None, settings=None):
+def _do(data, functions=None, foreign_functions=None, settings=None):
         exception = None;  exception_message = None; returned = None
         status = STATE_OK
 
@@ -394,6 +426,12 @@ def _do(data, functions=None, settings=None):
                     setting_dict1.update({key: value})
                 setting_dict1.update({'STATIC_DIR': "/%s/%s/static" % ("fastapp", base_name)})
                 func.settings = setting_dict1
+
+		# attach foreign_functions
+		func.foreigns = Bunch(foreign_functions)
+
+                # attach siblings
+                func.siblings = Bunch(functions)
 
                 # execution
                 returned = func(func)

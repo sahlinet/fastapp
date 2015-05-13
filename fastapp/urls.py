@@ -10,7 +10,7 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
         DjendBaseRenameView, CockpitView, DropboxNotifyView
 from rest_framework import routers
 
-from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
+from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
 
 
 from django.views.decorators.cache import never_cache
@@ -63,6 +63,8 @@ urlpatterns = patterns('',
     url(r'^api/base/(?P<pk>\d+)/transport/$', BaseViewSet.as_view({'post': 'transport'}), name='base-transport'),
     url(r'^api/base/import/$', csrf_exempt(BaseImportViewSet.as_view({'post': 'imp'})), name='base-import'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/$', ApyViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),
+    url(r'^api/public-apy/$', PublicApyViewSet.as_view({'get': 'list'}), name='public-apy-list'),
+    url(r'^api/public-apy/(?P<pk>\d+)/$', PublicApyViewSet.as_view({'get': 'retrieve'}), name='public-apy-detail'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/(?P<pk>\d+)/$', ApyViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='apy-detail'),
     url(r'^api/base/(?P<base_pk>\d+)/apy/(?P<pk>\d+)/clone/$', ApyViewSet.as_view({'post': 'clone'}), name='apy-clone'),
     url(r'^api/base/(?P<base_pk>\d+)/setting/$', SettingViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),

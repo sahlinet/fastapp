@@ -21,3 +21,4 @@ pyasn1==0.1.7
 python-tutum==0.12.6
 -e git+https://github.com/sahlinet/swampdragon.git@master#egg=swampdragon
 SwampDragon-auth==0.1.3
+django-compressor==1.5

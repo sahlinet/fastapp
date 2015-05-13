@@ -12,11 +12,10 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from rest_framework import renderers
 
-from fastapp.utils import Connection
 from fastapp.importer import import_base
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
 from fastapp.models import Base, Apy, Setting, TransportEndpoint
-from fastapp.api_serializers import ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
+from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
 from fastapp.utils import info, check_code
 from django.db import transaction
 from django.core.management import call_command
@@ -26,6 +25,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 import logging
 logger = logging.getLogger(__name__)
+
 
 class SettingViewSet(viewsets.ModelViewSet):
     model = Setting
@@ -39,6 +39,7 @@ class SettingViewSet(viewsets.ModelViewSet):
     def pre_save(self, obj):
         obj.base = Base.objects.get(id=self.kwargs['base_pk'])
 
+
 class TransportEndpointViewSet(viewsets.ModelViewSet):
     model = TransportEndpoint
     serializer_class = TransportEndpointSerializer
@@ -49,6 +50,7 @@ class TransportEndpointViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.user = self.request.user
+
 
 class ApyViewSet(viewsets.ModelViewSet):
     model = Apy
@@ -68,26 +70,24 @@ class ApyViewSet(viewsets.ModelViewSet):
         for warning in warnings:
             warnings_prep.append(
                 {
-                'filename': warning.filename,
-                'lineno': warning.lineno,
-                'col': warning.col,
-                'msg': warning.message % warning.message_args,
+                    'filename': warning.filename,
+                    'lineno': warning.lineno,
+                    'col': warning.col,
+                    'msg': warning.message % warning.message_args,
                 })
 
         for error in errors:
             errors_prep.append(
                 {
-                'filename': error.filename,
-                'lineno': error.lineno,
-                'col': error.col,
-                'msg': error.message,
+                    'filename': error.filename,
+                    'lineno': error.lineno,
+                    'col': error.col,
+                    'msg': error.message,
                 })
         if not result:
-            #logger.info(str(warnings))
-            #logger.info(str(errors))
             response_data = {
-                'warnings' : warnings_prep,
-                'errors' : errors_prep
+                'warnings': warnings_prep,
+                'errors': errors_prep
             }
             raise APIException(response_data)
 
@@ -95,12 +95,14 @@ class ApyViewSet(viewsets.ModelViewSet):
         info(self.request.user.username, "Apy saved")
 
     def clone(self, request, base_pk, pk):
-        base = get_object_or_404(Base, id=base_pk, user=User.objects.get(username=request.user.username))
+        base = get_object_or_404(Base, id=base_pk,
+                        user=User.objects.get(username=request.user.username))
         clone_count = base.apys.filter(name__startswith="%s_clone" % pk).count()
         created = False
         while not created:
-            cloned_exec, created = Apy.objects.get_or_create(base=base, name="%s_clone_%s" % (pk, str(clone_count+1)))
-            clone_count+=1
+            cloned_exec, created = Apy.objects.get_or_create(base=base,
+                                name="%s_clone_%s" % (pk, str(clone_count+1)))
+            clone_count += 1
 
         cloned_exec.module = base.apys.get(id=pk).module
         cloned_exec.save()
@@ -109,11 +111,23 @@ class ApyViewSet(viewsets.ModelViewSet):
         self.kwargs['pk'] = self.object.id
         return self.retrieve(request, new_pk=cloned_exec.id)
 
+
+class PublicApyViewSet(ApyViewSet):
+    serializer_class = PublicApySerializer
+
+    def get_queryset(self):
+        return Apy.objects.filter(public=True)
+
+
 class BaseAdminViewSet(viewsets.ModelViewSet):
     model = Base
     serializer_class = BaseSerializer
     renderer_classes = [JSONRenderer, JSONPRenderer]
-    authentication_classes = (TokenAuthentication, SessionAuthentication, BasicAuthentication)
+    authentication_classes = (
+        TokenAuthentication,
+        SessionAuthentication,
+        BasicAuthentication
+        )
     permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser)
 
     def get_queryset(self):
@@ -121,16 +135,16 @@ class BaseAdminViewSet(viewsets.ModelViewSet):
 
     def destroy_all(self, request):
         logger.info("Destroy all workers")
-        #call_command('destroy_workers')
-        thread = Thread(target = call_command, args = ('destroy_workers', ))
+        thread = Thread(target=call_command, args=('destroy_workers', ))
         thread.start()
         return Response("ok", status=status.HTTP_202_ACCEPTED)
 
     def recreate_all(self, request):
         logger.info("Recreate all workers")
-        thread = Thread(target = call_command, args = ('recreate_workers', ))
+        thread = Thread(target=call_command, args=('recreate_workers', ))
         thread.start()
         return Response("ok", status=status.HTTP_202_ACCEPTED)
+
 
 class BaseViewSet(viewsets.ModelViewSet):
     model = Base
@@ -167,7 +181,6 @@ class BaseViewSet(viewsets.ModelViewSet):
         transaction.commit()
         return self.retrieve(request, pk=pk)
 
-
     def destroy(self, request, pk):
         transaction.set_autocommit(False)
         logger.info("destroying %s: " % pk)
@@ -184,7 +197,10 @@ class BaseViewSet(viewsets.ModelViewSet):
         zf.seek(0)
         logger.info("Calling "+transport_url)
         logger.info("Token "+transport_token)
-        transport = TransportEndpoint.objects.get(user=request.user, url=transport_url)
+        transport = TransportEndpoint.objects.get(
+                user=request.user,
+                url=transport_url
+                )
         r = requests.post(transport_url, headers={
             'Authorization': 'Token '+transport_token
             }, data={
@@ -207,7 +223,6 @@ class BaseViewSet(viewsets.ModelViewSet):
             logger.error("%s failed with returncode %s" % (s, r.status_code))
             raise Exception("%s failed" % s)
 
-
     @link()
     def apy(self, request, pk=None):
         queryset = Apy.objects.filter(base__pk=pk)
@@ -215,12 +230,14 @@ class BaseViewSet(viewsets.ModelViewSet):
                 context={'request': request}, many=True)
         return Response(serializer.data)
 
+
 class ZipFileRenderer(renderers.BaseRenderer):
     media_type = 'application/zip'
     format = 'zip'
 
     def render(self, data, media_type=None, renderer_context=None):
         return data
+
 
 class BaseExportViewSet(viewsets.ModelViewSet):
     model = Base
@@ -263,11 +280,15 @@ class BaseImportViewSet(viewsets.ModelViewSet):
         f = request.FILES['file']
         zf = zipfile.ZipFile(f)
 
-	base = import_base(zf, request.user, name, override_public, override_private)
+        base = import_base(zf,
+                           request.user,
+                           name,
+                           override_public,
+                           override_private)
 
         base_queryset = base
         base.save()
         serializer = BaseSerializer(base_queryset,
-                context={'request': request}, many=False)
+                                    context={'request': request}, many=False)
         response = Response(serializer.data, status=201)
         return response

@@ -1,5 +1,6 @@
 import logging
 
+from distutils.util import strtobool
 from configobj import ConfigObj
 
 from fastapp.models import Base, Setting, Apy
@@ -35,6 +36,7 @@ def import_base(zf, user_obj, name, override_public, override_private):
         # override_private
         if not setting_obj.public and override_private:
             setting_obj.value = v['value']
+        setting_obj.public = strtobool(v['public'])
         setting_obj.save()
 
     filelist = zf.namelist()
@@ -59,6 +61,9 @@ def import_base(zf, user_obj, name, override_public, override_private):
             description = appconfig['modules'][name]['description']
             if description:
                 apy.description = description
+            public = appconfig['modules'][name].get('public', None)
+            if public:
+                apy.public = strtobool(public)
             apy.save()
 
     return base

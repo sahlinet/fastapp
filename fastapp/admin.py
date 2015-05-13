@@ -6,7 +6,6 @@ User = get_user_model()
 
 class BaseAdmin(admin.ModelAdmin):
     pass
-admin.site.register(Base, BaseAdmin)
 
 class ApyAdmin(admin.ModelAdmin):
     pass
@@ -23,6 +22,7 @@ class UserAdmin(admin.ModelAdmin):
 class AuthProfileAdmin(admin.ModelAdmin):
     pass
 
+admin.site.register(Base, BaseAdmin)
 admin.site.register(Apy, ApyAdmin)
 admin.site.register(Transaction, TransactionAdmin)
 admin.site.register(TransportEndpoint, TransportEndpointAdmin)

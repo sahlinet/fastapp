@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 HEARTBEAT_VHOST = load_setting('CORE_VHOST')
 HEARTBEAT_QUEUE = load_setting('HEARTBEAT_QUEUE')
 CONFIGURATION_QUEUE = "configuration"
+FOREIGN_CONFIGURATION_QUEUE = "fconfiguration"
 SETTING_QUEUE = "setting"
 
 
@@ -214,13 +215,21 @@ class HeartbeatThread(CommunicationThread):
 
             if not data['in_sync']:
                 from fastapp.models import Apy, Setting
-                for instance in Apy.objects.filter(base__name=base):
+                instances = list(Apy.objects.filter(base__name=base))
+                for instance in instances:
                     distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]),
                         vhost,
                         instance.base.name,
                         instance.base.executor.password
                         )
-
+                instances = base_obj.foreign_apys.all()
+                logger.info("Foreigns to sync: %s" % str(list(instances)))
+                for instance in instances:
+                    distribute(FOREIGN_CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]),
+                        vhost,
+                        base_obj.name,
+                        base_obj.executor.password
+                        )
                 for instance in Setting.objects.filter(base__name=base):
                     distribute(SETTING_QUEUE, json.dumps({
                         instance.key: instance.value
@@ -233,6 +242,7 @@ class HeartbeatThread(CommunicationThread):
             if data.has_key('ready_for_init') and data['ready_for_init']:
 
                 ## execute init exec
+		from fastapp.models import Apy
                 try:
                     init = base_obj.apys.get(name='init')
                     url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.name})
@@ -246,6 +256,9 @@ class HeartbeatThread(CommunicationThread):
                     view = DjendExecView()
                     response = view.get(request, base=base_obj.name, id=init.name)
                     logger.info("Init method called for base %s, response_code: %s" % (base_obj.name, response.status_code))
+
+                except Apy.DoesNotExist, e:
+		    logger.info("No init exec")
 
                 except Exception, e:
                     logger.exception(e)

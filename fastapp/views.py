@@ -366,8 +366,9 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             return HttpResponse(content, content_type, status=response_status_code)
 
         else:
+            msg = "Not received json or callback query string nor response_class from response."
             logger.error("Not received json or callback query string nor response_class from response.")
-            return HttpResponseServerError()
+            return HttpResponseServerError(msg)
 
     #@profile
     @never_cache
@@ -391,7 +392,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             # look for transaction
             transaction = Transaction.objects.get(pk=rid)
             if transaction.tout:
-                data = transaction.tout
+                data = json.loads(transaction.tout)
                 #data.update({'logs':
                 #        json.loads(serializers.serialize("json", transaction.logs.all()))
                 #    })
@@ -779,7 +780,7 @@ def process_user(uid):
             names = r.groups()
             base_name = names[0]
             apy_name = names[1]
-            logger.debug("base_name: %s, apy_name: %s, user: %s" % (base_name, apy_name, user))
+            logger.info("notification for: base_name: %s, apy_name: %s, user: %s" % (base_name, apy_name, user))
 
             try:
                 apy = Apy.objects.get(name=apy_name, base__name=base_name)
