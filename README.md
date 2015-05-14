@@ -68,7 +68,7 @@ or
 
 #### Docker on local machine (unix://var/run/docker.sock)
 
-The server process has access to the docker.sock file. Either because the server is running on the docker host or the socket file ist added as volume to the server container with `-v /var/run/docker.sock:/var/run/docker.sock`
+The server process has access to the docker.sock file. Either because the server is running on the docker host or the socket file is added as volume to the server container with `-v /var/run/docker.sock:/var/run/docker.sock`
 
     FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerSocketExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"

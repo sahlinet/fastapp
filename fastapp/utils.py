@@ -171,9 +171,9 @@ def send_client(channel_name, event, data):
     #channel = pusher
     channel = connect_to_queue(host, 'pusher_events', "/", username=user, password=password, port=port)
     payload = {
-        'channel': channel_name, 
-        'event': event, 
-        'data': data, 
+        'channel': channel_name,
+        'event': event,
+        'data': data,
     }
 
     channel.basic_publish(exchange='',
@@ -186,7 +186,7 @@ def send_client(channel_name, event, data):
     logger.debug("END EVENT_TO_QUEUE %s" % event)
     channel.close()
     channel.connection.close()
-    del channel.connection 
+    del channel.connection
     del channel
 
 def user_message(level, channel_name, message):
@@ -199,25 +199,25 @@ def user_message(level, channel_name, message):
 
     now = datetime.datetime.now()
     if level == logging.INFO:
-        class_level = "info"        
+        class_level = "info"
     elif level == logging.DEBUG:
-        class_level = "debug"        
+        class_level = "debug"
     elif level == logging.WARNING:
-        class_level = "warn"        
+        class_level = "warn"
     elif level == logging.ERROR:
-        class_level = "error"        
+        class_level = "error"
     logger.log(level, "to pusher: "+message)
     data = {'datetime': str(now), 'message': str(message), 'class': class_level}
     send_client(channel_name, "console_msg", data)
 
 
-def info(username, gmessage): 
+def info(username, gmessage):
         return user_message(logging.INFO, username, gmessage)
-def debug(username, gmessage): 
+def debug(username, gmessage):
         return user_message(logging.DEBUG, username, gmessage)
-def error(username, gmessage): 
+def error(username, gmessage):
         return user_message(logging.ERROR, username, gmessage)
-def warn(username, gmessage): 
+def warn(username, gmessage):
         return user_message(logging.WARN, username, gmessage)
 
 
@@ -290,7 +290,7 @@ def load_setting(name):
         logger.debug("Loaded setting from defaults %s with value: %s" % (name, v))
     if not v:
         logger.error("Could not load setting %s" % name)
-        raise ImproperlyConfigured()
+        raise ImproperlyConfigured(name)
     return v
 
 def load_var_to_file(var):
@@ -310,6 +310,3 @@ def load_var_to_file(var):
         else:
             os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
     return fq_file
-
-
-

@@ -12,10 +12,12 @@ from docker.utils import kwargs_from_env
 
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.utils import load_setting
 
 logger = logging.getLogger(__name__)
+
 
 class ContainerNotFound(Exception):
     pass
@@ -23,7 +25,8 @@ class ContainerNotFound(Exception):
 MEM_LIMIT = "128m"
 CPU_SHARES = 512
 
-DOCKER_IMAGE = settings.FASTAPP_DOCKER_IMAGE
+DOCKER_IMAGE = settings.get('FASTAPP_DOCKER_IMAGE',
+                            'philipsahli/skyblue-planet-lite-worker:develop')
 
 
 class BaseExecutor(object):
@@ -34,7 +37,8 @@ class BaseExecutor(object):
         self.password = kwargs['password']
 
         # container name, must be unique, therefore we use a mix from site's domain name and executor
-        slug = "worker-%s-%i-%s" % (Site.objects.get_current().domain, random.randrange(1,900000), self.base_name)
+        slug = "worker-%s-%i-%s" % (Site.objects.get_current().domain,
+            random.randrange(1,900000), self.base_name)
         self.name = slug.replace("_", "-").replace(".", "-")
 
     @property
@@ -45,8 +49,7 @@ class BaseExecutor(object):
                     self.vhost,
                     self.base_name,
                     self.base_name, self.password
-            )
-        #return start_command.split(" ")
+                    )
         return start_command
 
     def destroy(self, id):
@@ -73,22 +76,28 @@ class TutumExecutor(BaseExecutor):
         new = not self._container_exists(id)
         if new:
 
+            container_envvars = [
+                {'key': "RABBITMQ_HOST",
+                 'value': settings.WORKER_RABBITMQ_HOST},
+                {'key': "RABBITMQ_PORT",
+                 'value': settings.WORKER_RABBITMQ_PORT},
+                {'key': "FASTAPP_WORKER_THREADCOUNT",
+                 'value': settings.FASTAPP_WORKER_THREADCOUNT},
+                {'key': "FASTAPP_PUBLISH_INTERVAL",
+                 'value': settings.FASTAPP_PUBLISH_INTERVAL},
+                {'key': "FASTAPP_CORE_SENDER_PASSWORD",
+                 'value': settings.FASTAPP_CORE_SENDER_PASSWORD},
+                {'key': "EXECUTOR", 'value': "Tutum"},
+            ]
             # create the service
             service = self.api.Service.create(image=DOCKER_IMAGE,
-                name=self.name,
-                target_num_containers=1,
-                mem_limit = MEM_LIMIT,
-                cpu_shares = CPU_SHARES,
-                container_envvars = [
-                    { 'key': "RABBITMQ_HOST", 'value': settings.WORKER_RABBITMQ_HOST},
-                    { 'key': "RABBITMQ_PORT", 'value': settings.WORKER_RABBITMQ_PORT},
-                    { 'key': "FASTAPP_WORKER_THREADCOUNT", 'value': settings.FASTAPP_WORKER_THREADCOUNT },
-                    { 'key': "FASTAPP_PUBLISH_INTERVAL", 'value': settings.FASTAPP_PUBLISH_INTERVAL},
-                    { 'key': "FASTAPP_CORE_SENDER_PASSWORD", 'value': settings.FASTAPP_CORE_SENDER_PASSWORD},
-                    { 'key': "EXECUTOR", 'value': "Tutum"},
-                ],
-                autorestart="ALWAYS",
-                entrypoint = self._start_command
+                                              name=self.name,
+                                              target_num_containers=1,
+                                              mem_limit=MEM_LIMIT,
+                                              cpu_shares=CPU_SHARES,
+                                              container_envvars=container_envvars,
+                                              autorestart="ALWAYS",
+                                              entrypoint=self._start_command
             )
             service.save()
         else:
@@ -251,6 +260,26 @@ class DockerExecutor(BaseExecutor):
             return False
         return container['State']['Running']
 
+    def _login_repository(self):
+
+        try:
+            login_user = load_setting("DOCKER_LOGIN_USER")
+            login_pass = load_setting("DOCKER_LOGIN_PASS")
+            login_email = load_setting("DOCKER_LOGIN_EMAIL")
+            login_host = load_setting("DOCKER_LOGIN_HOST")
+        except ImproperlyConfigured:
+            pass
+
+        if login_user:
+            self.api.login(
+                username=login_user,
+                password=login_pass,
+                email=login_email,
+                registry=login_host,
+                reauth=True,
+                insecure_registry=True,
+            )
+
     @property
     def _start_command(self):
         start_command = "%s %smanage.py start_worker --vhost=%s --base=%s --username=%s --password=%s" % (
@@ -274,7 +303,6 @@ class DockerSocketExecutor(DockerExecutor):
 
 class RemoteDockerExecutor(DockerExecutor):
 
-
     def __init__(self, *args, **kwargs):
         """
         tls_config = docker.tls.TLSConfig(
@@ -286,37 +314,22 @@ class RemoteDockerExecutor(DockerExecutor):
 
         client_cert = load_setting("DOCKER_CLIENT_CERT")
         client_key = load_setting("DOCKER_CLIENT_KEY")
-        #client_ca = load_setting("DOCKER_CLIENT_CA")
-
-        login_user = load_setting("DOCKER_LOGIN_USER")
-        login_pass = load_setting("DOCKER_LOGIN_PASS")
-        login_email = load_setting("DOCKER_LOGIN_EMAIL")
-        login_host = load_setting("DOCKER_LOGIN_HOST")
-
 
         ssl_version = "TLSv1"
 
-        tls_config = TLSConfig(
-          client_cert=(client_cert, client_key),
-          #ca_cert=client_ca,
-          ssl_version=ssl_version,
-          verify=False,
-          assert_hostname=False
+        tls_config = TLSConfig(client_cert=(client_cert, client_key),
+                               ssl_version=ssl_version,
+                               verify=False,
+                               assert_hostname=False
         )
 
         base_url = load_setting("DOCKER_TLS_URL")
         self.api = Client(base_url, tls=tls_config)
 
-        self.api.login(
-            username=login_user,
-            password=login_pass,
-            email=login_email,
-            registry=login_host,
-            reauth=True,
-            insecure_registry=True,
-            )
+        self._login_repository()
 
         super(DockerExecutor, self).__init__(*args, **kwargs)
+
 
     def _pre_start(self):
             if ":" in DOCKER_IMAGE:
@@ -324,6 +337,7 @@ class RemoteDockerExecutor(DockerExecutor):
             else:
                 out = self.api.pull(repository=DOCKER_IMAGE)
             logger.info(out)
+
 
 class SpawnExecutor(BaseExecutor):
 

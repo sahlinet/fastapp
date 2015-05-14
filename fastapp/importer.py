@@ -41,6 +41,9 @@ def import_base(zf, user_obj, name, override_public, override_private):
 
     filelist = zf.namelist()
     for file in filelist:
+        # ignore files starting with '__'
+        if file.startswith('__'):
+            continue
         # static
         logger.info("staticfile: "+file)
         content = zf.open(file).read()
