@@ -92,7 +92,8 @@ class ApyViewSet(viewsets.ModelViewSet):
             raise APIException(response_data)
 
     def post_save(self, obj, created=False):
-        info(self.request.user.username, "Apy saved")
+        pass
+        #info(self.request.user.username, "Apy saved")
 
     def clone(self, request, base_pk, pk):
         base = get_object_or_404(Base, id=base_pk,
