@@ -25,7 +25,7 @@ class ContainerNotFound(Exception):
 MEM_LIMIT = "128m"
 CPU_SHARES = 512
 
-DOCKER_IMAGE = settings.get('FASTAPP_DOCKER_IMAGE',
+DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
                             'philipsahli/skyblue-planet-lite-worker:develop')
 
 

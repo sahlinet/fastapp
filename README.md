@@ -182,5 +182,5 @@ Development only (runserver) for loading static files, root path used for loadin
 
 # Usage
 
-- Read more on [sahli.net](https://sahli.net/software/django-fastapp)
+- Read more on [sahli.net](https://sahli.net/page/skyblue-platform)
 - Visit [http://localhost:8000/fastapp](http://localhost:8000/fastapp)
