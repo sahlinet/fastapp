@@ -9,12 +9,13 @@ import random
 from docker import Client
 from docker.tls import TLSConfig
 from docker.utils import kwargs_from_env
+from docker.errors import APIError
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 
-from fastapp.utils import load_setting
+from fastapp.utils import load_setting, load_var_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ class DockerExecutor(BaseExecutor):
                     'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
                     'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
                     'EXECUTOR': "docker",
-                    'constraint:node!=fed*': "docker",
+                    #'constraint:node!=fed*': "docker",
                 },
                 entrypoint = self._start_command
             )
@@ -263,11 +264,11 @@ class DockerExecutor(BaseExecutor):
     def _login_repository(self):
 
         try:
-            login_user = load_setting("DOCKER_LOGIN_USER")
-            login_pass = load_setting("DOCKER_LOGIN_PASS")
-            login_email = load_setting("DOCKER_LOGIN_EMAIL")
-            login_host = load_setting("DOCKER_LOGIN_HOST")
-        except ImproperlyConfigured:
+            login_user = load_setting("DOCKER_LOGIN_USER", False)
+            login_pass = load_setting("DOCKER_LOGIN_PASS", False)
+            login_email = load_setting("DOCKER_LOGIN_EMAIL", False)
+            login_host = load_setting("DOCKER_LOGIN_HOST", False)
+        except ImproperlyConfigured, e:
             pass
 
         if login_user:
@@ -312,8 +313,8 @@ class RemoteDockerExecutor(DockerExecutor):
         client = docker.Client(base_url='<https_url>', tls=tls_config)
         """
 
-        client_cert = load_setting("DOCKER_CLIENT_CERT")
-        client_key = load_setting("DOCKER_CLIENT_KEY")
+        client_cert = load_var_to_file("DOCKER_CLIENT_CERT")
+        client_key = load_var_to_file("DOCKER_CLIENT_KEY")
 
         ssl_version = "TLSv1"
 
@@ -332,11 +333,16 @@ class RemoteDockerExecutor(DockerExecutor):
 
 
     def _pre_start(self):
+        try:
             if ":" in DOCKER_IMAGE:
                 out = self.api.pull(repository=DOCKER_IMAGE.split(":")[0], tag=DOCKER_IMAGE.split(":")[1])
             else:
                 out = self.api.pull(repository=DOCKER_IMAGE)
             logger.info(out)
+        except APIError, e:
+            logger.warn("Not able to pull image")
+            logger.warn(e)
+
 
 
 class SpawnExecutor(BaseExecutor):

@@ -278,7 +278,7 @@ def check_code(code, name):
     return not (len(r) > 0 or len(errors) > 0), r, errors
 
 
-def load_setting(name):
+def load_setting(name, fail=True):
     v=None
     default = getattr(defaults, name, None)
     setting = getattr(settings, name, None)
@@ -288,13 +288,13 @@ def load_setting(name):
     elif default:
         v = default
         logger.debug("Loaded setting from defaults %s with value: %s" % (name, v))
-    if not v:
+    if not v and fail:
         logger.error("Could not load setting %s" % name)
         raise ImproperlyConfigured(name)
     return v
 
+
 def load_var_to_file(var):
-    #path = os.path.join(os.environ['HOME'], "tmp")
     path = "/tmp/"
     fq_file = os.path.join(path, var)
     content = os.environ[var]
@@ -304,9 +304,9 @@ def load_var_to_file(var):
         f = open(fq_file, 'w')
         f.write(content)
         f.close()
-        # fix \n to newlines
         if sys.platform == "darwin":
             os.popen4("echo $(cat %s) > %s" % (fq_file, fq_file))
         else:
             os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
+    logger.error(fq_file)
     return fq_file
