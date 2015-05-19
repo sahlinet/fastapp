@@ -233,6 +233,8 @@ class DockerExecutor(BaseExecutor):
             self.api.remove_container(id)
 
     def _get_container(self, id):
+        if not id:
+            raise ContainerNotFound()
         from docker import errors
         logger.debug("Get container (%s)" % id)
         try:
