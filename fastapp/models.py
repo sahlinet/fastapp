@@ -383,7 +383,6 @@ class Thread(models.Model):
         self.save()
 
 
-
 def default_pass():
     return get_user_model().objects.make_random_password()
 
@@ -395,31 +394,31 @@ class Executor(models.Model):
     password = models.CharField(max_length=20, default=default_pass)
     started = models.BooleanField(default=False)
 
-
     @property
     def vhost(self):
-        return generate_vhost_configuration(self.base.user.username, self.base.name)
+        return generate_vhost_configuration(self.base.user.username,
+                                            self.base.name)
 
     @property
     def implementation(self):
-        s_exec = getattr(settings, 'FASTAPP_WORKER_IMPLEMENTATION', 'fastapp.executors.local.SpawnExecutor')
-    	regex = re.compile("(.*)\.(.*)")
-    	r = regex.search(s_exec)
-    	s_mod = r.group(1)
-    	s_cls = r.group(2)
+        s_exec = getattr(settings, 'FASTAPP_WORKER_IMPLEMENTATION',
+                                   'fastapp.executors.local.SpawnExecutor')
+        regex = re.compile("(.*)\.(.*)")
+        r = regex.search(s_exec)
+        s_mod = r.group(1)
+        s_cls = r.group(2)
         m = __import__(s_mod, globals(), locals(), [s_cls])
         try:
-    	   cls = m.__dict__[s_cls]
-           return cls(
-               vhost = self.vhost,
-               base_name = self.base.name,
-               username = self.base.name,
-               password = self.password
-           )
+            cls = m.__dict__[s_cls]
+            return cls(
+                vhost=self.vhost,
+                base_name=self.base.name,
+                username=self.base.name,
+                password=self.password
+            )
         except KeyError, e:
             logger.error("Could not load %s" % s_exec)
             raise e
-
 
     def start(self):
         logger.info("Start manage.py start_worker")
