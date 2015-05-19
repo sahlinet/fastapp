@@ -14,7 +14,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.queue import connect_to_queue
 from fastapp import defaults
-#from fastapp.models import Base
 
 import sys
 import _ast

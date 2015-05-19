@@ -20,7 +20,7 @@
 					<td> {{ process.is_up }} </td>
 					<td> {{ process.running | date:"c"}} </td>
 					<td> {{ process.rss }} </td>
-					<td class="small"> {% for thread in process.threads.all %} 
+					<td class="small"> {% for thread in process.threads.all %}
 						{{ thread.name }} [{{ thread.health}}]</br>
 						{% endfor %}
 					</td>
@@ -42,6 +42,7 @@
 					<th>PID</th>
 					<th>Num instances</th>
 					<th>Instances</th>
+					<th>Log (Docker only)</th>
 				</tr>
 				{% for executor in executors %}
 				<tr>
@@ -57,6 +58,7 @@
 						<p> {{ instance.last_beat | date:"c"}} </p>
 						{% endfor %}
 					</td>
+					<td><a href="{% url 'base-log' executor.base.pk %}">Log</a></td>
 				</tr>
 				{% endfor %}
 			</table>

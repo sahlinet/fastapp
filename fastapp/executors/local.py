@@ -59,6 +59,9 @@ class BaseExecutor(object):
     def _pre_start(self):
         pass
 
+    def log(self, id):
+        raise NotImplementedError()
+
 
 class TutumExecutor(BaseExecutor):
 
@@ -293,7 +296,15 @@ class DockerExecutor(BaseExecutor):
                     self.base_name, self.password
             )
         return start_command.split(" ")
-        #return start_command
+
+    def log(self, id):
+        return self.api.logs(id,
+                      stdout=True,
+                      stderr=True,
+                      stream=True,
+                      timestamps=True,
+                      tail=200,
+        )
 
 
 class DockerSocketExecutor(DockerExecutor):

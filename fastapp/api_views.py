@@ -147,6 +147,22 @@ class BaseAdminViewSet(viewsets.ModelViewSet):
         return Response("ok", status=status.HTTP_202_ACCEPTED)
 
 
+class BaseLogViewSet(viewsets.ViewSet):
+    model = Base
+    renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (
+        TokenAuthentication,
+        SessionAuthentication,
+        BasicAuthentication
+        )
+    permission_classes = (permissions.IsAuthenticated, permissions.IsAdminUser)
+
+    def log(self, request, pk):
+        base = Base.objects.get(pk=pk)
+        logs = base.executor.implementation.log(base.executor.pid)
+        return Response(logs)
+
+
 class BaseViewSet(viewsets.ModelViewSet):
     model = Base
     serializer_class = BaseSerializer

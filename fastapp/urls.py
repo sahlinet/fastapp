@@ -10,7 +10,7 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
         DjendBaseRenameView, CockpitView, DropboxNotifyView
 from rest_framework import routers
 
-from fastapp.api_views import BaseAdminViewSet, BaseViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
+from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
 
 
 from django.views.decorators.cache import never_cache
@@ -57,6 +57,7 @@ urlpatterns = patterns('',
 
     url(r'^api/base/(?P<pk>\d+)/start/$', BaseViewSet.as_view({'post': 'start'}), name='base-stop'),
     url(r'^api/base/(?P<pk>\d+)/stop/$', BaseViewSet.as_view({'post': 'stop'}), name='base-start'),
+    url(r'^api/base/(?P<pk>\d+)/log/$', BaseLogViewSet.as_view({'get': 'log'}), name='base-log'),
     url(r'^api/base/(?P<pk>\d+)/restart/$', BaseViewSet.as_view({'post': 'restart'}), name='base-restart'),
     url(r'^api/base/(?P<pk>\d+)/destroy/$', BaseViewSet.as_view({'post': 'destroy'}), name='base-destroy'),
     url(r'^api/base/(?P<pk>\d+)/export/$', BaseExportViewSet.as_view({'get': 'export'}), name='base-export'),
