@@ -357,7 +357,6 @@ class RemoteDockerExecutor(DockerExecutor):
             logger.warn(e)
 
 
-
 class SpawnExecutor(BaseExecutor):
 
     def start(self, pid=None):
@@ -372,6 +371,7 @@ class SpawnExecutor(BaseExecutor):
             env['FASTAPP_WORKER_THREADCOUNT'] = str(load_setting("FASTAPP_WORKER_THREADCOUNT"))
             env['FASTAPP_PUBLISH_INTERVAL'] = str(load_setting("FASTAPP_PUBLISH_INTERVAL"))
             env['RABBITMQ_HOST'] = str(load_setting("WORKER_RABBITMQ_HOST"))
+            env['RABBITMQ_PORT'] = str(load_setting("WORKER_RABBITMQ_PORT"))
             python_paths = ""
             try:
                 for p in os.environ['PYTHONPATH'].split(":"):
