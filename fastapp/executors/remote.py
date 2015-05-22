@@ -74,7 +74,7 @@ def distribute(event, body, vhost, username, password):
                 vhost=vhost,
                 username=username,
                 password=password,
-                port=settings.RABBITMQ_PORT,
+                port=int(settings.RABBITMQ_PORT),
             )
 
             self.channel = self.connection.channel()

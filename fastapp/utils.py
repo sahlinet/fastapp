@@ -163,7 +163,7 @@ def send_client(channel_name, event, data):
     logger.debug("START EVENT_TO_QUEUE %s"   % event)
 
     host = settings.RABBITMQ_HOST
-    port = settings.RABBITMQ_PORT
+    port = int(settings.RABBITMQ_PORT)
     user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
     password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
 

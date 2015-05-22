@@ -29,7 +29,7 @@ class Command(BaseCommand):
         inactivate_thread.start()
 
         host = load_setting("RABBITMQ_HOST")
-        port = load_setting("RABBITMQ_PORT")
+        port = int(load_setting("RABBITMQ_PORT"))
 
         SENDER_PASSWORD = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
         RECEIVER_PASSWORD = load_setting("FASTAPP_CORE_RECEIVER_PASSWORD")
