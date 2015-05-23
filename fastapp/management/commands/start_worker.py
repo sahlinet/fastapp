@@ -71,8 +71,8 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-        for c in range(0, 10):
-            # start threads     
+        for c in range(0, settings.FASTAPP_WORKER_THREADCOUNT):
+            # start threads
             from fastapp.executors.remote import STATIC_QUEUE
             name = "StaticServerThread-%s-%s" % (c, base)
             thread = StaticServerThread(name, host, port, vhost, 
