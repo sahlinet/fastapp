@@ -137,11 +137,13 @@ def message(request, level, message):
         tag = "alert-info"
     messages.error(request, dt + " " + str(message)[:1000], extra_tags="%s safe" % tag)
 
+
 def sign(data):
     m = hashlib.md5()
     m.update(data)
     m.update(settings.SECRET_KEY)
     return "%s-%s" % (data, m.hexdigest()[:10])
+
 
 def channel_name_for_user(request):
     if request.user.is_authenticated():
@@ -154,10 +156,12 @@ def channel_name_for_user(request):
     logger.debug("channel_name: %s" % channel_name)
     return channel_name
 
+
 def channel_name_for_user_by_user(user):
     channel_name = "%s-%s" % (user.username, sign(user.username))
     logger.debug("channel_name: %s" % channel_name)
     return channel_name
+
 
 def send_client(channel_name, event, data):
     logger.debug("START EVENT_TO_QUEUE %s"   % event)
@@ -307,5 +311,4 @@ def load_var_to_file(var):
             os.popen4("echo $(cat %s) > %s" % (fq_file, fq_file))
         else:
             os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
-    logger.error(fq_file)
     return fq_file

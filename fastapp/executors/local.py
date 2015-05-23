@@ -303,7 +303,7 @@ class DockerExecutor(BaseExecutor):
                       stderr=True,
                       stream=True,
                       timestamps=True,
-                      tail=200,
+                      tail=20,
         )
 
 
