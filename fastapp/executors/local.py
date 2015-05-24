@@ -24,7 +24,7 @@ class ContainerNotFound(Exception):
     pass
 
 MEM_LIMIT = "128m"
-CPU_SHARES = 512
+#CPU_SHARES = 512
 
 DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
                             'philipsahli/skyblue-planet-lite-worker:develop')
@@ -98,7 +98,7 @@ class TutumExecutor(BaseExecutor):
                                               name=self.name,
                                               target_num_containers=1,
                                               mem_limit=MEM_LIMIT,
-                                              cpu_shares=CPU_SHARES,
+                                              #cpu_shares=CPU_SHARES,
                                               container_envvars=container_envvars,
                                               autorestart="ALWAYS",
                                               entrypoint=self._start_command
@@ -206,7 +206,7 @@ class DockerExecutor(BaseExecutor):
                 name=self.name,
                 detach = True,
                 mem_limit = MEM_LIMIT,
-                cpu_shares = CPU_SHARES,
+                #cpu_shares = CPU_SHARES,
                 environment = {
                     'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
                     'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
