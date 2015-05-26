@@ -307,7 +307,6 @@ class ImportTestCase(BaseTestCase):
             self.assertTrue(file in zf.namelist())
         self.assertEqual(self.base1_apy1.module, zf.read(files[0]))
 
-
     @patch("fastapp.utils.Connection.metadata")
     @patch("fastapp.utils.Connection.get_file")
     @patch("fastapp.utils.Connection.delete_file")
@@ -343,26 +342,26 @@ class ImportTestCase(BaseTestCase):
         self.client1.login(username='user1', password='pass')
         new_base_name = self.base1.name+"-new"
 
-        response = self.client1.post("/fastapp/api/base/import/", {'name': new_base_name, 'file': open(tempfile_name)})
+        response = self.client1.post("/fastapp/api/base/import/",
+                                     {'name': new_base_name,
+                                      'file': open(tempfile_name)})
         self.assertEqual(201, response.status_code)
         responsed_name = json.loads(response.content)['name']
         self.assertEqual(responsed_name, new_base_name)
         self.assertTrue(mock_put_file.call_count > 0)
 
         # check if setting is saved
-        self.assertEqual(1, Setting.objects.filter(base__name=new_base_name).count())
+        self.assertEqual(1,
+                         Setting.objects.filter(base__name=new_base_name).count())
         imported_apy_public = Apy.objects.get(name=self.base1_apy_public.name)
         imported_apy = Apy.objects.get(name=self.base1_apy_xml.name)
 
-        print Base.objects.get(name=new_base_name).config
-
-		# verify that boolean values are read correctly
+        # verify that boolean values are read correctly
         self.assertTrue(imported_apy_public.public)
         self.assertFalse(imported_apy.public)
 
         tf.close()
         os.remove(tempfile_name)
-
 
 
 class SyntaxCheckerTestCase(BaseTestCase):

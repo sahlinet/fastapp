@@ -29,7 +29,6 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
-from fastapp import __version__ as version
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 
 from fastapp.queue import generate_vhost_configuration
@@ -692,9 +691,6 @@ class DjendView(TemplateView):
         context['bases'] = Base.objects.filter(user=self.request.user).order_by('name')
         context['public_bases'] = Base.objects.filter(public=True).order_by('name')
 
-        context['FASTAPP_VERSION'] = version
-        import planet
-        context['PLANET_VERSION'] = planet.__VERSION__
         #try:
         #    token = self.request.user.auth_token
         #except Token.DoesNotExist:

@@ -10,19 +10,22 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from rest_framework import renderers
 
-from fastapp.importer import import_base
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
-from fastapp.models import Base, Apy, Setting, TransportEndpoint
-from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
-from fastapp.utils import info, check_code
 from django.db import transaction
 from django.core.management import call_command
+
+from rest_framework import renderers
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
+
+from fastapp.importer import import_base
+from fastapp.models import Base, Apy, Setting, TransportEndpoint
+from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
+from fastapp.utils import check_code
 
 from rest_framework.decorators import link
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -93,7 +96,6 @@ class ApyViewSet(viewsets.ModelViewSet):
 
     def post_save(self, obj, created=False):
         pass
-        #info(self.request.user.username, "Apy saved")
 
     def clone(self, request, base_pk, pk):
         base = get_object_or_404(Base, id=base_pk,
