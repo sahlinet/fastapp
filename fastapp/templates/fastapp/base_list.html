@@ -1,4 +1,8 @@
-{% extends "fastapp/index.html" %} {% block ngapp %} ng-app="execApp" ng-controller="BasesCtrl" {% endblock %} {% block additional_headers %}
+{% extends "fastapp/index.html" %}
+
+{% block title %}{{ block.super }} - Console {% endblock title %}
+
+{% block ngapp %} ng-app="execApp" ng-controller="BasesCtrl" {% endblock %} {% block additional_headers %}
 <div class="collapse navbar-collapse navbar-ex1-collapse">
     {% if user.is_authenticated %}
     <ul class="nav navbar-nav navbar-right ">

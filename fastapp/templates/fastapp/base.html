@@ -1,4 +1,9 @@
-{% extends "fastapp/index.html" %} {% block fastapp_header %} {{ block.super }} {% endblock %} {% block ngapp %} ng-app="execApp" {% endblock %} {% block main %}
+{% extends "fastapp/index.html" %}
+
+{% block title %}{{ block.super }} - {{ active_base.name }} {% endblock title %}
+
+{% block fastapp_header %} {{ block.super }} {% endblock %} {% block ngapp %} ng-app="execApp" {% endblock %} {% block main %}
+
 <!-- /.container -->
 <div class="container">
     <div class="row">
