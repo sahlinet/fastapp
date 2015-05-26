@@ -1,8 +1,9 @@
 from rest_framework import serializers
-#from django.core.urlresolvers import reverse
 from rest_framework.reverse import reverse
 from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint
 
+import logging
+logger = logging.getLogger(__name__)
 
 class CounterSerializer(serializers.ModelSerializer):
 
@@ -20,6 +21,9 @@ class ApySerializer(serializers.ModelSerializer):
 
 
 class PublicApySerializer(serializers.ModelSerializer):
+    """
+    Return all Apy objects which are made public. Enrich
+    """
     first_lastname = serializers.SerializerMethodField(method_name="creator")
     url = serializers.SerializerMethodField(method_name="detail_view")
 
@@ -29,12 +33,15 @@ class PublicApySerializer(serializers.ModelSerializer):
                   'first_lastname', 'url')
 
     def creator(self, obj):
-        user = obj.base.user
-        return user.first_name + " " + user.last_name
+        try:
+            user = obj.base.user
+            return user.first_name + " " + user.last_name
+        except Base.DoesNotExist, e:
+            logger.warn(e)
 
     def detail_view(self, obj):
-        #import pdb; pdb.set_trace()
-        return reverse('public-apy-detail', args=[obj.pk], request=self.context['request'])
+        return reverse('public-apy-detail', args=[obj.pk],
+                       request=self.context['request'])
 
 
 class SettingSerializer(serializers.ModelSerializer):
