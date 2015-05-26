@@ -65,6 +65,7 @@ class CockpitView(TemplateView):
             return HttpResponseNotFound()
         return super(CockpitView, self).dispatch(*args, **kwargs)
 
+
 class ResponseUnavailableViewMixing():
     def verify(self, request, base_model):
         if not base_model.state:
@@ -207,6 +208,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         logger.debug("deliver '%s' with '%s'" % (static_path, mimetype))
         return HttpResponse(f, content_type=mimetype)
 
+
 class DjendMixin(object):
 
     def connection(self, request):
@@ -295,7 +297,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             raise e
         return True
 
-    #@memory_profile
     def _handle_response(self, request, data, exec_model):
         response_class = data.get("response_class", None)
         default_status_code = 200
@@ -360,7 +361,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             else:
                 logger.warning("Wrong response")
                 return HttpResponseServerError("You're apy did not return any allowed response-class or is not called with 'json' or 'callback' as querystring.")
-
 
             return HttpResponse(content, content_type, status=response_status_code)
 
