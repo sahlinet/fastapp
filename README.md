@@ -21,7 +21,6 @@ Add fastapp to your urls.py
 
 # Configuration
 
-
 ## Required
 
 ### Threads
@@ -74,7 +73,7 @@ The server process has access to the docker.sock file. Either because the server
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
-    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-lite-worker:develop"
 
 or
 
@@ -88,15 +87,26 @@ Workers are started in a Docker container.
 
 Docker image to use:
 
-    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+    FASTAPP_DOCKER_IMAGE = "philipsahli/skyblue-planet-lite-worker:develop"
 
-Point to the docker instance and the stuff for TLS authentication. `load_var_to_file` expects the content from the files in an environment variable.
-You can also set a filepath if the files are on the machine.
+Point to the docker instance and the stuff for TLS authentication.
 
 	DOCKER_TLS_URL = "https://IPADDRESS:2376"
+
+If you are using a swarm cluster use port 3376:
+
+	DOCKER_TLS_URL = "https://IPADDRESS:3376"
+
+`load_var_to_file` expects the content from the files in an environment variable.
+
+The content of the pem file must be on one line, do so:
+
+	cat $FILE | awk 1 ORS='\\n'
+
+You can also set a filepath if the files are on the machine.
 	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")     # $HOME/.docker/xy/certs/cert.pem
 	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")		# $HOME/.docker/xy/certs/key.pem
-	DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem
+	# DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem
 
 Following stuff is needed for login to one private repository as you would do with `docker login`
 
@@ -120,6 +130,7 @@ Workers are started in a Docker container running on [Tutum.co](https://www.tutu
     FASTAPP_DOCKER_CPU_SHARES = 512
 
     FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
+
 
 ## Cache
 
