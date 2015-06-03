@@ -204,6 +204,7 @@ class BaseViewSet(viewsets.ModelViewSet):
         transaction.set_autocommit(False)
         logger.info("destroying %s: " % pk)
         base = self.get_queryset().get(id=pk)
+        base.stop()
         base.destroy()
         transaction.commit()
         return self.retrieve(request, pk=pk)
