@@ -5,7 +5,7 @@
 {% block fastapp_header %} {{ block.super }} {% endblock %} {% block ngapp %} ng-app="execApp" {% endblock %} {% block main %}
 
 <!-- /.container -->
-<div class="container">
+<div class="container" ng-controller="BasesCtrl">
     <div class="row">
         <h1>
             {{ FASTAPP_NAME }} {% if user.is_authenticated %}
@@ -21,6 +21,18 @@
             <a id="export" class="btn btn-default btn-xs" href="{% url 'base-export' active_base.id %}">
                 <span class="glyphicon glyphicon-download-alt"></span> Export</a>
 
+
+                <button type="button" class="btn btn-default btn-xs" ng-click="cycle_state(base)">
+                    <span ng-show="base.state == false">Start</span>
+                    <span ng-show="base.state == true">Stop</span>
+                </button>
+
+                <span ng-if="base.state">
+                    <button type="button" class="btn btn-default btn-xs" ng-click="restart(base)">
+                        <span>Restart</span>
+                    </button>
+                </span>
+
             {% endif %}
         </h1>
     </div>
@@ -28,7 +40,7 @@
         {{ active_base.template }} {% block content %} {% endblock %}
     </div>
     <div class="row">
-        <div class="col-md-12" ng-controller="BasesCtrl">
+        <div class="col-md-12" >
             <h3>Foreign Apys</h3>
             <p>Filter: </p>
             {% verbatim %}
@@ -317,4 +329,5 @@
 
         {% endverbatim %}
     </div>
-    {% endblock main %}
+</div>
+{% endblock main %}
