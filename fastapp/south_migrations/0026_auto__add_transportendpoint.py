@@ -20,7 +20,8 @@ class Migration(SchemaMigration):
         db.send_create_signal(u'fastapp', ['TransportEndpoint'])
 
         # to create authtokens for existing users
-        from django.contrib.auth.models import User
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         from rest_framework.authtoken.models import Token
 
         for user in User.objects.all():

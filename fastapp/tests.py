@@ -5,7 +5,6 @@ import StringIO
 import zipfile
 from mock import patch
 from django.test import TransactionTestCase, Client
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from fastapp.models import AuthProfile
 from django.db.models.signals import post_save, post_delete
@@ -16,6 +15,9 @@ from pyflakes.messages import UnusedImport, Message
 
 from fastapp.views import ResponseUnavailableViewMixing
 from swampdragon.models import SelfPublishModel
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class BaseTestCase(TransactionTestCase):

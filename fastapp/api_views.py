@@ -8,7 +8,6 @@ from rest_framework import status
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from django.db import transaction
@@ -25,6 +24,9 @@ from fastapp.utils import check_code
 from rest_framework.decorators import link
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 import logging
 logger = logging.getLogger(__name__)
