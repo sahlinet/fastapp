@@ -225,11 +225,11 @@ class ApyExecutionTestCase(BaseTestCase):
                 # get state (RUNNING)
                 response = self.client1.get(self.base1_apy1.get_exec_url()+"&rid=%s" % rid, HTTP_ACCEPT='application/xml')
                 self.assertEqual(200, response.status_code)
-                tout = json.dumps({u'status': u'RUNNING', "url": "/fastapp/base/base1/exec/base1_apy1/?json=&rid="+str(rid), 'rid': rid, 'id': u'base1_apy1'})
-                self.assertEqual(response.content, tout)
+                tout = {u'status': u'RUNNING', "url": "/fastapp/base/base1/exec/base1_apy1/?json=&rid="+str(rid), 'rid': rid, 'id': u'base1_apy1'}
+                self.assertEqual(json.loads(response.content)['rid'], tout['rid'])
 
                 # mock creation of response
-                tout = json.dumps({u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'rid': rid, 'id': u'base1_apy1'})
+                tout = {u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'rid': rid, 'id': u'base1_apy1'}
                 transaction.tout = tout
                 transaction.save()
                 self.assertEqual(transaction.apy, self.base1_apy1)
