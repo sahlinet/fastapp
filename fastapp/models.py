@@ -535,9 +535,10 @@ def synchronize_to_storage(sender, *args, **kwargs):
     except Exception, e:
         logger.exception(e)
 
-    if kwargs.get('created'):
+    if kwargs.get('created') or len(Counter.objects.filter(apy=instance))==0:
         counter = Counter(apy=instance)
         counter.save()
+        logger.debug("Counter created")
 
     if instance.base.state:
         distribute(CONFIGURATION_EVENT, serializers.serialize("json",
