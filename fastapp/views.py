@@ -8,6 +8,7 @@ import copy
 import sys
 import threading
 import re
+from StringIO import StringIO
 
 from datetime import datetime, timedelta
 
@@ -36,6 +37,8 @@ from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, T
 from fastapp.models import RUNNING, FINISHED
 from fastapp import responses
 from fastapp.executors.remote import call_rpc_client, get_static
+
+from fastapp.importer import _handle_settings, _read_config
 
 User = get_user_model()
 
@@ -125,16 +128,16 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         f = open(full_path, 'r')
                     except IOError, e:
                         logger.warning(e)
-                    if not f:
-                        try:
-                            DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
-                            logger.debug("load %s from local filesystem (dropbox app)" % static_path)
-                            filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
-                            f = open(filepath, 'r')
-                        except IOError, e:
-                            logger.warning(e)
-                            warn(channel, static_path + " not found")
-                            return HttpResponseNotFound(static_path + " not found")
+                    #if not f:
+                    #    try:
+                    #        DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
+                    #        logger.debug("load %s from local filesystem (dropbox app)" % static_path)
+                    #        filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
+                    #        f = open(filepath, 'r')
+                    #    except IOError, e:
+                    #        logger.warning(e)
+                    #        warn(channel, static_path + " not found")
+                    #        return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
                     logger.debug("load %s from module in worker" % static_path)
@@ -391,10 +394,12 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             # look for transaction
             transaction = Transaction.objects.get(pk=rid)
             if transaction.tout:
-                data = json.loads(transaction.tout)
-                #data.update({'logs':
-                #        json.loads(serializers.serialize("json", transaction.logs.all()))
-                #    })
+                logger.debug(transaction.tout)
+                #data = json.loads(transaction.tout)
+                data = transaction.tout
+                data.update({'logs':
+                        json.loads(serializers.serialize("json", transaction.logs.all()))
+                    })
             else:
                 data = {'status': transaction.get_status_display()}
                 redirect_to = request.get_full_path()
@@ -758,44 +763,100 @@ def process_user(uid):
 
     has_more = True
 
+    def get_app_config(client, path):
+        appconfig_file = StringIO()
+        appconfig_file = StringIO()
+        appconfig_file.write(client.get_file_content(path))
+        appconfig_file.seek(0) 
+        appconfig = _read_config(appconfig_file)
+        appconfig_file.close()
+        return appconfig
+
     while has_more:
         result = client.delta(cursor)
 
         for path, metadata in result['entries']:
-
-            # Handle only files ending with ".py"
-            if not path.endswith("py") or not metadata or "/." in path:
-                logger.debug("Ignore path: %s" % path)
-                continue
-
-            regex = re.compile("/(.*)/([a-zA-Z-_0-9]*).py")
-            r = regex.search(path)
-            if not r:
-                logger.warn("regex '/(.*)/(.*).py' no results in '%s'" % path)
-                continue
-            names = r.groups()
-            base_name = names[0]
-            apy_name = names[1]
-            logger.info("notification for: base_name: %s, apy_name: %s, user: %s" % (base_name, apy_name, user))
-
             try:
-                apy = Apy.objects.get(name=apy_name, base__name=base_name)
-            except Apy.DoesNotExist, e:
-                logger.warn(e.message)
-                continue
 
-            new_rev = metadata['rev']
-            logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
-            if apy.rev == new_rev:
-                logger.debug("no changes")
-            else:
-                logger.info("load changes for %s" % path)
+                # Handle only files ending with ".py" or "config"
+                #if not path.endswith("py") or not metadata or "/." in path or not path.endswith("config") or not path is "index.html":
+                #    logger.info("Ignore path: %s" % path)
+                #    continue
 
-                content, rev = client.get_file_content_and_rev("%s" % path)
-                apy.module = content
-                apy.rev = rev
-                apy.save()
-                logger.debug("Apy %s saved" % apy.name)
+                # setup recognition
+                regex = re.compile("/(.*)/.*")
+                r = regex.search(path)
+                if not r:
+                    logger.warn("regex '/(.*)/(.*).py' no results in '%s'" % path)
+                    continue
+                names = r.groups()
+                base_name = names[0]
+                appconfig_path = "%s/app.config" % base_name
+                logger.info("notification for: base_name: %s, user: %s" % (base_name, user))
+
+                if "/." in path:
+                    logger.debug("Ignore file starting with a dot")
+                    continue
+
+                # Handle app.config
+                elif "app.config" in path:
+                    appconfig = get_app_config(client, path)
+                    logger.info("Read app.config for base %s" % base_name)
+                    # base
+                    base_obj, created = Base.objects.get_or_create(name=base_name, user=user)
+                    base_obj.save()
+                    logger.info("base %s created?: %s" % (base_name, created))
+                    # settings
+                    _handle_settings(appconfig['settings'], base_obj)
+
+                # Handle index.html
+                elif path is "index.html":
+                    base_obj = Base.objects.get(name=base_name, user=user)
+                    index_html = client.get_file_content(path)
+                    base_obj.content = index_html
+                    base_obj.save()
+
+                # Handle apys
+                elif path.endswith("py"):
+                    logger.info("Try to handle apy on path %s" % path)
+                    regex = re.compile("/(.*)/([a-zA-Z-_0-9.]*).py")
+                    r = regex.search(path)
+                    apy_name = r.groups()[1]
+                    try:
+                        base_obj = Base.objects.get(name=base_name, user=user)
+                        apy, created = Apy.objects.get_or_create(name=apy_name, base=base_obj)
+                        if created:
+                            apy.save()
+                            logger.info("new apy %s created" % apy_name)
+                        logger.info("apy %s already exists" % apy_name)
+                    except Apy.DoesNotExist, e:
+                        logger.warn(e.message)
+                        continue
+
+
+                    description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
+                    if description:
+                        apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
+                        apy.save()
+
+
+                    new_rev = metadata['rev']
+                    logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
+                    if apy.rev == new_rev:
+                        logger.debug("no changes")
+                    else:
+                        logger.info("load changes for %s" % path)
+
+                        content, rev = client.get_file_content_and_rev("%s" % path)
+                        apy.module = content
+                        apy.rev = rev
+                        apy.save()
+                        logger.info("Apy %s saved" % apy.name)
+                else:
+                    logger.warn("Path %s ignored" % path)
+            except Exception, e:
+                logger.error("Exception handling path %s" % path)
+                logger.exception(e)
 
         # Update cursor
         cursor = result['cursor']
@@ -812,11 +873,11 @@ class DropboxNotifyView(View):
         return HttpResponse(challenge)
 
     def post(self, request):
-        logger.debug(request.body)
 
         # get delta for user
         for uid in json.loads(request.body)['delta']['users']:
             threading.Thread(target=process_user, args=(uid,)).start()
+            #pass
 
         return HttpResponse()
 

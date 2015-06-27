@@ -5,8 +5,49 @@ from configobj import ConfigObj
 
 from fastapp.models import Base, Setting, Apy
 from fastapp.utils import Connection
+from StringIO import StringIO
 
 logger = logging.getLogger(__name__)
+
+def _read_config(app_config):
+    # read app.config
+    #app_config_file = StringIO()
+    #app_config_file.write(app_config)
+    appconfig = ConfigObj(app_config)
+    #app_config_file.close()
+    return appconfig
+
+def _handle_settings(settings, base_obj, override_public=False, override_private=False):
+    """
+    dict with settings (k, v)
+    """
+    # get settings
+    print settings.items()
+    for k, v in settings.items():
+        setting_obj, created = Setting.objects.get_or_create(base=base_obj, key=k)
+        # set if empty
+        if not setting_obj.value:
+            setting_obj.value = v['value']
+        # override_public
+        if setting_obj.public and override_public:
+            setting_obj.value = v['value']
+        # override_private
+        if not setting_obj.public and override_private:
+            setting_obj.value = v['value']
+        setting_obj.public = strtobool(v['public'])
+        setting_obj.save()
+
+def _handle_apy(filename, content, base_obj, appconfig):
+    name = filename.replace(".py", "")
+    apy, created = Apy.objects.get_or_create(base=base_obj, name=name)
+    apy.module = content
+    description = appconfig['modules'][name]['description']
+    if description:
+        apy.description = description
+    public = appconfig['modules'][name].get('public', None)
+    if public:
+        apy.public = strtobool(public)
+    apy.save()
 
 
 def import_base(zf, user_obj, name, override_public, override_private):
@@ -21,52 +62,35 @@ def import_base(zf, user_obj, name, override_public, override_private):
     except Exception:
         pass
 
-    # read app.config
-    appconfig = ConfigObj(zf.open("app.config"))
+    # app.config
+    print zf.open("app.config")
+    appconfig = _read_config(zf.open("app.config"))
 
-    # get settings
-    for k, v in appconfig['settings'].items():
-        setting_obj, created = Setting.objects.get_or_create(base=base, key=k)
-        # set if empty
-        if not setting_obj.value:
-            setting_obj.value = v['value']
-        # override_public
-        if setting_obj.public and override_public:
-            setting_obj.value = v['value']
-        # override_private
-        if not setting_obj.public and override_private:
-            setting_obj.value = v['value']
-        setting_obj.public = strtobool(v['public'])
-        setting_obj.save()
+    # Apy
+    for apy in appconfig['modules'].keys():
+        filename = apy+".py"
+        apy_content = zf.open(filename).read()
+        _handle_apy(filename, apy_content, base, appconfig)
+
+    # settings
+    settings = appconfig['settings']
+    _handle_settings(settings, base)
 
     filelist = zf.namelist()
-    for file in filelist:
+    for filename in filelist:
         # ignore files starting with '__'
-        if file.startswith('__'):
+        if filename.startswith('__'):
             continue
+
         # static
-        logger.info("staticfile: "+file)
-        content = zf.open(file).read()
-        if file == "index.html":
+        logger.info("staticfile: "+filename)
+        content = zf.open(filename).read()
+        if filename == "index.html":
             base.content = content
             base.save()
 
-        if "static" in file:
-            file = "/%s/%s" % (base.name, file)
-            dropbox_connection.put_file(file, content)
-
-        # Apy
-        if file.endswith(".py"):
-            logger.info("apy: "+file)
-            name = file.replace(".py", "")
-            apy, created = Apy.objects.get_or_create(base=base, name=name)
-            apy.module = content
-            description = appconfig['modules'][name]['description']
-            if description:
-                apy.description = description
-            public = appconfig['modules'][name].get('public', None)
-            if public:
-                apy.public = strtobool(public)
-            apy.save()
+        if "static" in filename:
+            file = "/%s/%s" % (base.name, filename)
+            dropbox_connection.put_file(filename, content)
 
     return base
