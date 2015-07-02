@@ -23,11 +23,11 @@ class TransactionRouter(PrivateBaseModelPublisherRouter):
     include_related = [ApySocketSerializer]
 
     def get_object(self, **kwargs):
-        logger.info(kwargs)
+        #logger.info(kwargs)
         return self.model.objects.get(pk=kwargs['pk'])
 
     def get_query_set(self, **kwargs):
-        logger.info(kwargs)
+        #logger.info(kwargs)
         return self.model.all()
 
     def get_subscription_contexts(self, **kwargs):
@@ -40,11 +40,11 @@ class LogRouter(PrivateBaseModelPublisherRouter):
     route_name = 'logentry-router'
 
     def get_object(self, **kwargs):
-        logger.info(kwargs)
+        #logger.info(kwargs)
         return self.model.objects.get(pk=kwargs['pk'])
 
     def get_query_set(self, **kwargs):
-        logger.info(kwargs)
+        #logger.info(kwargs)
         return self.model.all()
 
 #    def get_subscription_contexts(self, **kwargs):
