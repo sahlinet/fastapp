@@ -5,6 +5,7 @@ from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint
 import logging
 logger = logging.getLogger(__name__)
 
+
 class CounterSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -18,6 +19,10 @@ class ApySerializer(serializers.ModelSerializer):
     class Meta:
         model = Apy
         fields = ('id', 'name', 'module', 'counter', 'description', 'public')
+
+    def save_object(self, obj, **kwargs):
+        logger.debug("save_and_sync")
+        obj.save_and_sync(**kwargs)
 
 
 class PublicApySerializer(serializers.ModelSerializer):
@@ -71,3 +76,7 @@ class BaseSerializer(serializers.ModelSerializer):
         model = Base
         fields = ('id', 'name', 'state', 'uuid',
                   'pids', 'content', 'foreign_apys')
+
+    def save_object(self, obj, **kwargs):
+        logger.debug("save_and_sync")
+        obj.save_and_sync(**kwargs)

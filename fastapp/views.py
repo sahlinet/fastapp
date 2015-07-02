@@ -444,6 +444,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
     def dispatch(self, *args, **kwargs):
         return super(DjendExecView, self).dispatch(*args, **kwargs)
 
+
 class DjendSharedView(View, ContextMixin):
 
     def get(self, request, *args, **kwargs):
@@ -477,6 +478,7 @@ class DjendSharedView(View, ContextMixin):
         rs = base_model.template(context)
         return HttpResponse(rs)
 
+
 class DjendBaseCreateView(View):
 
     def post(self, request, *args, **kwargs):
@@ -489,7 +491,7 @@ class DjendBaseCreateView(View):
         base, created = Base.objects.get_or_create(name=request.POST.get('new_base_name'), user=User.objects.get(username=request.user.username))
         if not created:
             return HttpResponseBadRequest("A base with this name does already exist.")
-        base.save()
+        base.save_and_sync()
         from fastapp.api_serializers import BaseSerializer
         base_data = BaseSerializer(base)
         response_data = base_data.data
@@ -767,7 +769,7 @@ def process_user(uid):
         appconfig_file = StringIO()
         appconfig_file = StringIO()
         appconfig_file.write(client.get_file_content(path))
-        appconfig_file.seek(0) 
+        appconfig_file.seek(0)
         appconfig = _read_config(appconfig_file)
         appconfig_file.close()
         return appconfig

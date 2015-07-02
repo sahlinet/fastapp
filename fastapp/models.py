@@ -193,7 +193,7 @@ class Base(models.Model):
     def state(self):
         try:
             return self.executor.is_running()
-        except IndexError:
+        except (IndexError, Executor.DoesNotExist):
             return False
 
     @property
@@ -216,6 +216,18 @@ class Base(models.Model):
 
     def __str__(self):
         return "<Base: %s>" % self.name
+
+    def save_and_sync(self, **kwargs):
+        ready_to_sync.send(self.__class__, instance=self)
+        self.save(**kwargs)
+
+    #def save(self, **kwargs):
+    #    logger.debug("create executor for base %s" % self)
+    #    print self.__dict__
+    #    if not hasattr(self, 'executor'):
+    #        executor = Executor(base=self)
+    #        executor.save()
+    #    self.save(**kwargs)
 
 MODULE_DEFAULT_CONTENT = """def func(self):\n    pass"""
 
@@ -242,6 +254,10 @@ class Apy(models.Model):
     def get_exec_url(self):
         return "/fastapp/base/%s/exec/%s/?json=" % (self.base.name, self.name)
 
+    def save_and_sync(self, **kwargs):
+        ready_to_sync.send(self.__class__, instance=self)
+        self.save(**kwargs)
+
 
 class Counter(models.Model):
     apy = models.OneToOneField(Apy, related_name="counter")
@@ -258,8 +274,9 @@ TRANSACTION_STATE_CHOICES = (
     ('T', 'TIMEOUT'),
 )
 
+
 def create_random():
-    rand=random.SystemRandom().randint(10000000,99999999)
+    rand = random.SystemRandom().randint(10000000, 99999999)
     return rand
 
 from django.utils import timezone
@@ -453,7 +470,6 @@ class Executor(models.Model):
         self.implementation.stop(self.pid)
 
         if not self.implementation.state(self.pid):
-        #    self.pid = None
             self.started = False
 
             # Threads
@@ -499,26 +515,31 @@ class TransportEndpoint(models.Model):
     override_settings_pub = models.BooleanField(default=True)
 
 
-@receiver(post_save, sender=Base)
+import django.dispatch
+ready_to_sync = django.dispatch.Signal()
+
+
+@receiver(ready_to_sync, sender=Base)
 def initialize_on_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
     # TODO: If a user connects his dropbox after creating a base, it should be initialized anyway.
 
     connection = Connection(instance.user.authprofile.access_token)
-    if not kwargs.get('created'):
-        connection.put_file("%s/index.html" % (instance.name), instance.content)
-        return
-
+    #if not kwargs.get('created'):
+    #    connection.put_file("%s/index.html" % (instance.name), instance.content)
+    #    return
+    logger.info("initialize_on_storage for Base '%s'" % instance.name)
+    logger.info(kwargs)
     try:
         connection.create_folder("%s" % instance.name)
     except Exception, e:
         logger.exception(e)
-        connection.put_file("%s/app.config" % (instance.name), instance.config)
-    except Exception, e:
-        logger.exception(e)
+
+    connection.put_file("%s/app.config" % (instance.name), instance.config)
+    connection.put_file("%s/index.html" % (instance.name), instance.content)
 
 
-@receiver(post_save, sender=Apy)
+@receiver(ready_to_sync, sender=Apy)
 def synchronize_to_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
     try:
@@ -535,7 +556,7 @@ def synchronize_to_storage(sender, *args, **kwargs):
     except Exception, e:
         logger.exception(e)
 
-    if kwargs.get('created') or len(Counter.objects.filter(apy=instance))==0:
+    if len(Counter.objects.filter(apy=instance))==0:
         counter = Counter(apy=instance)
         counter.save()
         logger.debug("Counter created")
@@ -550,6 +571,7 @@ def synchronize_to_storage(sender, *args, **kwargs):
                    )
 
 
+# Distribute signals
 @receiver(post_save, sender=Setting)
 def send_to_workers(sender, *args, **kwargs):
     instance = kwargs['instance']
@@ -563,7 +585,7 @@ def send_to_workers(sender, *args, **kwargs):
 
 
 @receiver(post_save, sender=Base)
-def synchronize_base_to_storage(sender, *args, **kwargs):
+def setup_base(sender, *args, **kwargs):
     instance = kwargs['instance']
 
     # create executor instance if none
