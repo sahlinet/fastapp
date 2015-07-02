@@ -41,7 +41,6 @@ class ThreadPool:
 if __name__ == '__main__':
     from random import randrange
     delays = [randrange(1, 10) for i in range(100)]
-
     from time import sleep
 
     def wait_delay(d):

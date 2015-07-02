@@ -754,16 +754,7 @@ def dropbox_auth_disconnect(request):
     return HttpResponseRedirect("/profile/")
 
 
-def process_user(uid):
-    auth_profile = AuthProfile.objects.filter(dropbox_userid=uid)[0]
-    token = auth_profile.access_token
-    user = auth_profile.user
-    logger.info("Process change notfication for user: %s" % user.username)
-    cursor = cache.get("cursor-%s" % uid)
-
-    client = Connection(token)
-
-    has_more = True
+def process_file(path, metadata, client, user):
 
     def get_app_config(client, path):
         appconfig_file = StringIO()
@@ -774,91 +765,108 @@ def process_user(uid):
         appconfig_file.close()
         return appconfig
 
+    try:
+
+        # Handle only files ending with ".py" or "config"
+        #if not path.endswith("py") or not metadata or "/." in path or not path.endswith("config") or not path is "index.html":
+        #    logger.info("Ignore path: %s" % path)
+        #    continue
+
+        # setup recognition
+        regex = re.compile("/(.*)/.*")
+        r = regex.search(path)
+        if not r:
+            logger.warn("regex '/(.*)/(.*).py' no results in '%s'" % path)
+            return
+        names = r.groups()
+        base_name = names[0]
+        appconfig_path = "%s/app.config" % base_name
+        logger.info("notification for: base_name: %s, user: %s" % (base_name, user))
+
+        if "/." in path:
+            logger.debug("Ignore file starting with a dot")
+            return
+
+        # Handle app.config
+        elif "app.config" in path:
+            appconfig = get_app_config(client, path)
+            logger.info("Read app.config for base %s" % base_name)
+            # base
+            base_obj, created = Base.objects.get_or_create(name=base_name, user=user)
+            base_obj.save()
+            logger.info("base %s created?: %s" % (base_name, created))
+            # settings
+            _handle_settings(appconfig['settings'], base_obj)
+
+        # Handle index.html
+        elif path is "index.html":
+            base_obj = Base.objects.get(name=base_name, user=user)
+            index_html = client.get_file_content(path)
+            base_obj.content = index_html
+            base_obj.save()
+
+        # Handle apys
+        elif path.endswith("py"):
+            logger.info("Try to handle apy on path %s" % path)
+            regex = re.compile("/(.*)/([a-zA-Z-_0-9.]*).py")
+            r = regex.search(path)
+            apy_name = r.groups()[1]
+            try:
+                base_obj = Base.objects.get(name=base_name, user=user)
+                apy, created = Apy.objects.get_or_create(name=apy_name, base=base_obj)
+                if created:
+                    apy.save()
+                    logger.info("new apy %s created" % apy_name)
+                logger.info("apy %s already exists" % apy_name)
+            except Apy.DoesNotExist, e:
+                logger.warn(e.message)
+                return
+
+            description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
+            if description:
+                apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
+                apy.save()
+
+            new_rev = metadata['rev']
+            logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
+            if apy.rev == new_rev:
+                logger.debug("no changes")
+            else:
+                logger.info("load changes for %s" % path)
+
+                content, rev = client.get_file_content_and_rev("%s" % path)
+                apy.module = content
+                apy.rev = rev
+                apy.save()
+                logger.info("Apy %s saved" % apy.name)
+        else:
+            logger.warn("Path %s ignored" % path)
+    except Exception, e:
+        logger.error("Exception handling path %s" % path)
+        logger.exception(e)
+
+
+def process_user(uid):
+    auth_profile = AuthProfile.objects.filter(dropbox_userid=uid)[0]
+    token = auth_profile.access_token
+    user = auth_profile.user
+    logger.info("START process user '%s'" % user)
+    logger.info("Process change notfication for user: %s" % user.username)
+    cursor = cache.get("cursor-%s" % uid)
+
+    client = Connection(token)
+
+    has_more = True
+
+    from threadpool import ThreadPool
+    from random import uniform
     while has_more:
         result = client.delta(cursor)
 
+        pool = ThreadPool(20)
         for path, metadata in result['entries']:
-            try:
-
-                # Handle only files ending with ".py" or "config"
-                #if not path.endswith("py") or not metadata or "/." in path or not path.endswith("config") or not path is "index.html":
-                #    logger.info("Ignore path: %s" % path)
-                #    continue
-
-                # setup recognition
-                regex = re.compile("/(.*)/.*")
-                r = regex.search(path)
-                if not r:
-                    logger.warn("regex '/(.*)/(.*).py' no results in '%s'" % path)
-                    continue
-                names = r.groups()
-                base_name = names[0]
-                appconfig_path = "%s/app.config" % base_name
-                logger.info("notification for: base_name: %s, user: %s" % (base_name, user))
-
-                if "/." in path:
-                    logger.debug("Ignore file starting with a dot")
-                    continue
-
-                # Handle app.config
-                elif "app.config" in path:
-                    appconfig = get_app_config(client, path)
-                    logger.info("Read app.config for base %s" % base_name)
-                    # base
-                    base_obj, created = Base.objects.get_or_create(name=base_name, user=user)
-                    base_obj.save()
-                    logger.info("base %s created?: %s" % (base_name, created))
-                    # settings
-                    _handle_settings(appconfig['settings'], base_obj)
-
-                # Handle index.html
-                elif path is "index.html":
-                    base_obj = Base.objects.get(name=base_name, user=user)
-                    index_html = client.get_file_content(path)
-                    base_obj.content = index_html
-                    base_obj.save()
-
-                # Handle apys
-                elif path.endswith("py"):
-                    logger.info("Try to handle apy on path %s" % path)
-                    regex = re.compile("/(.*)/([a-zA-Z-_0-9.]*).py")
-                    r = regex.search(path)
-                    apy_name = r.groups()[1]
-                    try:
-                        base_obj = Base.objects.get(name=base_name, user=user)
-                        apy, created = Apy.objects.get_or_create(name=apy_name, base=base_obj)
-                        if created:
-                            apy.save()
-                            logger.info("new apy %s created" % apy_name)
-                        logger.info("apy %s already exists" % apy_name)
-                    except Apy.DoesNotExist, e:
-                        logger.warn(e.message)
-                        continue
-
-
-                    description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
-                    if description:
-                        apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
-                        apy.save()
-
-
-                    new_rev = metadata['rev']
-                    logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
-                    if apy.rev == new_rev:
-                        logger.debug("no changes")
-                    else:
-                        logger.info("load changes for %s" % path)
-
-                        content, rev = client.get_file_content_and_rev("%s" % path)
-                        apy.module = content
-                        apy.rev = rev
-                        apy.save()
-                        logger.info("Apy %s saved" % apy.name)
-                else:
-                    logger.warn("Path %s ignored" % path)
-            except Exception, e:
-                logger.error("Exception handling path %s" % path)
-                logger.exception(e)
+            pool.add_task(process_file, path, metadata, client, user)
+        pool.wait_completion()
 
         # Update cursor
         cursor = result['cursor']
@@ -866,6 +874,8 @@ def process_user(uid):
 
         # Repeat only if there's more to do
         has_more = result['has_more']
+
+    logger.info("END process user '%s'" % user)
 
 
 class DropboxNotifyView(View):
@@ -878,8 +888,9 @@ class DropboxNotifyView(View):
 
         # get delta for user
         for uid in json.loads(request.body)['delta']['users']:
-            threading.Thread(target=process_user, args=(uid,)).start()
-            #pass
+            thread = threading.Thread(target=process_user, args=(uid,))
+            thread.daemon = True
+            thread.start()
 
         return HttpResponse()
 
