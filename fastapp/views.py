@@ -44,7 +44,7 @@ User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-use_plans = True
+use_plans = False
 try:
     from plans.quota import get_user_quota
 except ImportError:

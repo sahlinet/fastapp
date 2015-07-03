@@ -6,10 +6,11 @@ import zipfile
 from mock import patch
 from django.test import TransactionTestCase, Client
 from django.core.urlresolvers import reverse
+from django.db import IntegrityError
 from fastapp.models import AuthProfile
 from django.db.models.signals import post_save, post_delete
 
-from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage_on_delete, synchronize_to_storage, initialize_on_storage, Transaction, Setting
+from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage_on_delete, synchronize_to_storage, initialize_on_storage, Transaction, Setting, ready_to_sync
 from fastapp.utils import check_code
 from pyflakes.messages import UnusedImport, Message
 
@@ -27,6 +28,7 @@ class BaseTestCase(TransactionTestCase):
     @patch("fastapp.models.distribute")
     def setUp(self, distribute_mock):
         post_save.disconnect(synchronize_to_storage, sender=Apy)
+        ready_to_sync.disconnect(synchronize_to_storage, sender=Apy)
         post_save.disconnect(initialize_on_storage, sender=Base)
         post_delete.disconnect(synchronize_to_storage_on_delete, sender=Apy)
         distribute_mock.return_value = True
@@ -56,10 +58,6 @@ class BaseTestCase(TransactionTestCase):
         self.base1_apy_public.public = True
         self.base1_apy_public.save()
 
-        # counter is done in disconnected signal
-        counter = Counter(apy=self.base1_apy1)
-        counter.save()
-
         # add setting to base1
         setting = Setting(base=self.base1)
         setting.key = "setting1_key"
@@ -70,6 +68,15 @@ class BaseTestCase(TransactionTestCase):
         self.client2 = Client()  # logged in without objects
         self.client3 = Client()  # not logged in
         self.client_csrf = Client(enforce_csrf_checks=True)  # not logged in
+
+
+class BaseObjectTestCase(BaseTestCase):
+
+    def test_base_duplicates_not_possible(self):
+        #self.base1_duplicate = #Base.objects.create(name=self.base1.name,
+        #                    user=self.user1)
+        #
+        self.assertRaises(IntegrityError, Base.objects.create, name=self.base1.name, user=self.user1)
 
 
 class ApiTestCase(BaseTestCase):
@@ -242,6 +249,8 @@ class ApyExecutionTestCase(BaseTestCase):
                 transaction = Transaction.objects.get(pk=rid)
                 self.assertEqual(int, type(transaction.duration))
 
+#    def test_apy_has_counter_instance(self):
+#        self.assertTrue(len(self.base1_apy1.counter) is 1)
 
 @patch("fastapp.models.distribute")
 class SettingTestCase(BaseTestCase):
@@ -252,7 +261,7 @@ class SettingTestCase(BaseTestCase):
         json_data = {u'key': u'key', 'value': 'value'}
         response = self.client1.post("/fastapp/api/base/%s/setting/" % self.base1.id, json_data)
         self.assertEqual(201, response.status_code)
-        json_data_response = {"id": 21, "key": "key", "public": False, "value": u"value"}
+        json_data_response = {"id": 22, "key": "key", "public": False, "value": u"value"}
         self.assertJSONEqual(response.content, json_data_response)
         distribute_mock.assert_called
 

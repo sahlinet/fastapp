@@ -61,6 +61,9 @@ class Base(models.Model):
 
     foreign_apys = models.ManyToManyField("Apy", related_name="foreign_base")
 
+    class Meta:
+        unique_together = (("name", "user"),)
+
     @property
     def url(self):
         return "/fastapp/%s" % self.name
@@ -244,10 +247,16 @@ class Apy(models.Model):
 
     def mark_executed(self):
         with transaction.atomic():
+            if not hasattr(self, "counter"):
+                self.counter = Counter(apy=self)
+                self.counter.save()
             self.counter.executed = F('executed')+1
             self.counter.save()
 
     def mark_failed(self):
+        if not hasattr(self, "counter"):
+            self.counter = Counter(apy=self)
+            self.counter.save()
         self.counter.failed = F('failed')+1
         self.counter.save()
 
@@ -555,11 +564,6 @@ def synchronize_to_storage(sender, *args, **kwargs):
                                      instance.base.config)
     except Exception, e:
         logger.exception(e)
-
-    if len(Counter.objects.filter(apy=instance))==0:
-        counter = Counter(apy=instance)
-        counter.save()
-        logger.debug("Counter created")
 
     if instance.base.state:
         distribute(CONFIGURATION_EVENT, serializers.serialize("json",
