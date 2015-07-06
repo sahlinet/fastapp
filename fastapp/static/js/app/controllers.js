@@ -135,6 +135,14 @@
   			$scope.creation_is_running = false;
   		};
 
+        $scope.updatePublicity = function(base) {
+               console.info(base);
+                    console.info(base.public);
+                    $.post("/fastapp/"+base.name+"/sync/", {
+                        public: base.public
+                    });
+                    };
+
   		$scope.cycle_state = function(base) {
   			console.log(base);
   			if (base.state) {

@@ -597,6 +597,7 @@ class DjendBaseSaveView(View):
     def post(self, request, *args, **kwargs):
         base = get_object_or_404(Base, name=kwargs['base'], user=User.objects.get(username=request.user.username))
         content = request.POST.get('content', None)
+        public = request.POST.get('public', None)
 
         # exec
         if request.POST.has_key('exec_name'):
@@ -614,7 +615,8 @@ class DjendBaseSaveView(View):
         # base
         else:
             logger.info("Save base")
-            base.content = content
+            if content: base.content = content
+            if public: base.public = public
             base.save()
             # save in database
             #info(channel_name_for_user(request), "Base index '%s' saved" % base.name)
@@ -914,13 +916,22 @@ def login_or_sharedkey(function):
         if user.is_authenticated():
             return function(request, *args, **kwargs)
 
-        # if shared key in query string
+        # if base is public
         base_name = kwargs.get('base')
+        base_obj = get_object_or_404(Base, name=base_name)
+        if base_obj.public:
+           return function(request, *args, **kwargs)
+
+        # if shared key in query string
         if request.GET.has_key('shared_key'):
-            shared_key = request.GET.get('shared_key')
-            get_object_or_404(Base, name=base_name, uuid=shared_key)
-            request.session['shared_key'] = shared_key
-            return function(request, *args, **kwargs)
+            shared_key = request.GET.get('shared_key', None)
+            logger.info(base_obj.uuid)
+            logger.info(shared_key)
+            if base_obj.uuid==shared_key or base_obj.public:
+                request.session['shared_key'] = shared_key
+                return function(request, *args, **kwargs)
+            else:
+                return HttpResponseNotFound()
         # if shared key in session and corresponds to base
         #has_shared_key = request.session.__contains__('shared_key')
         #if has_shared_key:

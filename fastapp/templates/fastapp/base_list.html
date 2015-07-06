@@ -63,10 +63,12 @@
                         </span>
                 </h4>
                 <p>
-                    <span class="small">{{ one_base.apy_models.length }} Execs</span>
-                </p>
-                <p>
-                    <span class="small">{{ one_base.pids[0]|limitTo: 20 }} </span>
+                    <span ng-if="one_base.public" class="label label-default">Public</span>
+                    <span ng-if="one_base.apy_models.length>0" class="label label-default"><ng-pluralize count="one_base.apy_models.length"
+                                    when="{'0': 'No Execs',
+                                          'one': '1 Exec',
+                                          'other': '{} Execs'}"></span>
+                    <span ng-if="one_base.pids" class="label label-default">PID {{ one_base.pids[0]|limitTo: 20 }} </span>
                 </p>
                 <!--<span ng-repeat="apy in one_base.apy_models | orderBy:'name':false">
 						<button type="button" class="btn btn-default btn-xs"> {{ apy.name }} </button>

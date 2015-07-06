@@ -55,6 +55,15 @@
             {% endverbatim %}
 
         </div>
+        <div class="col-md-12" >
+            <h3>Configuration</h3>
+            <p>Public: </p>
+            {% verbatim %}
+            <a href="#" editable-checkbox="base.public" e-title="Published?" onaftersave="updatePublicity(base)">{{ base.public && "Public" || "Private" }}</a>
+            {% endverbatim %}
+
+        </div>
+
         <div class="col-md-6">
             <div ng-controller="TransportEndpointCtrl">
                 <h3>Transport</h3>
