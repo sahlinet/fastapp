@@ -128,16 +128,16 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         f = open(full_path, 'r')
                     except IOError, e:
                         logger.warning(e)
-                    #if not f:
-                    #    try:
-                    #        DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
-                    #        logger.debug("load %s from local filesystem (dropbox app)" % static_path)
-                    #        filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
-                    #        f = open(filepath, 'r')
-                    #    except IOError, e:
-                    #        logger.warning(e)
-                    #        warn(channel, static_path + " not found")
-                    #        return HttpResponseNotFound(static_path + " not found")
+                    if not f:
+                        try:
+                            DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
+                            logger.debug("load %s from local filesystem (dropbox app)" % static_path)
+                            filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
+                            f = open(filepath, 'r')
+                        except IOError, e:
+                            logger.warning(e)
+                            warn(channel, static_path + " not found")
+                            return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
                     logger.debug("load %s from module in worker" % static_path)
