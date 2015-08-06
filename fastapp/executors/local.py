@@ -301,9 +301,9 @@ class DockerExecutor(BaseExecutor):
         return self.api.logs(id,
                       stdout=True,
                       stderr=True,
-                      stream=True,
+                      stream=False,
                       timestamps=True,
-                      tail=20,
+                      tail=100,
         )
 
 
