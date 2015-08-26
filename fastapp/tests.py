@@ -10,7 +10,7 @@ from django.db import IntegrityError
 from fastapp.models import AuthProfile
 from django.db.models.signals import post_save, post_delete
 
-from fastapp.models import Base, Apy, Executor, Counter, synchronize_to_storage_on_delete, synchronize_to_storage, initialize_on_storage, Transaction, Setting, ready_to_sync
+from fastapp.models import Base, Apy, Executor, synchronize_to_storage_on_delete, synchronize_to_storage, initialize_on_storage, Transaction, Setting, ready_to_sync
 from fastapp.utils import check_code
 from pyflakes.messages import UnusedImport, Message
 
@@ -20,6 +20,7 @@ from swampdragon.models import SelfPublishModel
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+from fastapp.plugins.datastore.tests import *
 
 class BaseTestCase(TransactionTestCase):
 

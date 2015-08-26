@@ -1,0 +1,154 @@
+"""
+needs SQLAlchemy==1.0.8
+PSQL >9self.3
+
+postgres=# CREATE USER store WITH PASSWORD 'store123';
+CREATE ROLE
+postgres=# CREATE DATABASE store OWNER store;
+CREATE DATABASE
+
+ALTER ROLE store WITH SUPERUSER;
+ALTER ROLE store WITH CREATEROLE;
+
+
+ADD Quota "https://gist.github.com/javisantana/1277714"
+
+"""
+
+import os
+import logging
+import datetime
+import inspect
+
+from sqlalchemy import create_engine, text
+from sqlalchemy import func
+from sqlalchemy.orm import sessionmaker
+
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy.dialects.postgresql import JSON
+
+from django.conf import settings
+
+from fastapp.plugins import register_plugin, Singleton, Plugin
+
+logger = logging.getLogger(__name__)
+
+Base = declarative_base()
+
+
+class DataObject(Base):
+
+	__tablename__ = 'data_table'
+
+	id = Column(Integer, primary_key=True)
+	created_on = Column(DateTime, default=datetime.datetime.now)
+	data = Column(JSON)
+	#schema = "user1"
+
+
+class DataStore(object):
+
+	ENGINE = 'sqlite:///:memory:'
+
+	def __init__(self, schema=None, *args, **kwargs):
+		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True)
+		Session = sessionmaker(bind=self.engine)
+		self.session = Session()
+
+		self.schema = schema
+
+	def init_for_base(self):
+		if self.schema:
+			try:
+				self._execute("CREATE ROLE %s WITH PASSWORD '%s'" % (schema,
+					schema))
+			except Exception, e:
+				self.session.rollback()
+				if not "already exists" in str(e.orig):
+					raise e
+			try:
+				self._execute("CREATE SCHEMA IF NOT EXISTS %s AUTHORIZATION %s" % (self.schema,
+					self.schema))
+			except Exception, e:
+				print "Could not create schema '%s'" % schema
+				print e
+				self.session.rollback()
+				if not "already exists" in str(e.orig):
+					raise e
+			#self.session.execute("SET search_path TO %s" % schema)
+			self.session.execute("SET SCHEMA '%s'" % schema)
+			#Base.metadata.schema = "user1"
+
+		self._prepare()
+
+	def _prepare(self):
+		Base.metadata.create_all(self.engine)
+
+	def write_obj(self, obj):
+		self.session.add(obj)
+		self.session.commit()
+
+	def write_dict(self, data_dict):
+		obj_dict = DataObject(data=data_dict)
+		return self.store.write_obj(obj_dict)
+
+	def all(self):
+		return self.session.query(DataObject).all()
+
+	def filter(self, k, v):
+		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';"))
+
+	def _execute(self, sql):
+		result = self.session.execute(sql)
+		self.session.commit()
+		return result
+
+	def truncate(self):
+		self._execute("TRUNCATE data_table")
+
+
+def resultproxy_to_list(proxy):
+	l = []
+	for row in proxy:
+		l.append(row.__dict__)
+	return l
+
+
+class PsqlDataStore(DataStore):
+
+	ENGINE = 'postgresql+psycopg2://%(USER)s:%(PASSWORD)s@%(HOST)s:%(PORT)s/%(NAME)s'
+
+	def query(self, k, v):
+		q = """SELECT id, json_string(data,'%s'
+				FROM things
+				WHERE json_string(data,'%s')
+				LIKE '%s%';""" % (k, v)
+
+
+@register_plugin
+class DataStorePlugin(Plugin):
+
+	def attach_worker(self):
+		return PsqlDataStore(**settings.DATABASES['store'])
+
+	@classmethod
+	def init(cls):
+		logger.info("Init %s" % cls)
+		plugin_path = os.path.dirname(inspect.getfile(cls))
+		template_path = os.path.join(plugin_path, "templates")
+		settings.TEMPLATE_DIRS = settings.TEMPLATE_DIRS + (template_path,)
+
+	def cockpit_context(self):
+		self.store = PsqlDataStore(**settings.DATABASES['store'])
+		SCHEMAS = "SELECT schema_name FROM information_schema.schemata;"
+		TABLESPACES = """SELECT array_to_json(array_agg(row_to_json(t))) FROM (
+				SELECT *, pg_tablespace_size(spcname) FROM pg_tablespace
+			) t;"""
+		CONNECTIONS = "SELECT * FROM pg_stat_activity;"
+
+		return {
+			'SCHEMAS': [row for row in self.store._execute(SCHEMAS)][0],
+			'TABLESPACES': [row for row in self.store._execute(TABLESPACES)][0],
+			'CONNECTIONS': [row for row in self.store._execute(CONNECTIONS)],
+		}

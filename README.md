@@ -104,9 +104,14 @@ The content of the pem file must be on one line, do so:
 	cat $FILE | awk 1 ORS='\\n'
 
 You can also set a filepath if the files are on the machine.
-	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")     # $HOME/.docker/xy/certs/cert.pem
-	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")		# $HOME/.docker/xy/certs/key.pem
+	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")   # $HOME/.docker/xy/certs/cert.pem
+	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")			# $HOME/.docker/xy/certs/key.pem
 	# DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem
+
+The certificates needs to be one lined with a '\n' as separator.
+
+	awk 1 ORS='\\n' cert.pem
+	awk 1 ORS='\\n' key.pem
 
 Following stuff is needed for login to one private repository as you would do with `docker login`
 

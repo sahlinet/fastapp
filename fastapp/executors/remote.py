@@ -13,7 +13,7 @@ from django.conf import settings
 
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
 from fastapp.utils import load_setting
-
+from fastapp.plugins import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +241,7 @@ class ExecutorServerThread(CommunicationThread):
                         logger.info("Configuration '%s' received in %s" % (fields['name'], self.name))
                     except Exception, e:
                         traceback.print_exc()
-		elif props.app_id == "fconfiguration":
+                elif props.app_id == "fconfiguration":
                     fields = json.loads(body)[0]['fields']
                     try:
                         exec fields['module'] in globals(), locals()
@@ -427,11 +427,25 @@ def _do(data, functions=None, foreign_functions=None, settings=None):
                 setting_dict1.update({'STATIC_DIR': "/%s/%s/static" % ("fastapp", base_name)})
                 func.settings = setting_dict1
 
-		# attach foreign_functions
-		func.foreigns = Bunch(foreign_functions)
+                # attach foreign_functions
+                func.foreigns = Bunch(foreign_functions)
 
                 # attach siblings
                 func.siblings = Bunch(functions)
+
+                # attach plugins
+                plugins = PluginRegistry()
+                from django.conf import settings
+                settings.DATABASES["store"] = {
+                                    'ENGINE': "django.db.backends.postgresql_psycopg2",
+                                    'HOST': "localhost",
+                                    'PORT': "5432",
+                                    'NAME': "store",
+                                    'USER': "store",
+                                    'PASSWORD': "store123",
+                                }
+                for plugin in plugins:
+                    func.datastore = plugin.attach_worker()
 
                 # execution
                 returned = func(func)

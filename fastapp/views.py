@@ -40,6 +40,8 @@ from fastapp.executors.remote import call_rpc_client, get_static
 
 from fastapp.importer import _handle_settings, _read_config
 
+from fastapp.plugins import PluginRegistry
+
 User = get_user_model()
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ class CockpitView(TemplateView):
         context['executors'] = qs.order_by('base__name')
         context['process_list'] = Process.objects.all().order_by('-running')
         context['threads'] = Thread.objects.all().order_by('parent__name', 'name')
+        context['plugins'] = PluginRegistry().get()
         return context
 
     def dispatch(self, *args, **kwargs):

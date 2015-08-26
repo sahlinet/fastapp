@@ -17,7 +17,7 @@ pyflakes==0.8.1
 configobj==5.0.5
 pyOpenSSL==0.14
 ndg-httpsclient==0.3.2
-pyasn1==0.1.7
+pyasn1==0.1.8
 python-tutum==0.12.6
 -e git+https://github.com/sahlinet/swampdragon.git@master#egg=swampdragon
 SwampDragon-auth==0.1.3

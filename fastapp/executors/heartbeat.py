@@ -37,7 +37,7 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
-            logger.debug("inactivate run")
+            logger.info("inactivate run")
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
