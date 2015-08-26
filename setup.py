@@ -28,7 +28,8 @@ setup(name='django-fastapp',
 		'python-tutum==0.12.6',
 		'SwampDragon>=0.4.1.2',
 		'SwampDragon-auth==0.1.3',
-		'django-compressor==1.5'
+		'django-compressor==1.5',
+		'SQLAlchemy==1.0.8'
 	],
 	packages = find_packages(),
 	package_data = {'fastapp': ['fastapp/templates/*']},
