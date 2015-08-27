@@ -20,7 +20,7 @@ from swampdragon.models import SelfPublishModel
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-from fastapp.plugins.datastore.tests import *
+#from fastapp.plugins.datastore.tests import *
 
 class BaseTestCase(TransactionTestCase):
 

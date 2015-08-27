@@ -17,6 +17,7 @@ db_settings = { "store": {
                 } }
 
 
+@unittest.skip
 class TestStringMethods(TestCase):
 
     @override_settings(DATABASES=db_settings)
