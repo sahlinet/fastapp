@@ -1,4 +1,4 @@
-__version__ = "0.6.10"
+__version__ = "0.6.11"
 
 import os
 
@@ -17,5 +17,6 @@ try:
             return m
 
         amod = my_import(plugin)
-except ImproperlyConfigured:
+except ImproperlyConfigured, e:
+    print e
     pass
