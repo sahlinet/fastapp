@@ -28,7 +28,7 @@ urlpatterns = patterns('',
     url(r'dropbox_auth_disconnect/?$',dropbox_auth_disconnect),
     url(r'dropbox_notify/?$', DropboxNotifyView.as_view()),
 
-    url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html")))),
+    url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html"))), name='cockpit'),
 
     # base
     url(r'(?P<base>[\w-]+)/index/$', login_required(DjendBaseView.as_view(template_name="fastapp/base.html"))),
