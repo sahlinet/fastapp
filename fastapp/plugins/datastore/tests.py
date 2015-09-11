@@ -1,5 +1,4 @@
 import unittest
-import json
 
 from . import DataObject, PsqlDataStore, resultproxy_to_list
 
@@ -7,14 +6,15 @@ from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
 
-db_settings = { "store": {
-                    'ENGINE': "django.db.backends.postgresql_psycopg2",
-                    'HOST': "localhost",
-                    'PORT': "5432",
-                    'NAME': "store",
-                    'USER': "store",
-                    'PASSWORD': "store123",
-                } }
+db_settings = {"store": {
+    'ENGINE': "django.db.backends.postgresql_psycopg2",
+    'HOST': "localhost",
+    'PORT': "5432",
+    'NAME': "store",
+    'USER': "store",
+    'PASSWORD': "store123",
+    }
+}
 
 
 @unittest.skip
@@ -29,18 +29,19 @@ class TestStringMethods(TestCase):
 
         # write data
         data = {"name": "Rolf"}
-    	obj_dict= DataObject(data=data)
+        obj_dict = DataObject(data=data)
         self.store.write_obj(obj_dict)
         data = {"name": "Markus"}
-    	obj_dict= DataObject(data=data)
+        obj_dict = DataObject(data=data)
         self.store.write_obj(obj_dict)
 
         data = {"name": "Philip",
                 "address": {
                     "city": "Berne"
                     }
-        }
-    	obj_dict= DataObject(data=data)
+                }
+
+        obj_dict = DataObject(data=data)
         self.store.write_obj(obj_dict)
 
         # count
@@ -50,7 +51,7 @@ class TestStringMethods(TestCase):
         self.assertEqual("Rolf", self.store.all()[0].data['name'])
         self.assertEqual("Markus", self.store.all()[1].data['name'])
 
-        result = self.store.filter("name" ,"Markus")
+        result = self.store.filter("name", "Markus")
         self.assertIs(list, type(resultproxy_to_list(result)))
 
     def tearDown(self):

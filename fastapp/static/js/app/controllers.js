@@ -157,7 +157,7 @@
   					baseId: base.id
   				}, base, function(data) {
   					base.state = true;
-  					base.pids = data['pids'];
+  					base.executors = data['executors'];
   				});
   			}
   		};
@@ -175,7 +175,7 @@
   				Base.destroy({
   					baseId: base.id
   				}, base, function(data) {
-  					base.pids = [];
+  					base.executors = [];
   				});
   			}
   		};

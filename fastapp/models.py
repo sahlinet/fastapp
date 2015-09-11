@@ -32,6 +32,8 @@ from fastapp.utils import Connection
 from swampdragon.models import SelfPublishModel
 from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
 
+from sequence_field.fields import SequenceField
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -200,15 +202,28 @@ class Base(models.Model):
             return False
 
     @property
-    def pids(self):
+    def executors(self):
         try:
             if self.executor.pid is None:
                 return []
-            return [self.executor.pid]
+            return [
+                {
+                'pid': self.executor.pid,
+                'port': self.executor.port,
+                'ip': self.executor.ip,
+                'ip6': self.executor.ip6
+                }
+                ]
         except Exception:
             return []
 
     def start(self):
+        try:
+            self.executor
+        except Executor.DoesNotExist:
+            logger.debug("create executor for base %s" % self)
+            executor = Executor(base=self)
+            executor.save()
         return self.executor.start()
 
     def stop(self):
@@ -423,6 +438,16 @@ class Executor(models.Model):
     pid = models.CharField(max_length=72, null=True)
     password = models.CharField(max_length=20, default=default_pass)
     started = models.BooleanField(default=False)
+    ip = models.GenericIPAddressField(null=True)
+    ip6 = models.GenericIPAddressField(null=True)
+
+    port = SequenceField(
+        key='test.sequence.1',
+        template='1%NNNN',
+        #params={'code':'ABC'},
+        auto=True,
+        null=True
+    )
 
     @property
     def vhost(self):
@@ -462,8 +487,12 @@ class Executor(models.Model):
             instance.save()
             logger.info("Instance created with id %s" % instance.id)
 
+        kwargs = {}
+        if self.port:
+            kwargs['service_ports'] = [self.port]
+
         try:
-            self.pid = self.implementation.start(self.pid)
+            self.pid = self.implementation.start(self.pid, **kwargs)
         except Exception, e:
             logger.exception(e)
             raise e
@@ -471,6 +500,11 @@ class Executor(models.Model):
         logger.info("%s: worker started with pid %s" % (self, self.pid))
 
         self.started = True
+
+        ips = self.implementation.addresses(self.pid)
+        self.ip = ips['ip']
+        self.ip6 = ips['ip6']
+
         self.save()
 
     def stop(self):

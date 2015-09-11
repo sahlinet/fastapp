@@ -57,9 +57,13 @@
         </div>
         <div class="col-md-12" >
             <h3>Configuration</h3>
-            <p>Public: </p>
             {% verbatim %}
+            <p>Public: </p>
             <a href="#" editable-checkbox="base.public" e-title="Published?" onaftersave="updatePublicity(base)">{{ base.public && "Public" || "Private" }}</a>
+
+            <p>Port: </p>
+            <p>http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}
+            <p>http://{{ base.executors[0].ip6 }}:{{ base.executors[0].port }}
             {% endverbatim %}
 
         </div>

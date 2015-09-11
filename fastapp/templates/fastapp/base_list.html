@@ -56,7 +56,7 @@
                             <span>Restart</span>
                         </button>
                     </span>
-                    <span ng-if="!one_base.state && one_base.pids.length">
+                    <span ng-if="!one_base.state && one_base.executors.length">
                         <button type="button" class="btn btn-default btn-xs" ng-click="destroy(one_base)">
                             <span>Destroy</spgTgTan>
                         </button>
@@ -68,7 +68,7 @@
                                     when="{'0': 'No Execs',
                                           'one': '1 Exec',
                                           'other': '{} Execs'}"></span>
-                    <span ng-if="one_base.pids" class="label label-default">PID {{ one_base.pids[0]|limitTo: 20 }} </span>
+                    <span ng-if="one_base.executors" class="label label-default">PID {{ one_base.executors[0].pid|limitTo: 20 }} </span>
                 </p>
                 <!--<span ng-repeat="apy in one_base.apy_models | orderBy:'name':false">
 						<button type="button" class="btn btn-default btn-xs"> {{ apy.name }} </button>

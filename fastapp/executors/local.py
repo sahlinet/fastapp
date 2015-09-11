@@ -182,7 +182,6 @@ class TutumExecutor(BaseExecutor):
         return (service.state == "Running")
 
 
-
 class DockerExecutor(BaseExecutor):
 
     def __init__(self, *args, **kwargs):
@@ -194,18 +193,29 @@ class DockerExecutor(BaseExecutor):
 
         super(DockerExecutor, self).__init__(*args, **kwargs)
 
-    def start(self, id):
+    def start(self, id, *args, **kwargs):
 
         self._pre_start()
 
+        self.service_ports = []
+        if kwargs.has_key('service_ports'):
+            self.service_ports = kwargs.get('service_ports')
+        self.port_bindings = {}
+        for port in self.service_ports:
+            self.port_bindings[port] = port
+        logger.info(self.service_ports)
+        logger.info(self.port_bindings)
+
         if not self._container_exists(id):
             logger.info("Create container for %s" % self.vhost)
+            import docker
 
             container = self.api.create_container(
                 image = DOCKER_IMAGE,
                 name=self.name,
                 detach = True,
-                mem_limit = MEM_LIMIT,
+                ports = self.service_ports,
+                #mem_limit = MEM_LIMIT,
                 #cpu_shares = CPU_SHARES,
                 environment = {
                     'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
@@ -216,6 +226,9 @@ class DockerExecutor(BaseExecutor):
                     'EXECUTOR': "docker",
                     #'constraint:node!=fed*': "docker",
                 },
+                host_config=docker.utils.create_host_config(
+                    port_bindings=self.port_bindings
+                    ),
                 entrypoint = self._start_command
             )
 
@@ -226,6 +239,13 @@ class DockerExecutor(BaseExecutor):
         logger.info("Start container (%s)" % id)
         self.api.start(container=id)
         return id
+
+    def addresses(self, id):
+        container = self._get_container(id)
+        return {
+            'ip': container['NetworkSettings']['IPAddress'],
+            'ip6': container['NetworkSettings']['GlobalIPv6Address']
+            }
 
     def stop(self, id):
         logger.info("Stop container (%s)" % id)
@@ -306,6 +326,9 @@ class DockerExecutor(BaseExecutor):
                       tail=100,
         )
 
+        # https://github.com/docker/docker-py/issues/656
+        #return self.api.attach(id, logs=True, stream=True)
+
 
 class DockerSocketExecutor(DockerExecutor):
 
@@ -328,6 +351,7 @@ class RemoteDockerExecutor(DockerExecutor):
 
         client_cert = load_var_to_file("DOCKER_CLIENT_CERT")
         client_key = load_var_to_file("DOCKER_CLIENT_KEY")
+	import pdb; pdb.set_trace()
 
         ssl_version = "TLSv1"
 

@@ -54,7 +54,7 @@ or
 
 #### Docker on local machine (boot2docker)
 
-Workers are started in a Docker container, Docker environment must be set. Thus `kwargs_from_env()` from docker-py must work. Testsed with boot2docker.
+Workers are started in a Docker container, Docker environment must be set. Thus `kwargs_from_env()` from docker-py must work. Tested with boot2docker.
 
     FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
@@ -104,6 +104,7 @@ The content of the pem file must be on one line, do so:
 	cat $FILE | awk 1 ORS='\\n'
 
 You can also set a filepath if the files are on the machine.
+
 	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")   # $HOME/.docker/xy/certs/cert.pem
 	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")			# $HOME/.docker/xy/certs/key.pem
 	# DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem

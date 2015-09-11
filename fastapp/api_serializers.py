@@ -65,7 +65,7 @@ class TransportEndpointSerializer(serializers.ModelSerializer):
 class BaseSerializer(serializers.ModelSerializer):
     apy = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     state = serializers.Field()
-    pids = serializers.Field()
+    executors = serializers.Field()
     foreign_apys = serializers.HyperlinkedRelatedField(
         many=True,
         read_only=False,
@@ -75,7 +75,7 @@ class BaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Base
         fields = ('id', 'name', 'state', 'uuid',
-                  'pids', 'content', 'foreign_apys', 'public')
+                  'executors', 'content', 'foreign_apys', 'public')
 
     def save_object(self, obj, **kwargs):
         logger.debug("save_and_sync")
