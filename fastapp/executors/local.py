@@ -351,7 +351,6 @@ class RemoteDockerExecutor(DockerExecutor):
 
         client_cert = load_var_to_file("DOCKER_CLIENT_CERT")
         client_key = load_var_to_file("DOCKER_CLIENT_KEY")
-	import pdb; pdb.set_trace()
 
         ssl_version = "TLSv1"
 
