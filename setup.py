@@ -10,7 +10,7 @@ setup(name='django-fastapp',
 	author_email="philip@sahli.net",
 	dependency_links=[
 		'https://github.com/sahlinet/swampdragon/tarball/master#egg=SwampDragon-0.4.1.2',
-		'https://github.com/rpalacios/django-sequence-field.git@HEAD#egg=django-sequence-field'
+		'https://github.com/rpalacios/django-sequence-field.git@f1bdc48c897e6cd95a3182f8253665609a87a895#egg=django_sequence_field-master'
 	],
 	install_requires=['dropbox==1.6',
 		'djangorestframework==2.4.2',
