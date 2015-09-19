@@ -73,7 +73,9 @@
 			<div><h1>Plugins</h1></div>
 			{% for plugin in plugins %}
 			<h2>{{ plugin.name }}</h2>
-			{% include "datastore/cockpit.html" %}
+			{% with plugin.shortname|add:"/cockpit.html" as plugin_template %}
+				{% include plugin_template %}
+			{% endwith %}
 			{% endfor %}
 		</div>
 	</div>
