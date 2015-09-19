@@ -209,12 +209,12 @@ class Base(models.Model):
                 return []
             return [
                 {
-                'pid': self.executor.pid,
-                'port': self.executor.port,
-                'ip': self.executor.ip,
-                'ip6': self.executor.ip6
+                    'pid': self.executor.pid,
+                    'port': self.executor.port,
+                    'ip': self.executor.ip,
+                    'ip6': self.executor.ip6
                 }
-                ]
+            ]
         except Exception:
             return []
 
