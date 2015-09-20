@@ -36,6 +36,18 @@
             {% endif %}
         </h1>
     </div>
+
+    <div class="row">
+        <div class="col-md-12" >
+            <h3>Runtime Information</h3>
+            {% verbatim %}
+            <p>Port: </p>
+            <p><a href="http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}">http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}</a></p>
+            <p><a href="http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}">http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}</a></p>
+            {% endverbatim %}
+
+        </div>
+    </div>
     <div class="row rendered">
         {{ active_base.template }} {% block content %} {% endblock %}
     </div>
@@ -60,12 +72,7 @@
             {% verbatim %}
             <p>Public: </p>
             <a href="#" editable-checkbox="base.public" e-title="Published?" onaftersave="updatePublicity(base)">{{ base.public && "Public" || "Private" }}</a>
-
-            <p>Port: </p>
-            <p>http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}
-            <p>http://{{ base.executors[0].ip6 }}:{{ base.executors[0].port }}
             {% endverbatim %}
-
         </div>
 
         <div class="col-md-6">
@@ -178,6 +185,9 @@
 
                         <button id="exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="execute(apy)">
                             <span class="glyphicon glyphicon-fire"></span> Execute</button>
+
+                        <button id="exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="executeNewWindow(apy)">
+                            <span class="glyphicon glyphicon-fire"></span> Execute (new window)</button>
 
                         <button id="exec_{{ apy.name }}" type="button" class="btn btn-default btn-xs" ng-click="printcurl(apy)">
                             <span class="glyphicon glyphicon-fire"></span> Curl command</button>

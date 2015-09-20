@@ -360,6 +360,9 @@
   				'json': ""
   			});
   		};
+      $scope.executeNewWindow = function(apy) {
+        window.open("/fastapp/base/"+window.active_base+"/exec/"+apy.name+"/?json=", "_blank");
+  		};
 
   		$scope.printcurl = function(apy) {
   			var parser = document.createElement('a');

@@ -28,6 +28,7 @@ from django.core import serializers
 from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
 from fastapp.utils import Connection
+from fastapp.plugins import call_plugin_func
 
 from swampdragon.models import SelfPublishModel
 from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
@@ -208,12 +209,12 @@ class Base(models.Model):
                 return []
             return [
                 {
-                'pid': self.executor.pid,
-                'port': self.executor.port,
-                'ip': self.executor.ip,
-                'ip6': self.executor.ip6
+                    'pid': self.executor.pid,
+                    'port': self.executor.port,
+                    'ip': self.executor.ip,
+                    'ip6': self.executor.ip6
                 }
-                ]
+            ]
         except Exception:
             return []
 
@@ -224,12 +225,18 @@ class Base(models.Model):
             logger.debug("create executor for base %s" % self)
             executor = Executor(base=self)
             executor.save()
-        return self.executor.start()
+        r = self.executor.start()
+
+        # call plugin
+        call_plugin_func(self, "on_start_base")
+
+        return r
 
     def stop(self):
         return self.executor.stop()
 
     def destroy(self):
+        call_plugin_func(self, "on_destroy_base")
         return self.executor.destroy()
 
     def __str__(self):

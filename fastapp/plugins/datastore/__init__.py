@@ -30,7 +30,7 @@ from sqlalchemy.dialects.postgresql import JSON
 
 from django.conf import settings
 
-from fastapp.plugins import register_plugin, Singleton, Plugin
+from fastapp.plugins import register_plugin, Plugin
 
 logger = logging.getLogger(__name__)
 
