@@ -219,8 +219,13 @@ class DockerExecutor(BaseExecutor):
                     'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
                     'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
                     'EXECUTOR': "docker",
+                    'SERVICE_PORT': self.executor.port,
+                    'SERVICE_IP': self.executor.ip
                 }
+            if self.executor.ip6:
+                env['SERVICE_IP6'] = self.executor.ip6
 
+            # feed environment variables with vars from plugins
             success, failed = call_plugin_func(self.executor, "executor_context")
             if len(failed.keys()) > 0:
                 logger.warning("Problem with executor_context for plugin (%s)" % str(failed))
