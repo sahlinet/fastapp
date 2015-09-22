@@ -97,6 +97,23 @@ class DNSNamePlugin(Plugin):
 			logger.info("Delete '%s' from DNS zone %s" % (dns_name, domain))
 			dns.delete(dns_name)
 
+	def executor_context(self, executor):
+		context = {}
+		#for counter, executor in enumerate(base.executors):
+		#	k = "%s_executor_%s" % (base, counter)
+		#	v =  self._make_dns_name(base, executor)
+		#	context[k] = v
+
+		#k = "%s_executor" % (executor.base)
+		k = "SERVICE_DNS"
+		v =  self._make_dns_name(executor.base, 0)
+		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.dnsname']
+		domain = plugin_settings['zone']
+		v = v + "." + domain
+		context[k] = v
+
+		return context
+
 	def _make_dns_name(self, base, counter):
 		dns_name = "%s-%s-%i" % (base.user.username, base.name, counter)
 		logger.info(dns_name)

@@ -16,6 +16,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.utils import load_setting, load_var_to_file
+from fastapp.plugins import call_plugin_func
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class BaseExecutor(object):
         self.base_name = kwargs['base_name']
         self.username = kwargs['username']
         self.password = kwargs['password']
+        self.executor = kwargs['executor']
 
         # container name, must be unique, therefore we use a mix from site's domain name and executor
         slug = "worker-%s-%i-%s" % (Site.objects.get_current().domain,
@@ -210,22 +212,30 @@ class DockerExecutor(BaseExecutor):
             logger.info("Create container for %s" % self.vhost)
             import docker
 
-            container = self.api.create_container(
-                image = DOCKER_IMAGE,
-                name=self.name,
-                detach = True,
-                ports = self.service_ports,
-                #mem_limit = MEM_LIMIT,
-                #cpu_shares = CPU_SHARES,
-                environment = {
+            env = {
                     'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
                     'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
                     'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
                     'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
                     'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
                     'EXECUTOR': "docker",
-                    #'constraint:node!=fed*': "docker",
-                },
+                }
+
+            success, failed = call_plugin_func(self.executor, "executor_context")
+            if len(failed.keys()) > 0:
+                logger.warning("Problem with executor_context for plugin (%s)" % str(failed))
+            for plugin, context in success.items():
+                logger.info("Set context for plugin %s" % plugin)
+                env.update(context)
+
+            container = self.api.create_container(
+                image = DOCKER_IMAGE,
+                name = self.name,
+                detach = True,
+                ports = self.service_ports,
+                #mem_limit = MEM_LIMIT,
+                #cpu_shares = CPU_SHARES,
+                environment = env,
                 host_config=docker.utils.create_host_config(
                     port_bindings=self.port_bindings
                     ),

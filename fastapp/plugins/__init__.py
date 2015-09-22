@@ -48,7 +48,6 @@ def call_plugin_func(base, func):
 	r_success = {}
 	r_failed = {}
 	registry = PluginRegistry()
-	print registry.get()
 	for plugin in registry.get():
 		logger.info("Handling plugin %s for %s" % (plugin, func))
 		try:
@@ -98,4 +97,17 @@ class Plugin(object):
 		pass
 
 	def cockpit_context(self):
-		pass
+		return {}
+
+	def executor_context(self, executor):
+		return {}
+
+	def executor_context_kv(self, executor):
+		context = self.executor_context(self, executor)
+		new_context = []
+		for k, v in context.items():
+			new_context.append({
+				'key': k,
+				'value': k,
+			})
+		return new_context

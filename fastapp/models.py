@@ -97,7 +97,6 @@ class Base(models.Model):
             else:
                 config['modules'][texec.name]['description'] = ""
 
-
         # settings
         config['settings'] = {}
         for setting in self.setting.all():
@@ -476,8 +475,9 @@ class Executor(models.Model):
                 vhost=self.vhost,
                 base_name=self.base.name,
                 username=self.base.name,
-                password=self.password
-            )
+                password=self.password,
+                executor=self
+                )
         except KeyError, e:
             logger.error("Could not load %s" % s_exec)
             raise e
