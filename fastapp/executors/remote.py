@@ -576,17 +576,17 @@ class StaticServerThread(CommunicationThread):
                             except Exception, e:
                                 logger.warning(e)
                                 logger.warning("Could not open file %s" % full_path)
-                            rc="OK"
+                            rc = "OK"
                             response_data.update({
                                 'file': base64.b64encode(f.read())
                                 })
                             f.close()
                     if not f:
                         logger.warning("not found")
-                        rc="NOT_FOUND"
+                        rc = "NOT_FOUND"
 
                 except Exception, e:
-                    rc="NOT_FOUND"
+                    rc = "NOT_FOUND"
                     logger.exception(e)
                 finally:
                     response_data.update({'status': rc})
