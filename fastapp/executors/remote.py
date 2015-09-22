@@ -435,7 +435,6 @@ def _do(data, functions=None, foreign_functions=None, settings=None):
 
                 # attach plugins
                 plugins = PluginRegistry()
-                from django.conf import settings
                 settings.DATABASES["store"] = {
                                     'ENGINE': "django.db.backends.postgresql_psycopg2",
                                     'HOST': "localhost",
