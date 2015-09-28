@@ -44,7 +44,7 @@ def register_plugin(cls):
 	return cls
 
 
-def call_plugin_func(base, func):
+def call_plugin_func(obj, func):
 	r_success = {}
 	r_failed = {}
 	registry = PluginRegistry()
@@ -52,7 +52,7 @@ def call_plugin_func(base, func):
 		logger.info("Handling plugin %s for %s" % (plugin, func))
 		try:
 			plugin_func = getattr(plugin, func)
-			r = plugin_func(base)
+			r = plugin_func(obj)
 			r_success[plugin.name] = r
 		except Exception, e:
 			logger.error(e)
