@@ -26,6 +26,8 @@ FOREIGN_CONFIGURATION_EVENT = CONFIGURATION_QUEUE
 SETTINGS_EVENT = "setting"
 SETTING_QUEUE = SETTINGS_EVENT
 
+PLUGIN_CONFIG_QUEUE = "pluginconfig"
+
 RPC_QUEUE = "rpc_queue"
 STATIC_QUEUE = "static_queue"
 
@@ -257,14 +259,21 @@ class ExecutorServerThread(CommunicationThread):
                     key = json_body.keys()[0]
                     self.settings.update(json_body)
                     logger.info("Setting '%s' received in %s" % (key, self.name))
+
+                elif props.app_id == PLUGIN_CONFIG_QUEUE:
+                    json_body = json.loads(body)
+                    logger.info("Pluginconfig received and attached to self.pluginconfig")
+                    self.pluginconfig = json_body
+                    #logger.info("Setting '%s' received in %s" % (key, self.name))
                 else:
                     logger.error("Invalid event arrived (%s)" % props.app_id)
+
 
             if method.routing_key == RPC_QUEUE:
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
                 try:
                     response_data = {}
-                    response_data = _do(json.loads(body), self.functions, self.foreign_functions, self.settings)
+                    response_data = _do(json.loads(body), self.functions, self.foreign_functions, self.settings, self.pluginconfig)
                 except Exception, e:
                     logger.exception(e)
                 finally:
@@ -367,7 +376,7 @@ def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
 
 
-def _do(data, functions=None, foreign_functions=None, settings=None):
+def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfig={}):
         exception = None;  exception_message = None; returned = None
         status = STATE_OK
 
@@ -435,16 +444,22 @@ def _do(data, functions=None, foreign_functions=None, settings=None):
 
                 # attach plugins
                 plugins = PluginRegistry()
-                settings.DATABASES["store"] = {
-                                    'ENGINE': "django.db.backends.postgresql_psycopg2",
-                                    'HOST': "localhost",
-                                    'PORT': "5432",
-                                    'NAME': "store",
-                                    'USER': "store",
-                                    'PASSWORD': "store123",
-                                }
+                ###
+                #settings.DATABASES["store"] = {
+                #                    'ENGINE': "django.db.backends.postgresql_psycopg2",
+                #                'HOST': "localhost",
+                #                    'PORT': "5432",
+                #                    'NAME': "store",
+                #                    'USER': "store",
+                #                    'PASSWORD': "store123",
+                #                }
+                ###
                 for plugin in plugins:
-                    func.datastore = plugin.attach_worker()
+                    logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
+                    func.datastore = plugin.attach_worker(**pluginconfig[plugin.name])
+                    if not func.datastore:
+                        logger.warning("Func is None")
+                    logger.info("Got func: %s" % func.datastore)
 
                 # execution
                 returned = func(func)

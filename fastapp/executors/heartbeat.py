@@ -30,6 +30,7 @@ HEARTBEAT_QUEUE = load_setting('HEARTBEAT_QUEUE')
 CONFIGURATION_QUEUE = "configuration"
 FOREIGN_CONFIGURATION_QUEUE = "fconfiguration"
 SETTING_QUEUE = "setting"
+PLUGIN_CONFIG_QUEUE = "pluginconfig"
 
 
 def inactivate():
@@ -237,6 +238,20 @@ class HeartbeatThread(CommunicationThread):
                         vhost,
                         instance.base.name,
                         instance.base.executor.password
+                    )
+
+                # Plugin config
+                from fastapp.plugins import call_plugin_func
+                success, failed = call_plugin_func(base_obj, "config_for_workers")
+                print success
+                print failed
+                for plugin, config in success.items():
+                    logger.info("send config to %s" % plugin)
+                    logger.info("config is: %s" % config)
+                    distribute(PLUGIN_CONFIG_QUEUE, json.dumps({plugin: config}),
+                            vhost,
+                            instance.base.name,
+                            instance.base.executor.password
                     )
 
             if data.has_key('ready_for_init') and data['ready_for_init']:

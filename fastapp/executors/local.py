@@ -5,6 +5,7 @@ import subprocess
 import logging
 import tutum
 import random
+import atexit
 
 from docker import Client
 from docker.tls import TLSConfig
@@ -44,6 +45,13 @@ class BaseExecutor(object):
             random.randrange(1,900000), self.base_name)
         self.name = slug.replace("_", "-").replace(".", "-")
 
+    def addresses(self, id):
+
+        return {
+            'ip': None,
+            'ip6': None
+            }
+
     @property
     def _start_command(self):
         start_command = "%s %smanage.py start_worker --vhost=%s --base=%s --username=%s --password=%s" % (
@@ -59,7 +67,11 @@ class BaseExecutor(object):
         logger.info("Executor does not support 'destroy'")
 
     def _pre_start(self):
-        pass
+        success, failed = call_plugin_func(self.executor.base, "on_start_base")
+        if len(failed.keys()) > 0:
+            logger.warning("Problem with on_start_base for plugin (%s)" % str(failed))
+        print success
+        print failed
 
     def log(self, id):
         raise NotImplementedError()
@@ -397,8 +409,10 @@ class RemoteDockerExecutor(DockerExecutor):
 
 class SpawnExecutor(BaseExecutor):
 
-    def start(self, pid=None):
+    def start(self, pid=None, **kwargs):
         self.pid = pid
+
+        self._pre_start()
 
         python_path = sys.executable
         try:
@@ -425,7 +439,9 @@ class SpawnExecutor(BaseExecutor):
                 cwd=settings.PROJECT_ROOT,
                 shell=True, stdin=None, stdout=None, stderr=None, preexec_fn=os.setsid, env=env
             )
+            atexit.register(p.terminate)
             self.pid = p.pid
+
         except Exception, e:
             raise e
 

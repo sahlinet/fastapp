@@ -27,6 +27,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.schema import CreateSchema
 
 from django.conf import settings
 
@@ -44,7 +45,6 @@ class DataObject(Base):
 	id = Column(Integer, primary_key=True)
 	created_on = Column(DateTime, default=datetime.datetime.now)
 	data = Column(JSON)
-	#schema = "user1"
 
 
 class DataStore(object):
@@ -52,38 +52,51 @@ class DataStore(object):
 	ENGINE = 'sqlite:///:memory:'
 
 	def __init__(self, schema=None, *args, **kwargs):
+		self.schema = schema
+		logger.debug("Working with schema: %s" % schema)
+
+		# set schema for table creation
+		DataObject.__table__.schema = self.schema
+
+		# create session with engine
 		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True)
 		Session = sessionmaker(bind=self.engine)
 		self.session = Session()
 
-		self.schema = schema
+		# set schema for sql executions
+		self.session.execute("SET search_path TO %s" % self.schema)
 
-	def init_for_base(self):
+
+	def init_store(self, base):
+		"""
+		Runs on server with super user privileges
+		"""
 		if self.schema:
 			try:
-				self._execute("CREATE ROLE %s WITH PASSWORD '%s'" % (schema,
-					schema))
-			except Exception, e:
-				self.session.rollback()
-				if not "already exists" in str(e.orig):
-					raise e
-			try:
-				self._execute("CREATE SCHEMA IF NOT EXISTS %s AUTHORIZATION %s" % (self.schema,
+				self._execute("CREATE USER %s WITH PASSWORD '%s'" % (self.schema,
 					self.schema))
 			except Exception, e:
-				print "Could not create schema '%s'" % schema
-				print e
+				logger.exception(e)
 				self.session.rollback()
-				if not "already exists" in str(e.orig):
-					raise e
-			#self.session.execute("SET search_path TO %s" % schema)
-			self.session.execute("SET SCHEMA '%s'" % schema)
+			try:
+				self.engine.execute(CreateSchema(self.schema))
+				logger.info("Schema created")
+			except Exception, e:
+				logger.error("Could not create schema '%s'" % self.schema)
+				self.session.rollback()
+
+			#self._execute("ALTER ROLE %s WITH SUPERUSER;" % self.schema)
+			#self._execute("ALTER ROLE %s WITH CREATEROLE;" % self.schema)
+			#self.session.execute("SET SCHEMA '%s'" % self.schema)
 			#Base.metadata.schema = "user1"
 
+		#self.session.execute("SET search_path TO %s" % self.schema)
 		self._prepare()
+		return "init_store done"
 
 	def _prepare(self):
 		Base.metadata.create_all(self.engine)
+		self.session.commit()
 
 	def write_obj(self, obj):
 		self.session.add(obj)
@@ -129,8 +142,9 @@ class PsqlDataStore(DataStore):
 @register_plugin
 class DataStorePlugin(Plugin):
 
-	def attach_worker(self):
-		return PsqlDataStore(**settings.DATABASES['store'])
+	def attach_worker(self, **kwargs):
+		logger.info("Attach to worker")
+		return PsqlDataStore(schema=kwargs['USER'], **kwargs)
 
 	@classmethod
 	def init(cls):
@@ -139,8 +153,21 @@ class DataStorePlugin(Plugin):
 		template_path = os.path.join(plugin_path, "templates")
 		settings.TEMPLATE_DIRS = settings.TEMPLATE_DIRS + (template_path,)
 
+	def config(self, base):
+		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
+		plugin_settings['USER'] = base.name
+		plugin_settings['PASSWORD'] = base.name
+		#store_config = PsqlDataStore(**plugin_settings)
+		return plugin_settings
+
+	def on_start_base(self, base):
+		store = PsqlDataStore(schema=base.name, **settings.DATABASES['store'])
+		return store.init_store(base)
+
+
 	def cockpit_context(self):
-		self.store = PsqlDataStore(**settings.DATABASES['store'])
+		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
+		self.store = PsqlDataStore(**plugin_settings)
 		SCHEMAS = "SELECT schema_name FROM information_schema.schemata;"
 		TABLESPACES = """SELECT array_to_json(array_agg(row_to_json(t))) FROM (
 				SELECT *, pg_tablespace_size(spcname) FROM pg_tablespace

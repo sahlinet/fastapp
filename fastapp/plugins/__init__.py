@@ -64,9 +64,24 @@ class Plugin(object):
 
 	__metaclass__ = Singleton
 
+	def __init__(self, *args, **kwargs):
+		self.kwargs = kwargs
+		super(Plugin, self ).__init__()
+
 	@property
 	def name(self):
 		return self.__class__.__name__
+
+	def attach_worker(self, **kwargs):
+		pass
+
+	def config_for_workers(self, base):
+		# send dictionary with config to workers for the plugin
+		#    the dictionary is available in self.config(base)
+		config = {}
+		config.update(self.config(base))
+		logger.info("Config to worker for plugin %s" % self.name)
+		return config
 
 	@property
 	def shortname(self):

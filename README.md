@@ -197,6 +197,32 @@ Development only (runserver) for loading static files, root path used for loadin
 
     python manage.py console
 
+# Plugins
+
+## Datastore
+
+
+    FASTAPP_PLUGINS_CONFIG = {
+        'fastapp.plugins.datastore': {
+            'ENGINE': "django.db.backends.postgresql_psycopg2",
+            'HOST': "localhost",
+            'PORT': "5432",
+            'NAME': "store",
+            'USER': "store",
+            'PASSWORD': "store123",
+        }
+    }
+
+## DNSName
+
+    FASTAPP_PLUGINS_CONFIG = {
+        'fastapp.plugins.dnsname': {
+            'provider': "DigitalOcean",
+            'token': os.environ['DIGITALOCEAN_CONFIG'],
+            'zone': "hosts.planet-lite-test.sahli.net"
+        }
+    }
+
 # Usage
 
 - Read more on [sahli.net](https://sahli.net/page/skyblue-platform)
