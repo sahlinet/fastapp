@@ -1,15 +1,6 @@
 """
 needs SQLAlchemy==1.0.8
-PSQL >9self.3
-
-postgres=# CREATE USER store WITH PASSWORD 'store123';
-CREATE ROLE
-postgres=# CREATE DATABASE store OWNER store;
-CREATE DATABASE
-
-ALTER ROLE store WITH SUPERUSER;
-ALTER ROLE store WITH CREATEROLE;
-
+PSQL >9.3
 
 ADD Quota "https://gist.github.com/javisantana/1277714"
 
@@ -176,7 +167,7 @@ class DataStorePlugin(Plugin):
 		CONNECTIONS = "SELECT * FROM pg_stat_activity;"
 
 		return {
-			'SCHEMAS': [row for row in self.store._execute(SCHEMAS)][0],
+			'SCHEMAS': [row for row in self.store._execute(SCHEMAS)],
 			'TABLESPACES': [row for row in self.store._execute(TABLESPACES)][0],
 			'CONNECTIONS': [row for row in self.store._execute(CONNECTIONS)],
 		}
