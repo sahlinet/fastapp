@@ -55,7 +55,7 @@ def call_plugin_func(obj, func):
 			r = plugin_func(obj)
 			r_success[plugin.name] = r
 		except Exception, e:
-			logger.error(e)
+			logger.exception(e)
 			r_failed[plugin.name] = e
 	return r_success, r_failed
 
