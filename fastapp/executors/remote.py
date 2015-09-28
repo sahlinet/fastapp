@@ -228,7 +228,7 @@ class ExecutorServerThread(CommunicationThread):
                 }
 
     def on_message(self, ch, method, props, body):
-        logger.debug(self.name+": "+sys._getframe().f_code.co_name)
+        #logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         try:
             if method.exchange == "configuration":
                 if props.app_id == "configuration":
