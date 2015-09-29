@@ -394,8 +394,9 @@ class RemoteDockerExecutor(DockerExecutor):
 
         super(DockerExecutor, self).__init__(*args, **kwargs)
 
-
     def _pre_start(self):
+        super(RemoteDockerExecutor, self)._pre_start()
+
         try:
             if ":" in DOCKER_IMAGE:
                 out = self.api.pull(repository=DOCKER_IMAGE.split(":")[0], tag=DOCKER_IMAGE.split(":")[1])
