@@ -290,30 +290,38 @@ class ExecutorServerThread(CommunicationThread):
                         response_data.update({'rid': json.loads(body)['rid']})
                         channel.basic_publish(exchange='',
                             routing_key="async_callback",
-                            properties=pika.BasicProperties(
-                                #expiration = str(2000)
-                            ),
                             body=json.dumps(response_data)
                         )
                         connection.close()
 
                     else:
+                        try:
+                            response_data_json = json.dumps(response_data)
+                        except Exception, e:
+                            logger.exception(e)
+                            exception = "%s" % type(e).__name__
+                            exception_message = e.message
+                            status = STATE_NOK
+                            response_data_json= json.dumps({
+                                "status": status,
+                                "returned": None,
+                                "exception": exception,
+                                "exception_message": exception_message,
+                                "response_class": None
+                                })
                         ch.basic_publish(exchange='',
                                          routing_key=props.reply_to,
                                          properties=pika.BasicProperties(
                                             correlation_id = props.correlation_id,
                                             delivery_mode=1,
                                             ),
-                                         body=json.dumps(response_data))
+                                         body=response_data_json)
                     logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
                 logger.info("Response sent %s (%s)" % (self.name, str(props.reply_to)))
         except Exception, e:
             logger.exception(e)
 
-
-    #def __repr__(self):
-    #    return self.__dict__
 
 class ApyNotFound(Exception):
     pass
@@ -444,16 +452,6 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
 
                 # attach plugins
                 plugins = PluginRegistry()
-                ###
-                #settings.DATABASES["store"] = {
-                #                    'ENGINE': "django.db.backends.postgresql_psycopg2",
-                #                'HOST': "localhost",
-                #                    'PORT': "5432",
-                #                    'NAME': "store",
-                #                    'USER': "store",
-                #                    'PASSWORD': "store123",
-                #                }
-                ###
                 for plugin in plugins:
                     logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
                     func.datastore = plugin.attach_worker(**pluginconfig[plugin.name])

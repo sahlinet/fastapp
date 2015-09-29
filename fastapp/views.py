@@ -320,17 +320,17 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
 
             user = channel_name_for_user(request)
 
-            if data["status"] == "OK":
+            status = data.get("status", False)
+            if status == "OK":
                 exec_model.mark_executed()
             else:
-                #error(user, str(data))
                 exec_model.mark_failed()
-
-            if data["status"] in [self.STATE_NOK]:
+                
+            if status in [self.STATE_NOK]:
                 response_status_code = 500
-            elif data["status"] in [self.STATE_NOT_FOUND]:
+            elif status in [self.STATE_NOT_FOUND]:
                 response_status_code = 404
-            elif data["status"] in [self.STATE_TIMEOUT]:
+            elif status in [self.STATE_TIMEOUT]:
                 response_status_code = 502
 
             # send counter to client
