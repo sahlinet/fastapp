@@ -243,8 +243,8 @@ class HeartbeatThread(CommunicationThread):
                 # Plugin config
                 from fastapp.plugins import call_plugin_func
                 success, failed = call_plugin_func(base_obj, "config_for_workers")
-                print success
-                print failed
+                logger.info(success)
+                logger.info(failed)
                 for plugin, config in success.items():
                     logger.info("send config to %s" % plugin)
                     logger.info("config is: %s" % config)

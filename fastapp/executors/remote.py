@@ -216,6 +216,7 @@ class ExecutorServerThread(CommunicationThread):
         self.functions = {}
         self.foreign_functions = {}
         self.settings = {}
+        self.pluginconfig = {}
 
         return super(ExecutorServerThread, self).__init__(*args, **kwargs)
 
@@ -263,11 +264,9 @@ class ExecutorServerThread(CommunicationThread):
                 elif props.app_id == PLUGIN_CONFIG_QUEUE:
                     json_body = json.loads(body)
                     logger.info("Pluginconfig received and attached to self.pluginconfig")
-                    self.pluginconfig = json_body
-                    #logger.info("Setting '%s' received in %s" % (key, self.name))
+                    self.pluginconfig.update(json_body)
                 else:
                     logger.error("Invalid event arrived (%s)" % props.app_id)
-
 
             if method.routing_key == RPC_QUEUE:
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
