@@ -49,7 +49,7 @@ def call_plugin_func(obj, func):
 	r_failed = {}
 	registry = PluginRegistry()
 	for plugin in registry.get():
-		logger.info("Handling plugin %s for %s" % (plugin, func))
+		logger.info("Handling plugin %s for %s starting" % (plugin, func))
 		try:
 			plugin_func = getattr(plugin, func)
 			r = plugin_func(obj)
@@ -57,6 +57,8 @@ def call_plugin_func(obj, func):
 		except Exception, e:
 			logger.exception(e)
 			r_failed[plugin.name] = e
+		logger.info("Handling plugin %s for %s ended" % (plugin, func))
+	logger.info("Loaded %s with success, %s with errors" % (len(r_success), len(r_failed)))
 	return r_success, r_failed
 
 
