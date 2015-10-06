@@ -43,7 +43,10 @@ class DataStore(object):
 	ENGINE = 'sqlite:///:memory:'
 
 	def __init__(self, schema=None, *args, **kwargs):
-		self.schema = schema.replace("-", "_")
+		if schema:
+			self.schema = schema.replace("-", "_")
+		else:
+			self.schema = schema
 		self.kwargs = kwargs
 		logger.info("Working with schema: %s" % schema)
 		logger.info("Working with config: %s" % str(kwargs))
@@ -154,7 +157,7 @@ class DataStorePlugin(Plugin):
 
 	def config(self, base):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-		plugin_settings['USER'] = base.name
+		plugin_settings['USER'] = base.name.replace("-", "_")
 		plugin_settings['PASSWORD'] = base.name
 		#store_config = PsqlDataStore(**plugin_settings)
 		return plugin_settings
