@@ -76,7 +76,9 @@ class DataStore(object):
 				logger.error("Could not create schema '%s'" % self.schema)
 				self.session.rollback()
 
-			#self._execute("ALTER ROLE %s WITH SUPERUSER;" % self.schema)
+			self._execute("GRANT USAGE ON SCHEMA %s to %s;" % (self.schema, self.schema))
+			self._execute("GRANT ALL ON ALL TABLES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
+			self._execute("GRANT ALL ON ALL SEQUENCES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
 			#self._execute("ALTER ROLE %s WITH CREATEROLE;" % self.schema)
 			#self.session.execute("SET SCHEMA '%s'" % self.schema)
 			#Base.metadata.schema = "user1"
