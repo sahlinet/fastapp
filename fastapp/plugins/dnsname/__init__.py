@@ -27,7 +27,7 @@ class DigitaloceanDns():
 		self.r = requests.get(self.URL, data={'per_page': 200}, headers=self.headers)
 		self.records = self.r.json()
 
-		id = self._get_record(hostname)
+		id = self._get_record(hostname, type)
 		if id:
 			r = requests.put(self.URL+"/%s" % id, self.data, headers=self.headers)
 		else:
@@ -35,23 +35,20 @@ class DigitaloceanDns():
 		logger.info((hostname, ip, r.status_code, r.text))
 		return hostname, ip, r.status_code
 
-	def delete(self, hostname):
-		id = self._get_record(hostname)
+	def delete(self, hostname, type):
+		id = self._get_record(hostname, type)
 		r = requests.delete(self.URL+"/%s" % id,headers=self.headers)
 		return r.status_code
 
-	def _get_record(self, hostname):
-				# update dns record
-		#URL = "https://api.digitalocean.com/v2/domains/%s/records" % domain
-
+	def _get_record(self, hostname, type):
 		r = requests.get(self.URL, data={'per_page': 200}, headers=self.headers)
 		records = r.json()
 
-		found = False
 		for record in records['domain_records']:
-				if record['name'] == hostname:
-						id = record['id']
-						return id
+				if record['name'] == hostname and record['type'] == type:
+						logger.info("%s-Record for host %s found with id '%s'" % (type, hostname, record['id']))
+						return record['id']
+		logger.info("%s-Record for host %s not found" % (type, hostname))
 		return None
 
 import inspect
