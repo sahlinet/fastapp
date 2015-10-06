@@ -43,7 +43,7 @@ class DataStore(object):
 	ENGINE = 'sqlite:///:memory:'
 
 	def __init__(self, schema=None, *args, **kwargs):
-		self.schema = schema
+		self.schema = schema.replace("-", "_")
 		self.kwargs = kwargs
 		logger.info("Working with schema: %s" % schema)
 		logger.info("Working with config: %s" % str(kwargs))
@@ -57,7 +57,7 @@ class DataStore(object):
 		self.session = Session()
 
 		# set schema for sql executions
-		self.session.execute("SET search_path TO %s" % self.schema)
+		self._execute("SET search_path TO %s" % self.schema)
 
 
 	def init_store(self, base):
@@ -107,7 +107,7 @@ class DataStore(object):
 	def filter(self, k, v):
 		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';"))
 
-	def _execute(self, sql):
+	def _execute(self, sql, result=None):
 		try:
 			result = self.session.execute(sql)
 			self.session.commit()
