@@ -44,7 +44,9 @@ class DataStore(object):
 
 	def __init__(self, schema=None, *args, **kwargs):
 		self.schema = schema
-		logger.debug("Working with schema: %s" % schema)
+		self.kwargs = kwargs
+		logger.info("Working with schema: %s" % schema)
+		logger.info("Working with config: %s" % str(kwargs))
 
 		# set schema for table creation
 		DataObject.__table__.schema = self.schema
@@ -106,8 +108,12 @@ class DataStore(object):
 		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';"))
 
 	def _execute(self, sql):
-		result = self.session.execute(sql)
-		self.session.commit()
+		try:
+			result = self.session.execute(sql)
+			self.session.commit()
+		except Exception, e:
+			logger.exception("Error executing SQL command: %s" % sql)
+			logger.warn(self.kwargs)
 		return result
 
 	def truncate(self):
