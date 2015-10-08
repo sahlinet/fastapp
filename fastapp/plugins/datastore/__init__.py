@@ -102,7 +102,7 @@ class DataStore(object):
 
 	def write_dict(self, data_dict):
 		obj_dict = DataObject(data=data_dict)
-		return self.store.write_obj(obj_dict)
+		return self.write_obj(obj_dict)
 
 	def all(self):
 		return self.session.query(DataObject).all()
