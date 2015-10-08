@@ -53,10 +53,9 @@ def _handle_apy(filename, content, base_obj, appconfig):
 def import_base(zf, user_obj, name, override_public, override_private):
     base, created = Base.objects.get_or_create(user=user_obj, name=name)
     if not created:
-        logger.warn("base '%s' did already exist" % name)
+        logger.info("base '%s' did already exist" % name)
         base.save()
-
-        # Dropbox connection
+    # Dropbox connection
     try:
         dropbox_connection = Connection(base.auth_token)
     except Exception:

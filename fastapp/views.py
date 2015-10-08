@@ -325,7 +325,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 exec_model.mark_executed()
             else:
                 exec_model.mark_failed()
-                
+
             if status in [self.STATE_NOK]:
                 response_status_code = 500
             elif status in [self.STATE_NOT_FOUND]:
@@ -839,16 +839,18 @@ def process_file(path, metadata, client, user):
 
             new_rev = metadata['rev']
             logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
+
             if apy.rev == new_rev:
-                logger.debug("no changes")
+                logger.info("No changes in %s" % path)
             else:
-                logger.info("load changes for %s" % path)
+                logger.info("Load changes for %s" % path)
 
                 content, rev = client.get_file_content_and_rev("%s" % path)
                 apy.module = content
+                logger.info("Update content for %s with %s" % (path, str(len(content))))
                 apy.rev = rev
                 apy.save()
-                logger.info("Apy %s saved" % apy.name)
+                logger.info("Apy %s updated" % apy.name)
         else:
             logger.warn("Path %s ignored" % path)
     except Exception, e:
@@ -873,10 +875,14 @@ def process_user(uid):
     while has_more:
         result = client.delta(cursor)
 
-        pool = ThreadPool(20)
+        pool = ThreadPool(50)
         for path, metadata in result['entries']:
+            logger.info("Add task for %path to pool" % path)
             pool.add_task(process_file, path, metadata, client, user)
+        logger.info("Waiting for completion..." % path)
         pool.wait_completion()
+        logger.info("Add task for %path to pool")
+        logger.info("Tasks completed.")
 
         # Update cursor
         cursor = result['cursor']
