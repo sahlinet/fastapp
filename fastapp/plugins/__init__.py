@@ -81,7 +81,11 @@ class Plugin(object):
 		# send dictionary with config to workers for the plugin
 		#    the dictionary is available in self.config(base)
 		config = {}
-		config.update(self.config(base))
+		try:
+			config.update(self.config(base))
+		except AttributeError, e:
+			pass
+
 		logger.info("Config to worker for plugin %s" % self.name)
 		return config
 
