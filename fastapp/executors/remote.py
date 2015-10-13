@@ -331,7 +331,7 @@ class ApyError(Exception):
 from fastapp.queue import connect_to_queue
 
 def log_to_queue(tid, level, msg):
-    logger.info("Send log message")
+    #logger.info("Send log message")
     host = settings.RABBITMQ_HOST
     port = settings.RABBITMQ_PORT
     vhost = load_setting("CORE_VHOST")
@@ -341,12 +341,12 @@ def log_to_queue(tid, level, msg):
 
     channel = connect_to_queue(host, log_queue_name, vhost, username=username, password=password, port=port)
 
-    logger.info(vhost)
-    logger.info(log_queue_name)
-    logger.info(username)
-    logger.info(password)
-    logger.info(host)
-    logger.info(port)
+    #logger.info(vhost)
+    #logger.info(log_queue_name)
+    #logger.info(username)
+    #logger.info(password)
+    #logger.info(host)
+    #logger.info(port)
     payload = {
         'rid': tid,
         'level': level,
@@ -360,7 +360,7 @@ def log_to_queue(tid, level, msg):
                             delivery_mode=1,
                          ),
                         )
-    logger.info(channel)
+    #logger.info(channel)
     channel.close()
     channel.connection.close()
     del channel.connection
