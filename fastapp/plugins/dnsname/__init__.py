@@ -77,8 +77,10 @@ class DNSNamePlugin(Plugin):
 			logger.info(executor)
 			logger.info("Add '%s' to DNS zone %s" % (dns_name, domain))
 			dns.update(dns_name, executor['ip'])
+			dns.update(dns_name+"-v4", executor['ip'])
 			if executor['ip6']:
 				dns.update(dns_name, executor['ip6'], type="AAAA")
+				dns.update(dns_name+"-v6", executor['ip6'], type="AAAA")
 
 	def on_destroy_base(self, base):
 		logger.info(str(self.__class__.name) + " " + inspect.stack()[0][3])
