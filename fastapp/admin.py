@@ -11,7 +11,7 @@ class ApyAdmin(admin.ModelAdmin):
     pass
 
 class TransactionAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('rid', 'status')
 
 class TransportEndpointAdmin(admin.ModelAdmin):
     pass
