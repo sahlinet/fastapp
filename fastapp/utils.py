@@ -209,7 +209,7 @@ def user_message(level, channel_name, message):
         class_level = "warn"
     elif level == logging.ERROR:
         class_level = "error"
-    logger.log(level, "to pusher: "+message)
+    #logger.log(level, "to pusher: "+message)
     data = {'datetime': str(now), 'message': str(message), 'class': class_level}
     send_client(channel_name, "console_msg", data)
 
