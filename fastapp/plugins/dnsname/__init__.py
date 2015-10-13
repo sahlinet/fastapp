@@ -35,7 +35,7 @@ class DigitaloceanDns():
 		logger.info((hostname, ip, r.status_code, r.text))
 		return hostname, ip, r.status_code
 
-	def delete(self, hostname, type):
+	def delete(self, hostname, type="A"):
 		id = self._get_record(hostname, type)
 		r = requests.delete(self.URL+"/%s" % id,headers=self.headers)
 		return r.status_code
@@ -93,6 +93,8 @@ class DNSNamePlugin(Plugin):
 			dns_name = self._make_dns_name(base, counter)
 			logger.info("Delete '%s' from DNS zone %s" % (dns_name, domain))
 			dns.delete(dns_name)
+			if executor['ip6']:
+				dns.delete(dns_name, type="AAAA")
 
 	def executor_context(self, executor):
 		context = {}
