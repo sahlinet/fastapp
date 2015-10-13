@@ -278,7 +278,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             logger.debug("RESPONSE-data: %s" % response_data[:120])
             data = json.loads(response_data)
             data.update({
-                #"id": kwargs['id'],
                 "time_ms": ms,
             })
         except Exception, e:
