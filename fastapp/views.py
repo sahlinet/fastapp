@@ -824,7 +824,7 @@ def process_file(path, metadata, client, user):
                 base_obj = Base.objects.get(name=base_name, user=user)
                 apy, created = Apy.objects.get_or_create(name=apy_name, base=base_obj)
                 if created:
-                    apy.save()
+                    apy.save_and_sync()
                     logger.info("new apy %s created" % apy_name)
                 logger.info("apy %s already exists" % apy_name)
             except Apy.DoesNotExist, e:
@@ -834,7 +834,7 @@ def process_file(path, metadata, client, user):
             description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
             if description:
                 apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
-                apy.save()
+                apy.save_and_sync()
 
             new_rev = metadata['rev']
             logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
@@ -848,7 +848,7 @@ def process_file(path, metadata, client, user):
                 apy.module = content
                 logger.info("Update content for %s with %s" % (path, str(len(content))))
                 apy.rev = rev
-                apy.save()
+                apy.save_and_sync()
                 logger.info("Apy %s updated" % apy.name)
         else:
             logger.warn("Path %s ignored" % path)
@@ -933,8 +933,8 @@ def login_or_sharedkey(function):
         # if shared key in query string
         if request.GET.has_key('shared_key'):
             shared_key = request.GET.get('shared_key', None)
-            logger.info(base_obj.uuid)
-            logger.info(shared_key)
+            #logger.info(base_obj.uuid)
+            #logger.info(shared_key)
             if base_obj.uuid==shared_key or base_obj.public:
                 request.session['shared_key'] = shared_key
                 return function(request, *args, **kwargs)

@@ -46,7 +46,6 @@ class BaseExecutor(object):
         self.name = slug.replace("_", "-").replace(".", "-")
 
     def addresses(self, id):
-
         return {
             'ip': None,
             'ip6': None
@@ -268,6 +267,7 @@ class DockerExecutor(BaseExecutor):
         return id
 
     def addresses(self, id):
+        logging.info("Get addresses for %s" % id)
         container = self._get_container(id)
         return {
             'ip': container['NetworkSettings']['IPAddress'],

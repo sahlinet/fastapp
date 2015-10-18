@@ -42,9 +42,13 @@
             <h3>Runtime Information</h3>
             {% verbatim %}
             <p>Port: </p>
-            <p><a href="http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}">http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}</a></p>
-            <p><a href="http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}">http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}</a></p>
+            <p><a target="_blank" href="http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}">http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}</a></p>
+            <p>{{ base.executors[0] }}</p>
+            <p><a target="_blank" href="http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}">http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}</a></p>
             {% endverbatim %}
+            <p>{{ active_base.executors.0.plugins.dnsnameplugin.SERVICE_DNS }}</a></p>
+            <p>{{ active_base.executors.0.plugins.dnsnameplugin.SERVICE_DNS_V4 }}</a></p>
+            <p>{{ active_base.executors.0.plugins.dnsnameplugin.SERVICE_DNS_V6 }}</a></p>
 
         </div>
     </div>

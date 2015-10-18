@@ -211,10 +211,12 @@ class Base(models.Model):
                     'pid': self.executor.pid,
                     'port': self.executor.port,
                     'ip': self.executor.ip,
-                    'ip6': self.executor.ip6
+                    'ip6': self.executor.ip6,
+                    'plugins': self.executor.plugins
                 }
             ]
-        except Exception:
+        except Exception, e:
+            logger.exception(e)
             return []
 
     def start(self):
@@ -437,6 +439,7 @@ class Thread(models.Model):
 def default_pass():
     return get_user_model().objects.make_random_password()
 
+from fastapp.plugins import PluginRegistry
 
 class Executor(models.Model):
     base = models.OneToOneField(Base, related_name="executor")
@@ -450,10 +453,26 @@ class Executor(models.Model):
     port = SequenceField(
         key='test.sequence.1',
         template='1%NNNN',
-        #params={'code':'ABC'},
         auto=True,
         null=True
     )
+
+    def __init__(self, *args, **kwargs):
+        super(Executor, self ).__init__(*args, **kwargs)
+        self.attach_plugins()
+
+    def attach_plugins(self):
+        # attach plugins
+        plugins = PluginRegistry()
+        if not hasattr(self, "plugins"):
+            self.plugins = {}
+        for plugin in plugins:
+            logger.info("Attach %s to executor instance" % plugin.name)
+            if hasattr(plugin, "return_to_executor"):
+                self.plugins[plugin.name.lower()] = plugin.return_to_executor(self)
+                #setattr(self.plugins, plugin.name.lower(), plugin.return_to_executor(self))
+            else:
+                logger.warning("Func is None")
 
     @property
     def vhost(self):

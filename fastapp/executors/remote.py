@@ -263,7 +263,7 @@ class ExecutorServerThread(CommunicationThread):
 
                 elif props.app_id == PLUGIN_CONFIG_QUEUE:
                     json_body = json.loads(body)
-                    logger.info("Pluginconfig received and attached to self.pluginconfig")
+                    logger.info("Pluginconfig (%s) received and attached to self.pluginconfig" % str(json_body.keys()))
                     self.pluginconfig.update(json_body)
                 else:
                     logger.error("Invalid event arrived (%s)" % props.app_id)

@@ -106,6 +106,7 @@ class DNSNamePlugin(Plugin):
 		#	context[k] = v
 
 		#k = "%s_executor" % (executor.base)
+
 		k = "SERVICE_DNS"
 		v =  self._make_dns_name(executor.base, 0)
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.dnsname']
@@ -113,7 +114,24 @@ class DNSNamePlugin(Plugin):
 		v = v + "." + domain
 		context[k] = v
 
+		k = "SERVICE_DNS_V4"
+		v =  self._make_dns_name(executor.base, 0)+"-v4"
+		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.dnsname']
+		domain = plugin_settings['zone']
+		v = v + "." + domain
+		context[k] = v
+
+		k = "SERVICE_DNS_V6"
+		v =  self._make_dns_name(executor.base, 0)+"-v6"
+		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.dnsname']
+		domain = plugin_settings['zone']
+		v = v + "." + domain
+		context[k] = v
+
 		return context
+
+	def return_to_executor(self, executor):
+		return self.executor_context(executor)
 
 	def _make_dns_name(self, base, counter):
 		dns_name = "%s-%s-%i" % (base.user.username, base.name, counter)
