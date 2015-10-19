@@ -51,15 +51,12 @@ class DigitaloceanDns():
 		logger.info("%s-Record for host %s not found" % (type, hostname))
 		return None
 
-import inspect
 
 @register_plugin
 class DNSNamePlugin(Plugin):
 
 	@classmethod
 	def init(cls):
-		logger.info(str(cls.name) + "  " + inspect.stack()[0][3])
-		logger.info("Init %s" % cls)
 		plugin_path = os.path.dirname(inspect.getfile(cls))
 		template_path = os.path.join(plugin_path, "templates")
 		settings.TEMPLATE_DIRS = settings.TEMPLATE_DIRS + (template_path,)

@@ -1,5 +1,8 @@
 import os
 import logging
+
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -10,10 +13,10 @@ class Singleton(type):
 
 	def __call__(cls,*args,**kw):
 		if cls.instance is None:
-			logger.info("Create singleton instance for %s" % cls)
+			logger.debug("Create singleton instance for %s" % cls)
 			cls.instance = super(Singleton, cls).__call__(*args, **kw)
 		else:
-			logger.info("Return singleton instance for %s" % cls)
+			logger.debug("Return singleton instance for %s" % cls)
 		return cls.instance
 
 
@@ -29,8 +32,14 @@ class PluginRegistry(object):
 	def add(self, cls):
 		if cls not in self.plugins:
 			logger.info("Register: %s" % cls)
-			cls.init()
-			self.plugins.append(cls)
+			logger.info("Check if plugin '%s' must be activated..." % cls.shortname)
+			plugins_config = getattr(settings, "FASTAPP_PLUGINS_CONFIG", {})
+			if cls.fullname in plugins_config.keys():
+				cls.init()
+				self.plugins.append(cls)
+				logger.info("Plugin '%s' activated with settings: %s" % (cls.fullname, str(plugins_config[cls.fullname].keys())))
+			else:
+				logger.info("Plugin '%s' not activated" % cls.fullname)
 		else:
 			logger.debug("Already registered: %s" % cls)
 
@@ -39,7 +48,7 @@ class PluginRegistry(object):
 
 
 def register_plugin(cls):
-	"""Class decorator for adding plugins to the registry"""
+	""" Class decorator for adding plugins to the registry """
 	PluginRegistry().add(cls())
 	return cls
 
@@ -49,7 +58,7 @@ def call_plugin_func(obj, func):
 	r_failed = {}
 	registry = PluginRegistry()
 	for plugin in registry.get():
-		logger.info("Handling plugin %s for %s starting" % (plugin, func))
+		logger.info("Handling plugin %s for %s starting" % (plugin.fullname, func))
 		try:
 			plugin_func = getattr(plugin, func)
 			r = plugin_func(obj)
@@ -68,6 +77,7 @@ class Plugin(object):
 
 	def __init__(self, *args, **kwargs):
 		self.kwargs = kwargs
+		logger.info("Init %s" % self.name)
 		super(Plugin, self ).__init__()
 
 	@property
@@ -91,7 +101,12 @@ class Plugin(object):
 
 	@property
 	def shortname(self):
+		print self.__class__.__module__.split(".")
 		return self.__class__.__module__.split(".")[-1]
+
+	@property
+	def fullname(self):
+		return self.__class__.__module__
 
 	def init(self):
 		pass

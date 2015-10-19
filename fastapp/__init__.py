@@ -7,7 +7,8 @@ from django.core.exceptions import ImproperlyConfigured
 # load plugins
 from django.conf import settings
 try:
-    for plugin in getattr(settings, "FASTAPP_PLUGINS", []):
+    plugins_config = getattr(settings, "FASTAPP_PLUGINS_CONFIG", {})
+    for plugin in plugins_config.keys():
 
         def my_import(name):
             # from http://effbot.org/zone/import-string.htm
@@ -19,4 +20,3 @@ try:
         amod = my_import(plugin)
 except ImproperlyConfigured, e:
     print e
-    pass
