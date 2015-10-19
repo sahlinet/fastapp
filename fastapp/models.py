@@ -462,6 +462,9 @@ class Executor(models.Model):
         self.attach_plugins()
 
     def attach_plugins(self):
+        """
+
+        """
         # attach plugins
         plugins = PluginRegistry()
         if not hasattr(self, "plugins"):
@@ -470,9 +473,6 @@ class Executor(models.Model):
             logger.info("Attach %s to executor instance" % plugin.name)
             if hasattr(plugin, "return_to_executor"):
                 self.plugins[plugin.name.lower()] = plugin.return_to_executor(self)
-                #setattr(self.plugins, plugin.name.lower(), plugin.return_to_executor(self))
-            else:
-                logger.warning("Func is None")
 
     @property
     def vhost(self):
