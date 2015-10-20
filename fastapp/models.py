@@ -470,7 +470,7 @@ class Executor(models.Model):
         if not hasattr(self, "plugins"):
             self.plugins = {}
         for plugin in plugins:
-            logger.info("Attach %s to executor instance" % plugin.name)
+            logger.info("Attach %s.return_to_executor to executor instance '%s'" % (plugin.name, self.base.name))
             if hasattr(plugin, "return_to_executor"):
                 self.plugins[plugin.name.lower()] = plugin.return_to_executor(self)
 

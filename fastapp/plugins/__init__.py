@@ -101,7 +101,6 @@ class Plugin(object):
 
 	@property
 	def shortname(self):
-		print self.__class__.__module__.split(".")
 		return self.__class__.__module__.split(".")[-1]
 
 	@property

@@ -48,7 +48,7 @@ class DigitaloceanDns():
 				if record['name'] == hostname and record['type'] == type:
 						logger.info("%s-Record for host %s found with id '%s'" % (type, hostname, record['id']))
 						return record['id']
-		logger.info("%s-Record for host %s not found" % (type, hostname))
+		logger.debug("%s-Record for host %s not found" % (type, hostname))
 		return None
 
 
@@ -132,5 +132,4 @@ class DNSNamePlugin(Plugin):
 
 	def _make_dns_name(self, base, counter):
 		dns_name = "%s-%s-%i" % (base.user.username, base.name, counter)
-		logger.info(dns_name)
 		return dns_name.replace("_", "-").lower()
