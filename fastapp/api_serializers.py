@@ -78,5 +78,6 @@ class BaseSerializer(serializers.ModelSerializer):
                   'executors', 'content', 'foreign_apys', 'public')
 
     def save_object(self, obj, **kwargs):
+        super(BaseSerializer, self).save_object(obj, **kwargs)
         logger.debug("save_and_sync")
         obj.save_and_sync(**kwargs)

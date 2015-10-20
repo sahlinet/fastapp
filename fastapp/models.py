@@ -603,7 +603,11 @@ def initialize_on_storage(sender, *args, **kwargs):
     try:
         connection.create_folder("%s" % instance.name)
     except Exception, e:
-        logger.exception(e)
+        pass
+        #if "already exists" in e['body']['error']:
+        #    pass
+        #else:
+        #    logger.exception(e)
 
     connection.put_file("%s/app.config" % (instance.name), instance.config)
     connection.put_file("%s/index.html" % (instance.name), instance.content)
