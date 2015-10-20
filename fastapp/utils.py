@@ -164,6 +164,7 @@ def channel_name_for_user_by_user(user):
 
 
 def send_client(channel_name, event, data):
+    return
     logger.debug("START EVENT_TO_QUEUE %s"   % event)
 
     host = settings.RABBITMQ_HOST
