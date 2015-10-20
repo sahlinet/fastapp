@@ -824,7 +824,7 @@ def process_file(path, metadata, client, user):
                 base_obj = Base.objects.get(name=base_name, user=user)
                 apy, created = Apy.objects.get_or_create(name=apy_name, base=base_obj)
                 if created:
-                    apy.save_and_sync()
+                    apy.save()
                     logger.info("new apy %s created" % apy_name)
                 logger.info("apy %s already exists" % apy_name)
             except Apy.DoesNotExist, e:
@@ -834,7 +834,7 @@ def process_file(path, metadata, client, user):
             description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
             if description:
                 apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
-                apy.save_and_sync()
+                apy.save()
 
             new_rev = metadata['rev']
             logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
@@ -848,7 +848,7 @@ def process_file(path, metadata, client, user):
                 apy.module = content
                 logger.info("Update content for %s with %s" % (path, str(len(content))))
                 apy.rev = rev
-                apy.save_and_sync()
+                apy.save()
                 logger.info("Apy %s updated" % apy.name)
         else:
             logger.warn("Path %s ignored" % path)
@@ -874,7 +874,7 @@ def process_user(uid):
     while has_more:
         result = client.delta(cursor)
 
-        pool = ThreadPool(50)
+        pool = ThreadPool(1)
         for path, metadata in result['entries']:
             logger.info("Add task for %s to pool" % path)
             pool.add_task(process_file, path, metadata, client, user)
