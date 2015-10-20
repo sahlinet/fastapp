@@ -59,10 +59,9 @@ class Command(BaseCommand):
             thread.daemon = True
             thread.start()
 
-        update_status_thread = threading.Thread(target=update_status, args=["Heartbeat", HEARTBEAT_THREAD_COUNT, threads])
+        update_status_thread = threading.Thread(target=update_status, args=["HeartbeatThread", HEARTBEAT_THREAD_COUNT, threads])
         update_status_thread.daemon = True
         update_status_thread.start()
-
 
         # async response thread
         ASYNC_THREAD_COUNT = settings.FASTAPP_ASYNC_LISTENER_THREADCOUNT
@@ -70,13 +69,14 @@ class Command(BaseCommand):
         queues_consume_async = [[async_queue_name, True]]
         for c in range(0, ASYNC_THREAD_COUNT):
             name = "AsyncResponseThread-%s" % c
-
             thread = AsyncResponseThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_async, ttl=3000)
-            #thread = AsyncResponseThread(name, host, port, "/", CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_async, ttl=3000)
             async_threads.append(thread)
             thread.daemon = True
             thread.start()
 
+        async_status_thread = threading.Thread(target=update_status, args=["AsyncResponseThread", ASYNC_THREAD_COUNT, async_threads])
+        async_status_thread.daemon = True
+        async_status_thread.start()
 
         # log receiver
         LOG_THREAD_COUNT = settings.FASTAPP_LOG_LISTENER_THREADCOUNT
@@ -85,14 +85,15 @@ class Command(BaseCommand):
         log_threads = []
         for c in range(0, LOG_THREAD_COUNT):
             name = "LogReceiverThread-%s" % c
-
             thread = LogReceiverThread(name, host, port, CORE_VHOST, CORE_RECEIVER_USERNAME, RECEIVER_PASSWORD, queues_consume=queues_consume_log, ttl=10000)
             log_threads.append(thread)
             thread.daemon = True
             thread.start()
 
+        log_status_thread = threading.Thread(target=update_status, args=["LogReceiverThread", LOG_THREAD_COUNT, log_threads])
+        log_status_thread.daemon = True
+        log_status_thread.start()
 
-#        for t in threads+async_threads+log_threads:
         for t in [inactivate_thread]+threads+async_threads:
             try:
                 logger.info("Thread started")

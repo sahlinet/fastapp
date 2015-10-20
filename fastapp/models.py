@@ -426,6 +426,7 @@ class Thread(models.Model):
     health = models.CharField(max_length=2,
                             choices=HEALTH_STATE_CHOICES,
                             default=STOPPED)
+    updated = models.DateTimeField(auto_now=True, null=True)
 
     def started(self):
         self.health = Thread.STARTED
