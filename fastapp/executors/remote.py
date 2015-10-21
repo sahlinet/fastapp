@@ -451,7 +451,7 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
 
                 # attach plugins
                 plugins = PluginRegistry()
-                for plugin in plugins:
+                for plugin in plugins.all_plugins:
                     logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
                     func.datastore = plugin.attach_worker(**pluginconfig[plugin.name])
                     if not func.datastore:

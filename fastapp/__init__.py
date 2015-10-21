@@ -8,8 +8,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 try:
     plugins_config = getattr(settings, "FASTAPP_PLUGINS_CONFIG", {})
-    for plugin in plugins_config.keys():
-
+    plugins = plugins_config.keys()
+    plugins = plugins + getattr(settings, "FASTAPP_PLUGINS", [])
+    for plugin in list(set(plugins)):
         def my_import(name):
             # from http://effbot.org/zone/import-string.htm
             m = __import__(name)

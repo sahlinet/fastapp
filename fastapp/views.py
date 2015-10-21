@@ -878,7 +878,7 @@ def process_user(uid):
         for path, metadata in result['entries']:
             logger.info("Add task for %s to pool" % path)
             pool.add_task(process_file, path, metadata, client, user)
-        logger.info("Waiting for completion..." % path)
+        logger.info("Waiting for completion ... %s" % path)
         pool.wait_completion()
         logger.info("Add task for %s to pool")
         logger.info("Tasks completed.")

@@ -38,7 +38,7 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
-            logger.info("inactivate run")
+            logger.debug("inactivate run")
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
@@ -195,6 +195,7 @@ class HeartbeatThread(CommunicationThread):
             # verify and warn for incomplete threads
             base_obj = Base.objects.get(name=base)
             for thread in data['threads']['list']:
+                #logger.debug(thread)
                 try:
                     thread_obj, created = Thread.objects.get_or_create(name=thread['name'], parent=process)
                     if thread['connected']:
@@ -243,10 +244,10 @@ class HeartbeatThread(CommunicationThread):
                 # Plugin config
                 from fastapp.plugins import call_plugin_func
                 success, failed = call_plugin_func(base_obj, "config_for_workers")
-                logger.info(success)
-                logger.info(failed)
+                logger.info("Plugin to sync - success: "+str(success))
+                logger.info("Plugin to sync - failed: "+str(failed))
                 for plugin, config in success.items():
-                    logger.info("send config to %s" % plugin)
+                    logger.info("Send config to %s" % plugin)
                     logger.info("config is: %s" % config)
                     distribute(PLUGIN_CONFIG_QUEUE, json.dumps({plugin: config}),
                             vhost,

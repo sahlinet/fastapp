@@ -25,6 +25,7 @@ class PluginRegistry(object):
 
 	def __init__(self):
 		self.plugins = []
+		self.all_plugins = []
 
 	def __iter__(self):
 		return iter(self.plugins)
@@ -40,8 +41,17 @@ class PluginRegistry(object):
 				logger.info("Plugin '%s' activated with settings: %s" % (cls.fullname, str(plugins_config[cls.fullname].keys())))
 			else:
 				logger.info("Plugin '%s' not activated" % cls.fullname)
+			self.all_plugins.append(cls)
 		else:
 			logger.debug("Already registered: %s" % cls)
+
+	@property
+	def all(self):
+		"""
+		Used for worker process, where plugin is not in registry, because of missing configuration.
+		-> Configuration arrives from server over heartbeating mechanism.
+		"""
+		return self.all_plugins
 
 	def get(self):
 		return self.plugins
