@@ -45,9 +45,9 @@ class BaseExecutor(object):
             random.randrange(1,900000), self.base_name)
         self.name = slug.replace("_", "-").replace(".", "-")
 
-    def addresses(self, id):
+    def addresses(self, id, port=None):
         return {
-            'ip': None,
+            'ip': "127.0.0.1",
             'ip6': None
             }
 
@@ -266,12 +266,17 @@ class DockerExecutor(BaseExecutor):
         self.api.start(container=id)
         return id
 
-    def addresses(self, id):
+    def addresses(self, id, port=None):
         logging.info("Get addresses for %s" % id)
         container = self._get_container(id)
+        if port:
+            ip = self.api.port(id, port)[0]['HostIp']
+        else:
+            ip = container['NetworkSettings']['IPAddress']
+        ip6 = container['NetworkSettings']['GlobalIPv6Address']
         return {
-            'ip': container['NetworkSettings']['IPAddress'],
-            'ip6': container['NetworkSettings']['GlobalIPv6Address']
+            'ip': ip,
+            'ip6': ip6
             }
 
     def stop(self, id):

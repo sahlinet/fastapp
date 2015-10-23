@@ -528,7 +528,7 @@ class Executor(models.Model):
 
         self.started = True
 
-        ips = self.implementation.addresses(self.pid)
+        ips = self.implementation.addresses(self.pid, port=self.port)
         self.ip = ips['ip']
         self.ip6 = ips['ip6']
 
