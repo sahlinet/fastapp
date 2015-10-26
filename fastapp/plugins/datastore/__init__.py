@@ -11,6 +11,8 @@ import logging
 import datetime
 import inspect
 
+from copy import deepcopy
+
 from sqlalchemy import create_engine, text
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
@@ -62,8 +64,24 @@ class DataStore(object):
 		# set schema for sql executions
 		self._execute("SET search_path TO %s" % self.schema)
 
+	def _activate_plpythonu(self):
+		"""As from link http://stackoverflow.com/questions/18209625/how-do-i-modify-fields-inside-the-new-postgresql-json-datatype"""
 
-	def init_store(self, base):
+		self._execute("CREATE EXTENSION IF NOT EXISTS plpythonu;")
+		self._execute("CREATE LANGUAGE plpythonu;")
+
+	def _json_update(self):
+
+		self._execute("""CREATE OR REPLACE FUNCTION json_update(data json, key text, value text)
+		 RETURNS json
+		 AS $$
+		    import json
+		    json_data = json.loads(data)
+		    json_data[key] = value
+		    return json.dumps(json_data, indent=4)
+		 $$ LANGUAGE plpythonu;""")
+
+	def init_store(self):
 		"""
 		Runs on server with super user privileges
 		"""
@@ -108,7 +126,21 @@ class DataStore(object):
 		return self.session.query(DataObject).all()
 
 	def filter(self, k, v):
-		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';"))
+		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';")).all()
+
+	def delete(self, obj):
+		self.session.delete(obj)
+		return self.session.commit()
+
+	def save(self, obj):
+		#self.session.add(obj)
+		return self.session.commit()
+
+	def get(self, k, v):
+		result = self.filter(k, v)
+		if len(result) > 1:
+			raise Exception("More than one row returned!")
+		return result[0]
 
 	def _execute(self, sql, result=None):
 		try:
@@ -120,7 +152,7 @@ class DataStore(object):
 		return result
 
 	def truncate(self):
-		self._execute("TRUNCATE data_table")
+		self._execute("TRUNCATE %s.data_table" % self.schema)
 
 
 def resultproxy_to_list(proxy):
