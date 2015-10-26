@@ -1,4 +1,5 @@
 import unittest
+import os
 
 from . import DataObject, PsqlDataStore, resultproxy_to_list
 
@@ -16,8 +17,8 @@ db_settings = {"store": {
     }
 }
 
-
-#@unittest.skip
+#@unittest.skipIf(hasattr(os.environ, "CIRCLECI"), "Running on CI")
+@unittest.skip
 class TestStringMethods(TestCase):
 
     @override_settings(DATABASES=db_settings)
@@ -101,9 +102,4 @@ class TestStringMethods(TestCase):
         self.assertEqual(0, len(self.store.all()))
 
     def tearDown(self):
-        #pass
-        #self.store._execute("TRUNCATE user1.data_table")
-        #self.store._execute("TRUNCATE data_table")
-        #self.store._execute("DROP TABLE user1.data_table")
-        #self.store._execute("DROP TABLE data_table")
         self.store.truncate()
