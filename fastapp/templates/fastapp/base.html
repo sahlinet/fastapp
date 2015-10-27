@@ -43,7 +43,6 @@
             {% verbatim %}
             <p>Port: </p>
             <p><a target="_blank" href="http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}">http://{{ base.executors[0].ip }}:{{ base.executors[0].port }}</a></p>
-            <p>{{ base.executors[0] }}</p>
             <p><a target="_blank" href="http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}">http://[{{ base.executors[0].ip6 }}]:{{ base.executors[0].port }}</a></p>
             {% endverbatim %}
             <p>{{ active_base.executors.0.plugins.dnsnameplugin.SERVICE_DNS }}</a></p>
@@ -60,16 +59,31 @@
             <h3>Foreign Apys</h3>
             <p>Filter: </p>
             {% verbatim %}
-            <div ng-repeat="foreign_apy in public_apys">
-                <h4>{{ foreign_apy.name }}</h4>
-                <p>{{ foreign_apy.first_lastname }}</p>
-                <p>{{ foreign_apy.description }}</p>
-
-                <button ng-show="is_related(foreign_apy)" class="btn btn-default btn-xs" ng-click="relate(foreign_apy)">Unrelate</button>
-                <button ng-show="!is_related(foreign_apy)" class="btn btn-default btn-xs" ng-click="relate(foreign_apy)">Relate</button>
+            <div>
+              <p><input ng-model="search.$"/></p>
+            </div>
+            <div class="row">
+              <div class="col-md-8">
+                <table class="table table-striped table-bordered table-condensed table-hover">
+                   <thead>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Creator</th>
+                      <th>Actions</th>
+                    </thead>
+                    <tr ng-repeat="foreign_apy in public_apys | filter:search:strict ">
+                        <td>{{ foreign_apy.name }}</th>
+                        <td>{{ foreign_apy.description }}</th>
+                        <td>{{ foreign_apy.first_lastname }}</th>
+                        <td>
+                            <button ng-show="is_related(foreign_apy)" class="btn btn-default btn-xs" ng-click="relate(foreign_apy)">Unrelate</button>
+                            <button ng-show="!is_related(foreign_apy)" class="btn btn-default btn-xs" ng-click="relate(foreign_apy)">Relate</button>
+                        </td>
+                    </tr>
+                </table>
+              </div>
             </div>
             {% endverbatim %}
-
         </div>
         <div class="col-md-12" >
             <h3>Configuration</h3>
@@ -116,19 +130,15 @@
                     $.post("/fastapp/{{ active_base.name }}/sync/", {
                         content: cm.getValue()
                     });
-                    console.log("render to DOM");
                     $('body > div.container > div.row.rendered').html(cm.getValue());
                 });
             </script>
             <div class="table-responsive" ng-controller="SettingsCtrl" ng-init="init()">
                 <h3>Settings
-
                     <button type="button" class="btn btn-default btn-xs" ng-click="addRow()">
                         <span class="glyphicon glyphicon-plus"></span> Add row</button>
-
                     <button type="button" class="btn btn-default btn-xs" ng-click="save()">
                         <span class="glyphicon glyphicon-save"></span> Save</button>
-
                 </h3>
 
                 <div class="gridStyle" ng-grid="gridOptions"></div>
@@ -239,122 +249,9 @@
                     </div>
                     {% endverbatim %}
                 </div>
-                {% endif %} {% comment %}
-                <h3>Transactions (last 30 minutes)</h3>
-                <div>
-                    <table class="table">
-                        <tr>
-                            <th>RID</th>
-                            <th>Async</th>
-                            <th>State</th>
-                            <th>APY</th>
-                            <th>Duration (ms)</th>
-                            <th>Created</th>
-                            <th>Modified</th>
-                            <th>In</th>
-                            <th>Out</th>
-                        </tr>
-                        {% for transaction in transaction_list %}
-                        <tr>
-                            <td class="small"> {{ transaction.rid }} </td>
-                            <td class="small"> {{ transaction.async }} </td>
-                            <td class="small"> {{ transaction.status }} </td>
-                            <td class="small"> {{ transaction.apy.name }} </td>
-                            <td class="small"> {{ transaction.duration}} </td>
-                            <td class="small"> {{ transaction.created | date:"c" }} </td>
-                            <td class="small"> {{ transaction.modified | date:"c" }} </td>
-                            <td class="small"> {{ transaction.tin_nice }} </td>
-                            <td class="small"> {{ transaction.tout }} </td>
-                        </tr>
-                        {% for log in transaction.logs.all %}
-                        <tr class="small">
-                            <td class="small" colspan="5">&nbsp;</td>
-                            <td class="small" colspan="8"> {{log.level_verbose}} {{log.msg}} </td>
-                        </tr>
-                        {% endfor %} {% endfor %}
-                    </table>
-                </div>
-
-                {% endcomment %}
+                {% endif %}
             </div>
         </div>
-    </div>
-    <div class="container">
-        <div class="row clearfix">
-            <div class="col-md-12 column">
-                <div class="page-header">
-                    <h2>
-                        Live Transactions
-                        <small>Subtext for header</small>
-                    </h2>
-                    <!--<span>
-                    <div class="btn-group btn-group-sm" role="group" aria-label="...">
-                      <button type="button" class="btn btn-default ">Hide finished</button>
-                      <button type="button" class="btn btn-default">Error only</button>
-                    </div>
-                </span>
-            -->
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container" ng-controller="TransactionCtrl">
-        {% verbatim %}
-        <div class="row" ng-repeat="transaction in transactions | reverse">
-            <div class="col-md-4">
-                <div class="row">
-                    <div class="col-md-12 column">
-                        <p>
-                            <span class="label label-default">init</span>
-                            <span class="label label-default">{{ transaction.id }}</span>
-                            <span class="label label-default">{{ transaction.status }}</span>
-                            <span class="label label-default">async:{{ transaction.async }}</span>
-                        </p>
-                        <p>
-                            Start
-                            <span class="label label-default">{{ transaction.created }}</span>
-                        </p>
-                        <p>
-                            Updated
-                            <span class="label label-default">{{ transaction.modified }}</span>
-
-                        </p>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-8">
-                <div class="row">
-                    <h4> IN
-                        <span class="label label-default">POST</span>
-                    </h4>
-                    <pre>{{ transaction.tin_object | json:4 }}</pre>
-                </div>
-
-                <div class="row">
-                    <h4> Logs </h4>
-                    <div id="messages">
-                        <table class="table table-condensed">
-                            <tr class="{{ log.slevel | lowercase }}" ng-repeat="log in  logentries | filter:transaction.id">
-                                <td class="col-md-4">{{ log.created }}</td>
-                                <td class="col-md-1 ">{{ log.slevel }}</td>
-                                <td>{{ log.msg }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                <div class="row">
-                    <h4> OUT
-                        <span class="label label-default">HTML</span>
-                    </h4>
-                    <pre>{{ transaction.tout_object | json:4 }}</pre>
-                    <p>
-                </div>
-            </div>
-
-        </div>
-
-        {% endverbatim %}
     </div>
 </div>
 {% endblock main %}

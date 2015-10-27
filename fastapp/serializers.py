@@ -12,8 +12,19 @@ class TransactionSerializer(ModelSerializer):
 
     class Meta:
         model = 'fastapp.Transaction'
-        publish_fields = ('rid', 'async', 'created', 'modified', 'apy')
+        publish_fields = ('rid', 'async', 'created', 'modified', 'apy', 'tin', 'tout', 'logs')
 
+    def serialize_apy_name(self, obj):
+        return obj.apy.name
+
+    def serialize_base_name(self, obj):
+        return obj.apy.base.name
+
+    def serialize_logs(self, obj):
+        return [{'msg': log.msg,
+                 'slevel': log.slevel,
+                 'created': str(log.created),
+            } for log in obj.logs.all()]
 
 class LogEntrySerializer(ModelSerializer):
     apy = "app.LogEntry"
