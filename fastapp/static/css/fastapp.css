@@ -123,3 +123,27 @@ tr.small > td {
   line-height: 1.1 !important;
   height: 10px;
 }
+
+[ng\:cloak],[ng-cloak],.ng-cloak{display:none !important}
+
+
+.row.ng-scope {
+		-webkit-animation-name: color2;
+		-webkit-animation-duration: 5s;
+		-webkit-animation-iteration-count: 1;
+		-webkit-animation-timing-function: linear;
+		-webkit-animation-delay: 0s;
+}
+@-webkit-keyframes color2 {
+		0% {
+		}
+		5%,25% {
+				background-color: #50c1e9;
+		}
+		15%,35% {
+				background-color: #50c1e9;
+		}
+		40% {
+				background-color: none;
+	}
+}

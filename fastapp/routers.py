@@ -28,7 +28,7 @@ class TransactionRouter(PrivateBaseModelPublisherRouter):
 
     def get_query_set(self, **kwargs):
         #logger.info(kwargs)
-        return self.model.all()
+        return self.model.objects.all().order_by('-created')[:50]
 
     def get_subscription_contexts(self, **kwargs):
         return {'apy__base__user_id': self.connection.user.pk}
