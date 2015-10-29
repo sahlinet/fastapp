@@ -463,15 +463,12 @@ class Executor(models.Model):
         self.attach_plugins()
 
     def attach_plugins(self):
-        """
-
-        """
         # attach plugins
         plugins = PluginRegistry()
         if not hasattr(self, "plugins"):
             self.plugins = {}
         for plugin in plugins:
-            logger.info("Attach %s.return_to_executor to executor instance '%s'" % (plugin.name, self.base.name))
+            logger.debug("Attach %s.return_to_executor to executor instance '%s'" % (plugin.name, self.base.name))
             if hasattr(plugin, "return_to_executor"):
                 self.plugins[plugin.name.lower()] = plugin.return_to_executor(self)
 

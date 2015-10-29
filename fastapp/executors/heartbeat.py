@@ -247,8 +247,7 @@ class HeartbeatThread(CommunicationThread):
                 logger.info("Plugin to sync - success: "+str(success))
                 logger.info("Plugin to sync - failed: "+str(failed))
                 for plugin, config in success.items():
-                    logger.info("Send config to %s" % plugin)
-                    logger.info("config is: %s" % config)
+                    logger.info("Send '%s' config '%s' to %s" % (plugin, config, instance.base.name))
                     distribute(PLUGIN_CONFIG_QUEUE, json.dumps({plugin: config}),
                             vhost,
                             instance.base.name,

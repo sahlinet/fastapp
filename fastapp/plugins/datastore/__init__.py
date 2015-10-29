@@ -197,7 +197,7 @@ class DataStorePlugin(Plugin):
 	def on_start_base(self, base):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
 		store = PsqlDataStore(schema=base.name, **plugin_settings)
-		return store.init_store(base)
+		return store.init_store()
 
 	def cockpit_context(self):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
