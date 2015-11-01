@@ -121,7 +121,6 @@ class HeartbeatThread(CommunicationThread):
         proc = subprocess.Popen(args, stdout=subprocess.PIPE)
         (out, err) = proc.communicate()
         rss = str(out).rstrip().strip().lstrip()
-        #logger.debug("MEM-Usage of '%s': %s" % (pid, rss))
 
         thread_list_status = [ thread.state for thread in self.thread_list]
 

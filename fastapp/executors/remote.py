@@ -299,7 +299,8 @@ class ExecutorServerThread(CommunicationThread):
                         except Exception, e:
                             logger.exception(e)
                             exception = "%s" % type(e).__name__
-                            exception_message = e.message
+                            exception_message = repr(e)
+                            traceback = traceback.format_exc()
                             status = STATE_NOK
                             response_data_json= json.dumps({
                                 "status": status,
@@ -366,18 +367,14 @@ def log_to_queue(tid, level, msg):
     del channel.connection
     del channel
 
-
 def info(tid, msg):
     log_to_queue(tid, logging.INFO, msg)
-
 
 def warning(tid, msg):
     log_to_queue(tid, logging.WARNING, msg)
 
-
 def debug(tid, msg):
     log_to_queue(tid, logging.DEBUG, msg)
-
 
 def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
@@ -468,8 +465,10 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
             except Exception, e:
                 logger.exception(e)
                 exception = "%s" % type(e).__name__
-                exception_message = e.message
+                exception_message = repr(e)
+                traceback = traceback.format_exc()
                 status = STATE_NOK
+                error(data['rid'], repr(e) + ": " + traceback)
             logger.debug("END DO")
         return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
         if exception_message:
