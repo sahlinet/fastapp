@@ -26,6 +26,8 @@ from django.conf import settings
 
 from fastapp.plugins import register_plugin, Plugin
 
+import psycopg2
+
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
@@ -68,7 +70,9 @@ class DataStore(object):
 		"""As from link http://stackoverflow.com/questions/18209625/how-do-i-modify-fields-inside-the-new-postgresql-json-datatype"""
 
 		self._execute("CREATE EXTENSION IF NOT EXISTS plpythonu;")
+		self.session.commit()
 		self._execute("CREATE LANGUAGE plpythonu;")
+		self.session.commit()
 
 	def _json_update(self):
 
@@ -80,35 +84,39 @@ class DataStore(object):
 		    json_data[key] = value
 		    return json.dumps(json_data, indent=4)
 		 $$ LANGUAGE plpythonu;""")
+		self.session.commit()
 
 	def init_store(self):
 		"""
 		Runs on server with super user privileges
 		"""
 		if self.schema:
+			# User
 			try:
 				self._execute("CREATE USER %s WITH PASSWORD '%s'" % (self.schema,
 					self.schema))
 			except Exception, e:
-				logger.exception(e)
+				logger.error(repr(e))
 				self.session.rollback()
+				logger.info("Could not create user '%s', does already exist?" % self.schema)
+
+			# Schema
 			try:
 				self.engine.execute(CreateSchema(self.schema))
 				logger.info("Schema created")
 			except Exception, e:
-				logger.error("Could not create schema '%s'" % self.schema)
+				logger.error(repr(e))
+				logger.info("Could not create schema '%s', probably it already exists" % self.schema)
 				self.session.rollback()
 
+			# Permissions
 			self._execute("GRANT USAGE ON SCHEMA %s to %s;" % (self.schema, self.schema))
 			self._execute("GRANT ALL ON ALL TABLES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
 			self._execute("GRANT ALL ON ALL SEQUENCES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
-			#self._execute("ALTER ROLE %s WITH CREATEROLE;" % self.schema)
-			#self.session.execute("SET SCHEMA '%s'" % self.schema)
-			#Base.metadata.schema = "user1"
+			self.session.commit()
 
-		#self.session.execute("SET search_path TO %s" % self.schema)
 		self._prepare()
-		return "init_store done"
+		return "init_store '%s' done" % self.schema
 
 	def _prepare(self):
 		Base.metadata.create_all(self.engine)
@@ -143,13 +151,8 @@ class DataStore(object):
 		return result[0]
 
 	def _execute(self, sql, result=None):
-		try:
-			result = self.session.execute(sql)
-			self.session.commit()
-		except Exception, e:
-			logger.exception("Error executing SQL command: %s" % sql)
-			logger.warn(self.kwargs)
-		return result
+		result = self.session.execute(sql)
+		self.session.commit()
 
 	def truncate(self):
 		self._execute("TRUNCATE %s.data_table" % self.schema)
