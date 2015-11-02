@@ -65,6 +65,7 @@ class DataStore(object):
 
 		# set schema for sql executions
 		self._execute("SET search_path TO %s" % self.schema)
+		self.session.commit()
 
 	def _activate_plpythonu(self):
 		"""As from link http://stackoverflow.com/questions/18209625/how-do-i-modify-fields-inside-the-new-postgresql-json-datatype"""
@@ -194,8 +195,7 @@ class DataStorePlugin(Plugin):
 	def config(self, base):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
 		plugin_settings['USER'] = base.name.replace("-", "_")
-		plugin_settings['PASSWORD'] = base.name
-		#store_config = PsqlDataStore(**plugin_settings)
+		plugin_settings['PASSWORD'] = base.name.replace("-", "_")
 		return plugin_settings
 
 	def on_start_base(self, base):
