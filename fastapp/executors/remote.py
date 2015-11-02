@@ -300,7 +300,7 @@ class ExecutorServerThread(CommunicationThread):
                             logger.exception(e)
                             exception = "%s" % type(e).__name__
                             exception_message = repr(e)
-                            traceback = traceback.format_exc()
+                            #trc = traceback.format_exc()
                             status = STATE_NOK
                             response_data_json= json.dumps({
                                 "status": status,
@@ -466,9 +466,12 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                 logger.exception(e)
                 exception = "%s" % type(e).__name__
                 exception_message = repr(e)
-                traceback = traceback.format_exc()
                 status = STATE_NOK
-                error(data['rid'], repr(e) + ": " + traceback)
+
+                # log to user
+                trc = traceback.format_exc()
+                error(data['rid'], repr(e) + ": " + trc)
+
             logger.debug("END DO")
         return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
         if exception_message:
