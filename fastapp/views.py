@@ -834,10 +834,14 @@ def process_file(path, metadata, client, user):
                 logger.warn(e.message)
                 return
 
-            description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
-            if description:
-                apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
-                apy.save()
+            try:
+                description = get_app_config(client, appconfig_path)['modules'][apy_name].get('description', None)
+                if description:
+                    apy.description = get_app_config(client, appconfig_path)['modules'][apy_name]['description']
+                    apy.save()
+            except Exception, e:
+                logger.warn("Description could not be read for %s" % apy_name)
+                logger.warn(repr(e))
 
             new_rev = metadata['rev']
             logger.debug("local rev: %s, remote rev: %s" % (apy.rev, new_rev))
