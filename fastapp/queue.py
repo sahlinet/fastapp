@@ -1,4 +1,4 @@
-import logging 
+import logging
 import pika
 import sys
 import subprocess
@@ -21,7 +21,7 @@ def generate_vhost_configuration(*args):
     return vhost
 
 def create_vhosts():
-    from models import Base 
+    from models import Base
     # create the vhosts, users and permissions
     for base in Base.objects.all():
         create_vhost(base)
@@ -128,11 +128,11 @@ def create_vhost(base):
 #@memory_profile
 def connect_to_queuemanager(host, vhost, username, password, port):
     credentials = pika.PlainCredentials(username, password)
-    logger.debug("Trying to connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
+    logger.debug("Trying to connect to: %s, %s, %s, %s" % (host, port, vhost, username))
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=40, credentials=credentials))
     except Exception, e:
-        logger.error("Cannot connect to: %s, %s, %s, %s, %s" % (host, port, vhost, username, password))
+        logger.error("Cannot connect to: %s, %s, %s, %s" % (host, port, vhost, username))
         logger.exception(e)
         raise e
     return connection
@@ -178,7 +178,7 @@ class CommunicationThread(threading.Thread):
 
         self.queues_consume =  queues_consume
         self.queues_produce =  queues_produce
-        self.topic_receiver = topic_receiver 
+        self.topic_receiver = topic_receiver
 
         self.exchange_count = len(self.topic_receiver)
 
@@ -190,10 +190,10 @@ class CommunicationThread(threading.Thread):
 
     def run(self):
         self.parameters = pika.ConnectionParameters(
-            host=self.host, 
-            port=self.port, 
-            virtual_host=self.vhost, 
-            heartbeat_interval=40, 
+            host=self.host,
+            port=self.port,
+            virtual_host=self.vhost,
+            heartbeat_interval=40,
             credentials=self.credentials
             )
         logger.debug("Starting " + self.name)
@@ -203,7 +203,7 @@ class CommunicationThread(threading.Thread):
             try:
                 self._connection = pika.SelectConnection(self.parameters, self.on_connected, on_close_callback=self.on_close)
                 logger.info("'%s' connected to: %s:%s%s" % (self.name, self.host, self.port, self.vhost))
-                self.is_connected = True 
+                self.is_connected = True
             except Exception, e:
                 self.is_connected = False
                 logger.warning('cannot connect to %s' % str(self.parameters))
@@ -285,7 +285,7 @@ class CommunicationThread(threading.Thread):
 
         # queue consumer
         for queue in self.queues_consume:
-            channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared, 
+            channel.queue_declare(queue=queue[0], callback=self.consume_on_queue_declared,
                 )
 
         # queue producer
@@ -297,6 +297,3 @@ class CommunicationThread(threading.Thread):
             channel.exchange_declare(exchange="configuration", type='fanout', callback=self.on_exchange_declare)
 
         self.channel = channel
-
-
-
