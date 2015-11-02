@@ -153,6 +153,7 @@ class DataStore(object):
 	def _execute(self, sql, result=None):
 		result = self.session.execute(sql)
 		self.session.commit()
+		return result
 
 	def truncate(self):
 		self._execute("TRUNCATE %s.data_table" % self.schema)
