@@ -28,17 +28,14 @@ class TutumLogsPlugin(Plugin):
 			plugin_settings = settings.FASTAPP_PLUGINS_CONFIG[self.fullname]
 
 			import tutum
-			#tutum.user = plugin_settings['USER']
-			#tutum.apikey = plugin_settings['API_KEY']
 
 			service_uuid = os.environ['TUTUM_SERVICE_API_URI'].split("/")[-2]
-
 
 			def log_handler(message):
 				logs.append(message)
 
-			container = tutum.Container.fetch(service_uuid)
-			container.logs(tail=200, follow=False, log_handler=log_handler)
+			container = tutum.Service.fetch(service_uuid)
+			container.logs(tail=100, follow=False, log_handler=log_handler)
 			msg = "Well done..."
 		except Exception, e:
 			msg = repr(e)
