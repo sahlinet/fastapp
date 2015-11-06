@@ -94,6 +94,11 @@ class Command(BaseCommand):
         log_status_thread.daemon = True
         log_status_thread.start()
 
+
+        # start scheduler
+        from fastapp import scheduler
+        scheduler.start_scheduler()
+
         for t in [inactivate_thread]+threads+async_threads:
             try:
                 logger.info("Thread started")

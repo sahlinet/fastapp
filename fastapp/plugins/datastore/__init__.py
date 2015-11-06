@@ -21,6 +21,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.schema import CreateSchema
+from sqlalchemy.pool import NullPool
 
 from django.conf import settings
 
@@ -59,7 +60,7 @@ class DataStore(object):
 		DataObject.__table__.schema = self.schema
 
 		# create session with engine
-		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True)
+		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True, poolclass=NullPool)
 		Session = sessionmaker(bind=self.engine)
 		self.session = Session()
 
@@ -205,7 +206,7 @@ class DataStorePlugin(Plugin):
 
 	def cockpit_context(self):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-		self.store = PsqlDataStore(**plugin_settings)
+		#self.store = PsqlDataStore(**plugin_settings)
 		SCHEMAS = "SELECT schema_name FROM information_schema.schemata;"
 		TABLESPACES = """SELECT array_to_json(array_agg(row_to_json(t))) FROM (
 				SELECT *, pg_tablespace_size(spcname) FROM pg_tablespace
@@ -213,7 +214,7 @@ class DataStorePlugin(Plugin):
 		CONNECTIONS = "SELECT * FROM pg_stat_activity;"
 
 		return {
-			'SCHEMAS': [row for row in self.store._execute(SCHEMAS)],
-			'TABLESPACES': [row for row in self.store._execute(TABLESPACES)][0],
-			'CONNECTIONS': [row for row in self.store._execute(CONNECTIONS)],
+			#'SCHEMAS': [row for row in PsqlDataStore(**plugin_settings)._execute(SCHEMAS)],
+			#'TABLESPACES': [row for row in PsqlDataStore(**plugin_settings)._execute(TABLESPACES)][0],
+			#'CONNECTIONS': [row for row in PsqlDataStore(**plugin_settings)._execute(CONNECTIONS)],
 		}

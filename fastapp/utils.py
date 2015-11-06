@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 from django.core.exceptions import ImproperlyConfigured
+from django.contrib.auth import get_user_model
 
 from fastapp.queue import connect_to_queue
 from fastapp import defaults
@@ -21,6 +22,8 @@ from pyflakes import checker
 from pyflakes import reporter as modReporter
 from pyflakes.messages import Message
 
+from django.core.urlresolvers import reverse
+from django.test import RequestFactory
 
 class UnAuthorized(Exception):
     pass
@@ -313,3 +316,27 @@ def load_var_to_file(var):
         else:
             os.popen4("echo -e $(cat %s) > %s" % (fq_file, fq_file))
     return fq_file
+
+
+def call_apy(base_name, apy_name):
+    logger.info("START call_apy")
+    try:
+        from fastapp.models import Apy
+        apy = Apy.objects.get(name=apy_name, base__name=base_name)
+        logger.info("START call_apy %s" % apy.name)
+        url = reverse('exec', kwargs={'base': apy.base.name, 'id': apy.name})
+
+        request_factory = RequestFactory()
+        request = request_factory.get(url, data={'base': apy.base.name, 'id': apy.name})
+        # TODO: fails if user admin is not created
+        request.user = get_user_model().objects.get(username='admin')
+        request.META['HTTP_ACCEPT'] = "text/html"
+
+        from fastapp.views import DjendExecView
+        view = DjendExecView()
+        response = view.get(request, base=apy.base.name, id=apy.name)
+        logger.info("method called for base %s, response_code: %s" % (apy.base.name, response.status_code))
+        logger.info("END call_apy %s" % apy.name)
+    except Exception, e:
+        logger.error("ERROR call_apy")
+        logger.exception(e)

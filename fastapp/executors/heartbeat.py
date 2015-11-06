@@ -38,7 +38,6 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
-            logger.debug("inactivate run")
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
@@ -52,7 +51,7 @@ def inactivate():
                 #for executor in Executor.objects.select_for_update(nowait=True).filter(started=True):
                     if not base.executor.is_running():
                         # log start with last beat datetime
-                        logger.warn("start worker for not running base: %s" % base.name)
+                        logger.error("Start worker for not running base: %s" % base.name)
                         base.executor.start()
             except DatabaseError, e:
                 logger.warning("Executor was locked with select_for_update")
@@ -291,6 +290,8 @@ class HeartbeatThread(CommunicationThread):
                     #self.PUBLISH_INTERVAL)
         self._connection.add_timeout(settings.FASTAPP_PUBLISH_INTERVAL,
                                      self.send_message)
+
+
 
 
 class AsyncResponseThread(CommunicationThread):

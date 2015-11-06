@@ -42,3 +42,5 @@ fastapp.sublime-workspace
 fastapp.sublime-project
 MANIFEST
 fastapp/broker_test.py
+
+*.sqlite3

@@ -24,6 +24,7 @@ from django.db import transaction
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import serializers
+from django.core.validators import RegexValidator
 
 from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
@@ -265,6 +266,8 @@ class Apy(models.Model):
     description = models.CharField(max_length=1024, blank=True, null=True)
     public = models.BooleanField(default=False)
     rev = models.CharField(max_length=32, blank=True, null=True)
+
+    schedule = models.CharField(max_length=64, null=True, blank=True)
 
     serializer_class = ApySocketSerializer
 
