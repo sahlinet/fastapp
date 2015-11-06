@@ -18,7 +18,7 @@ class ApySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Apy
-        fields = ('id', 'name', 'module', 'counter', 'description', 'public')
+        fields = ('id', 'name', 'module', 'counter', 'description', 'public', 'schedule')
 
     def save_object(self, obj, **kwargs):
         logger.debug("save_and_sync")

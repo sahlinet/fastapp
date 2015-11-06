@@ -425,6 +425,7 @@ print django"""
         response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id),
                 data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
             )
+        print response.content
         self.assertEqual(200, response.status_code)
 
     def test_save_unparsebla_module(self):

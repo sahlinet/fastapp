@@ -37,6 +37,13 @@ Add fastapp to your urls.py
 
 ### Worker
 
+todo
+
+### Cleanup
+
+	FASTAPP_CLEANUP_OLDER_THAN_N_HOURS				# Cleanup transactions and logs
+	FASTAPP_CLEANUP_INTERVAL_MINUTES					# Cleanup interval
+
 
 #### Spawn Process
 

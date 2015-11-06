@@ -2,6 +2,7 @@ import logging
 import datetime
 import pytz
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from fastapp.models import Transaction, LogEntry
@@ -12,7 +13,7 @@ class Command(BaseCommand):
     help = 'Cleanup old transactions and logs'
 
     def handle(self, *args, **options):
-        older_than = datetime.datetime.now()-datetime.timedelta(hours=48)
+        older_than = datetime.datetime.now()-datetime.timedelta(hours=settings.FASTAPP_CLEANUP_OLDER_THAN_N_HOURS)
         older_than_aware = older_than.replace(tzinfo=pytz.UTC)
         transactions = Transaction.objects.filter(created__lte=older_than_aware)
         logger.info("Deleting %s transactions" % transactions.count())
