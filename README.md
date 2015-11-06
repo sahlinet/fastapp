@@ -44,6 +44,10 @@ todo
 	FASTAPP_CLEANUP_OLDER_THAN_N_HOURS				# Cleanup transactions and logs
 	FASTAPP_CLEANUP_INTERVAL_MINUTES					# Cleanup interval
 
+### Static Files
+
+	FASTAPP_STATIC_CACHE_SECONDS							# How many seconds a static file got cached
+
 
 #### Spawn Process
 

@@ -176,7 +176,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
-                    cache.set(base_model.name+"-"+static_path, f, 60)
+                    cache.set(base_model.name+"-"+static_path, f, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
                     logger.debug("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
                 logger.warning("not found: '%s'" % static_path)
