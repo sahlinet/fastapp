@@ -8,7 +8,7 @@ class BaseAdmin(admin.ModelAdmin):
     pass
 
 class ApyAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'public', 'schedule')
 
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('rid', 'status')
