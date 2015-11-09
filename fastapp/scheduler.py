@@ -84,7 +84,7 @@ def start_scheduler():
             try:
                 update_job(apy, scheduler)
             except Exception, e:
-                logger.warn("Problem with schdule config for %s: %s" % (apy.name, apy.schedule))
+                logger.warn("Problem with schedule config for %s: %s" % (apy.name, apy.schedule))
         logger.info("END rescheduling call_apy")
         time.sleep(60)
 
