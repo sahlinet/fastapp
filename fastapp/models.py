@@ -533,9 +533,10 @@ class Executor(models.Model):
         self.ip6 = ips['ip6']
 
         self.save()
+        logger.info("%s: worker saved with pid %s" % (self, self.pid))
 
     def stop(self):
-        logger.info("stop worker with PID %s" % self.pid)
+        logger.info("Stop worker with PID %s" % self.pid)
 
         self.implementation.stop(self.pid)
 
@@ -551,6 +552,7 @@ class Executor(models.Model):
                 pass
 
             self.save()
+        logger.info("Stopped worker with PID %s" % self.pid)
 
     def restart(self):
         self.stop()
