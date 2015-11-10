@@ -512,7 +512,7 @@ class Executor(models.Model):
         except Instance.DoesNotExist, e:
             instance = Instance(executor=self)
             instance.save()
-            logger.info("Instance created with id %s" % instance.id)
+            logger.info("Instance for '%s' created with id %s" % (self, instance.id))
 
         kwargs = {}
         if self.port:

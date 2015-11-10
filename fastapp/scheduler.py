@@ -12,12 +12,9 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from django.core.management import call_command
 
 from fastapp.models import Apy
-
-logger = logging.getLogger(__name__)
-
-
 from fastapp.utils import call_apy
 
+logger = logging.getLogger(__name__)
 
 
 def cron_to_dict(cronexpr):
@@ -53,17 +50,16 @@ def update_job(apy, scheduler):
 def start_scheduler():
 
     jobstores = {
-        #'default': MemoryJobStore(),
         'default': SQLAlchemyJobStore(url=settings.FASTAPP_SCHEDULE_JOBSTORE)
     }
 
     executors1 = {
-        'default': ThreadPoolExecutor(20),
-        'processpool': ProcessPoolExecutor(5)
+        'default': ThreadPoolExecutor(5)
     }
+
     job_defaults = {
         'coalesce': False,
-        'max_instances': 2
+        'max_instances': 1
     }
 
     scheduler = BackgroundScheduler(executors=executors1, jobstores=jobstores, job_defaults=job_defaults, timezone=utc)
@@ -86,6 +82,6 @@ def start_scheduler():
             except Exception, e:
                 logger.warn("Problem with schedule config for %s: %s" % (apy.name, apy.schedule))
         logger.info("END rescheduling call_apy")
-        time.sleep(60)
+        time.sleep(120)
 
     logger.info("Done scheduling jobs")
