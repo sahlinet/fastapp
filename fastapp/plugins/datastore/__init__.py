@@ -21,11 +21,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.schema import CreateSchema
-from sqlalchemy.pool import NullPool
 
 from django.conf import settings
 
-from fastapp.plugins import register_plugin, Plugin
+from fastapp.plugins import register_plugin, Plugin, Singleton
 
 import psycopg2
 
@@ -60,7 +59,7 @@ class DataStore(object):
 		DataObject.__table__.schema = self.schema
 
 		# create session with engine
-		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True, poolclass=NullPool)
+		self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True)
 		Session = sessionmaker(bind=self.engine)
 		self.session = Session()
 
@@ -169,6 +168,7 @@ def resultproxy_to_list(proxy):
 
 
 class PsqlDataStore(DataStore):
+	__metaclass__ = Singleton
 
 	ENGINE = 'postgresql+psycopg2://%(USER)s:%(PASSWORD)s@%(HOST)s:%(PORT)s/%(NAME)s'
 
