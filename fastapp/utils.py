@@ -340,3 +340,21 @@ def call_apy(base_name, apy_name):
     except Exception, e:
         logger.error("ERROR call_apy")
         logger.exception(e)
+
+import cProfile
+def profileit(func):
+    """
+    Taken from http://stackoverflow.com/questions/5375624/a-decorator-that-profiles-a-method-call-and-logs-the-profiling-result
+    """
+    def wrapper(*args, **kwargs):
+        prof = cProfile.Profile()
+        if not os.environ.has_key("PROFILE_DO_FUNC"):
+            return func(*args, **kwargs)
+        retval = prof.runcall(func, *args, **kwargs)
+		# Note use of name from outer scope
+		#prof.dump_stats(name)
+        import pstats
+        s = pstats.Stats(prof).sort_stats('time')
+        s.print_stats(30)
+        return retval
+    return wrapper

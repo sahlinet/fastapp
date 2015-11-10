@@ -236,6 +236,9 @@ class DockerExecutor(BaseExecutor):
             if self.executor.ip6:
                 env['SERVICE_IP6'] = self.executor.ip6
 
+            if os.environ.has_key('PROFILE_DO_FUNC'):
+                env['PROFILE_DO_FUNC'] = True
+
             # feed environment variables with vars from plugins
             success, failed = call_plugin_func(self.executor, "executor_context")
             if len(failed.keys()) > 0:
