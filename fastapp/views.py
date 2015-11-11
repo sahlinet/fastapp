@@ -101,7 +101,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
     @never_cache
     def get(self, request, *args, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
-        logger.debug("get %s" % static_path)
+        logger.info("get %s" % static_path)
         channel = channel_name_for_user(request)
         info(channel, "get %s" % static_path)
 
@@ -121,7 +121,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         f = cache.get(base_model.name+"-"+static_path)
         if not f:
             try:
-                logger.debug("not in cache: %s" % static_path)
+                logger.info("not in cache: %s" % static_path)
 
                 REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
                 if "runserver" in sys.argv and REPOSITORIES_PATH:
@@ -146,7 +146,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                             return HttpResponseNotFound(static_path + " not found")
                 else:
                     # try to load from installed module in worker
-                    logger.debug("load %s from module in worker" % static_path)
+                    logger.info("load %s from module in worker" % static_path)
                     response_data = get_static(
                         json.dumps({"base_name": base_model.name, "path": static_path}),
                         generate_vhost_configuration(
@@ -163,16 +163,17 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     elif data['status'] == "TIMEOUT":
                         return HttpResponseServerError("Timeout")
                     elif data['status'] == "OK":
-                        logger.debug("File received from worker")
+                        logger.info("File %s received from worker" % static_path)
                         f = base64.b64decode(data['file'])
                     # get from dropbox
                     elif data['status'] == "NOT_FOUND":
-                        logger.debug("File not found from worker")
+                        logger.info("File not found from worker, try to load from dropbox")
                         # get file from dropbox
                         auth_token = base_model.user.authprofile.access_token
                         client = dropbox.client.DropboxClient(auth_token)
                         try:
                             f = client.get_file(static_path).read()
+                            logger.info("File %s loaded from dropbox" % static_path)
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
@@ -182,7 +183,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                 logger.warning("not found: '%s'" % static_path)
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
-            logger.debug("found in cache: '%s'" % static_path)
+            logger.info("found in cache: '%s'" % static_path)
 
         # default
         mimetype = "text/plain"
@@ -214,7 +215,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         else:
             logger.warning("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
-        logger.debug("deliver '%s' with '%s'" % (static_path, mimetype))
+        logger.info("deliver '%s' with '%s'" % (static_path, mimetype))
         return HttpResponse(f, content_type=mimetype)
 
 

@@ -316,7 +316,6 @@ class ExecutorServerThread(CommunicationThread):
                                             delivery_mode=1,
                                             ),
                                          body=response_data_json)
-                    logger.debug("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
                 logger.info("Response sent %s (%s)" % (self.name, str(props.reply_to)))
         except Exception, e:
@@ -584,7 +583,6 @@ class StaticServerThread(CommunicationThread):
                         if base_name in p:
                             logger.info(p+" found")
                             full_path = os.path.join(p, path.replace(base_name+"/", ""))
-                            logger.info(full_path)
                             try:
                                 f = open(full_path, 'r')
                             except Exception, e:
@@ -604,7 +602,7 @@ class StaticServerThread(CommunicationThread):
                     logger.exception(e)
                 finally:
                     response_data.update({'status': rc})
-                    logger.info(props.reply_to)
+                    #logger.info(props.reply_to)
                     publish_result = ch.basic_publish(exchange='',
                                      routing_key=props.reply_to,
                                      properties=pika.BasicProperties(
@@ -612,8 +610,8 @@ class StaticServerThread(CommunicationThread):
                                         delivery_mode=1,
                                         ),
                                      body=json.dumps(response_data))
-                    logger.info("message published: %s" % str(publish_result))
-                    logger.info("ack message")
+                    #logger.info("message published: %s" % str(publish_result))
+                    #logger.info("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
         except Exception, e:
             logger.exception(e)
