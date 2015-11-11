@@ -402,18 +402,10 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                 logger.debug(transaction.tout)
                 #data = json.loads(transaction.tout)
                 data = transaction.tout
-                data.update({'logs':
-                        json.loads(serializers.serialize("json", transaction.logs.all()))
-                    })
             else:
                 data = {'status': transaction.get_status_display()}
                 redirect_to = request.get_full_path()
                 data.update({'url': redirect_to})
-                #if request.GET.get('include_logs', None):
-                data.update({'logs':
-                    json.loads(serializers.serialize("json", transaction.logs.all()))
-                })
-
         else:
             request_data = self._prepare_request(request, exec_model)
             transaction = Transaction(apy=exec_model)
