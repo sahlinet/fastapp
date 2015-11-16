@@ -14,7 +14,7 @@ class ApyAdmin(admin.ModelAdmin):
     list_display = ('name', 'public', 'schedule')
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('rid', 'status')
+    list_display = ('rid', 'apy_name', 'base_name', 'status', 'created', 'modified')
 
 class TransportEndpointAdmin(admin.ModelAdmin):
     pass

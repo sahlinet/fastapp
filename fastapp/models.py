@@ -344,6 +344,14 @@ class Transaction(SelfPublishModel, models.Model):
         super(self.__class__, self).save(*args, **kwargs)
         logger.info(self.action)
 
+    @property
+    def apy_name(self):
+        return self.apy.name
+
+    @property
+    def base_name(self):
+        return self.apy.base.name
+
 LOG_LEVELS = (
     ("10", 'DEBUG'),
     ("20", 'INFO'),
