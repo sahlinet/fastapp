@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class ContainerNotFound(Exception):
     pass
 
-MEM_LIMIT = "128m"
+MEM_LIMIT = "96m"
 #CPU_SHARES = 512
 
 DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
@@ -111,11 +111,11 @@ class TutumExecutor(BaseExecutor):
                                               name=self.name,
                                               target_num_containers=1,
                                               mem_limit=MEM_LIMIT,
-                                              #cpu_shares=CPU_SHARES,
+                                              # cpu_shares=CPU_SHARES,
                                               container_envvars=container_envvars,
                                               autorestart="ALWAYS",
                                               entrypoint=self._start_command
-            )
+                                              )
             service.save()
         else:
             service = self._get_container(id)
