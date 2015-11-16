@@ -446,14 +446,15 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                 # attach siblings
                 func.siblings = Bunch(functions)
 
-                # attach plugins
-                plugins = PluginRegistry()
-                for plugin in plugins.all_plugins:
-                    logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
-                    func.datastore = plugin.attach_worker(**pluginconfig[plugin.name])
-                    if not func.datastore:
-                        logger.warning("Func is None")
-                    logger.info("Got func: %s" % func.datastore)
+                if model['fields']['name'] != "init":
+                    # attach plugins
+                    plugins = PluginRegistry()
+                    for plugin in plugins.all_plugins:
+                        logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
+                        setattr(func, plugin.shortname, plugin.attach_worker(**pluginconfig[plugin.name]))
+                        if not hasattr(func, plugin.shortname):
+                            logger.warning("Func is None")
+                        logger.info("Func '%s' attached to _do" % func.datastore)
 
                 # execution
                 returned = func(func)
