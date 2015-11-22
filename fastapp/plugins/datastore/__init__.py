@@ -214,7 +214,7 @@ class DataStorePlugin(Plugin):
 		CONNECTIONS = "SELECT * FROM pg_stat_activity;"
 
 		return {
-			#'SCHEMAS': [row for row in PsqlDataStore(**plugin_settings)._execute(SCHEMAS)],
-			#'TABLESPACES': [row for row in PsqlDataStore(**plugin_settings)._execute(TABLESPACES)][0],
-			#'CONNECTIONS': [row for row in PsqlDataStore(**plugin_settings)._execute(CONNECTIONS)],
+			'SCHEMAS': [row for row in PsqlDataStore(**plugin_settings)._execute(SCHEMAS)],
+			'TABLESPACES': [row for row in PsqlDataStore(**plugin_settings)._execute(TABLESPACES)][0],
+			'CONNECTIONS': [row for row in PsqlDataStore(**plugin_settings)._execute(CONNECTIONS)],
 		}
