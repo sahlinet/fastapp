@@ -45,12 +45,26 @@
                 <div class="collapse navbar-collapse">
                     <ul class="nav navbar-nav navbar-right">
                         <!-- <li><a class="nav-link current" href="#/start">Start</a></li> -->
-                        <li><a class="nav-link" href="/docs">Documentation</a></li>
-                        <li><a class="nav-link" href="{% url 'console' %}">Console</a></li>
-                        <li><a class="nav-link" href="{% url 'live' %}">Liveview</a></li>
+                        <li><a class="nav-link" href="/docs">
+                        <!--
+                        glyphicon glyphicon-book
+                        -->
+                        <span class="glyphicon glyphicon-book img-circle" aria-hidden="true"></span>&nbsp;
+              Documentation
+                        </a></li>
+                        <li><a class="nav-link" href="{% url 'console' %}">
+                        <span class="glyphicon glyphicon-edit img-circle" aria-hidden="true"></span>&nbsp;
+
+                Console</a></li>
+                        <li><a class="nav-link" href="{% url 'live' %}">
+
+                        <span class="glyphicon glyphicon-dashboard img-circle" aria-hidden="true"></span>&nbsp;
+                            Liveview
+                        </a></li>
 
                         {% if user.is_superuser %}
                         <li><a class="nav-link" href="{% url 'cockpit' %}">Cockpit</a></li>
+                        <li><a class="nav-link" href="/admin/fastapp/">Admin</a></li>
                         {% endif %}
 
                         {% if user.is_authenticated %}
