@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import patterns, url, include
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
@@ -11,7 +11,6 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
 from rest_framework import routers
 
 from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
-
 
 from django.views.decorators.cache import never_cache
 
@@ -79,6 +78,9 @@ urlpatterns = patterns('',
 
     # home
     url(r'^$', DjendView.as_view(template_name="fastapp/base_list.html"), name="console"),
+
+    # api-docs
+    url(r'^api-docs/', include('rest_framework_swagger.urls')),
 )
 
 from rest_framework.urlpatterns import format_suffix_patterns

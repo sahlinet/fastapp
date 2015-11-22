@@ -32,6 +32,7 @@ setup(name='django-fastapp',
 		'django-compressor==1.5',
 		'SQLAlchemy==1.0.8',
 		'APScheduler==3.0.4'
+		'django-rest-swagger==0.3.4'
 	],
 	packages = find_packages(),
 	package_data = {'fastapp': ['fastapp/templates/*']},
