@@ -31,7 +31,7 @@ setup(name='django-fastapp',
 		'SwampDragon-auth==0.1.3',
 		'django-compressor==1.5',
 		'SQLAlchemy==1.0.8',
-		'APScheduler==3.0.4'
+		'APScheduler==3.0.4',
 		'django-rest-swagger==0.3.4'
 	],
 	packages = find_packages(),
