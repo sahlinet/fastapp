@@ -44,6 +44,11 @@ def inactivate():
     try:
         while True:
 
+            m = p.memory_info()
+            set_metric("Physical Memory", float(m.rss)/(1024*1024))
+            set_metric("Virtual Memory", float(m.vms)/(1024*1024))
+            logger.debug("Send metric data")
+
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):

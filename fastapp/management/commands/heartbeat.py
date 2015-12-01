@@ -2,6 +2,7 @@ import logging
 import sys
 import threading
 
+
 from django.core.management.base import BaseCommand
 
 from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE, AsyncResponseThread
@@ -13,18 +14,18 @@ from fastapp.utils import load_setting
 
 logger = logging.getLogger("fastapp.executors.remote")
 
-import psutil
 import os
 
-@newrelic.agent.data_source_generator(name='Memory Usage')
-def memory_metrics():
-    pid = os.getpid()
-    p = psutil.Process(os.getpid())
-    m = p.get_memory_info()
-    yield ('Custom/Memory/Physical', float(m.rss)/(1024*1024))
-    yield ('Custom/Memory/Virtual', float(m.vms)/(1024*1024))
-
-newrelic.agent.register_data_source(memory_metrics)
+#import psutil
+#import newrelic.agent
+#@newrelic.agent.data_source_generator(name='Memory Usage')
+#def memory_metrics():
+#    pid = os.getpid()
+#    p = psutil.Process(os.getpid())
+#    m = p.get_memory_info()
+#    yield ('Custom/Memory/Physical', float(m.rss)/(1024*1024))
+#    yield ('Custom/Memory/Virtual', float(m.vms)/(1024*1024))
+#newrelic.agent.register_data_source(memory_metrics)
 
 class Command(BaseCommand):
     args = '<poll_id poll_id ...>'
