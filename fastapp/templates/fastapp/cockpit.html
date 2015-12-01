@@ -13,9 +13,11 @@
 		<div class="col-md-12">
 			<div><h1>Heartbeat Memory Usage</h1></div>
 
-		{% get_past_datetime 15 "m" as starttime %}
-		{% metric_history "Heartbeat Virtual Memory" "minutes" starttime True %}
-		{% metric_history "Heartbeat Physical Memory" "minutes" starttime True %}
+				{% get_past_datetime 30 "m" as starttime %}
+				<h2>Virtual</h2>
+				{% metric_history "Heartbeat Virtual Memory" "minutes" starttime False %}
+				<h2>Physical</h2>
+				{% metric_history "Heartbeat Physical Memory" "minutes" starttime False %}
 
 		</div>
 
@@ -66,7 +68,14 @@
 					<td> {{ process.name }} </td>
 					<td> {{ process.is_up }} </td>
 					<td> {{ process.running | date:"c"}} </td>
-					<td> {{ process.rss }} </td>
+					<td> {{ process.rss }}
+
+					{% with process.name|replacer:"/,"|add:"-rss" as slug %}
+						{% get_past_datetime 15 "m" as short_starttime %}
+						{% metric_history slug "minutes" short_starttime False %}
+					{% endwith %}
+
+					</td>
 					<td class="small"> {% for thread in process.threads.all %}
 						{{ thread.name }} [{{ thread.health}}] [{{ thread.updated|timesince }}]</br>
 						{% endfor %}

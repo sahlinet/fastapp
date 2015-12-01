@@ -14,3 +14,8 @@ def get_past_datetime(delta, step):
     else:
         raise Exception("specify correct step (h, m)")
     return datetime.now()-td
+
+@register.filter
+def replacer(value, arg):
+    args = arg.split(",")
+    return value.replace(arg[0], arg[1])
