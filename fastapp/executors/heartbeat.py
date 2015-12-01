@@ -32,12 +32,18 @@ FOREIGN_CONFIGURATION_QUEUE = "fconfiguration"
 SETTING_QUEUE = "setting"
 PLUGIN_CONFIG_QUEUE = "pluginconfig"
 
+from redis_metrics import metric, set_metric
+import psutil
 
 def inactivate():
+
+    pid = os.getpid()
+    p = psutil.Process(os.getpid())
 
     transaction.set_autocommit(False)
     try:
         while True:
+
             time.sleep(0.1)
             now=datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):

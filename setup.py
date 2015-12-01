@@ -34,6 +34,8 @@ setup(name='django-fastapp',
 		'APScheduler==3.0.4',
 		'objgraph==2.0.1',
 		'django-rest-swagger==0.3.4'
+		'django-rest-swagger==0.3.4',
+		'django-redis-metrics==1.0.3'
 	],
 	packages = find_packages(),
 	package_data = {'fastapp': ['fastapp/templates/*']},
