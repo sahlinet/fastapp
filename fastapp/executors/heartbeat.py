@@ -199,6 +199,10 @@ class HeartbeatThread(CommunicationThread):
                 process.version = data['version']
             process.save()
 
+            slug = vhost.replace("/", "")+"-rss"
+            logger.info("Sent metric for slug %s" % slug)
+            set_metric(slug, int(process.rss)/1024, expire=2400)
+
             #logger.info(data['ready_for_init'], data['in_sync'])
 
             # verify and warn for incomplete threads
