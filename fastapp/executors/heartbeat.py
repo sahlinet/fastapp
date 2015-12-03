@@ -4,6 +4,7 @@ import time
 import json
 import sys
 import os
+import socket
 import subprocess
 import pytz
 from datetime import datetime, timedelta
@@ -45,7 +46,6 @@ def inactivate():
         while True:
 
             m = p.memory_info()
-            set_metric("Heartbeat Physical Memory", float(m.rss)/(1024*1024))
             set_metric("Heartbeat Virtual Memory", float(m.vms)/(1024*1024))
             logger.debug("Send metric data")
 

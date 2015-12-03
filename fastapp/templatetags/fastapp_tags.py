@@ -19,3 +19,13 @@ def get_past_datetime(delta, step):
 def replacer(value, arg):
     args = arg.split(",")
     return value.replace(arg[0], arg[1])
+
+from redis_metrics.utils import get_r
+@register.assignment_tag
+def get_slug_list(filter):
+    slug_list = get_r().metric_slugs_by_category()['Uncategorized']
+    slugs = []
+    for slug in slug_list:
+        if filter in slug:
+            slugs.append(slug)
+    return slugs
