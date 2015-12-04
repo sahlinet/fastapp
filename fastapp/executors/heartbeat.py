@@ -47,14 +47,14 @@ def inactivate():
 
             m = p.memory_info()
             slug="Heartbeat %s rss" % socket.gethostname()
-            set_metric(slug, float(m.rss)/(1024*1024), expire=3600)
+            set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
             slug="Heartbeat %s vms" % socket.gethostname()
-            set_metric(slug, float(m.vms)/(1024*1024), expire=3600)
+            set_metric(slug, float(m.vms)/(1024*1024), expire=86400)
 
             slug="Heartbeat %s rss" % socket.gethostname()+"1"
-            set_metric(slug, float(m.rss)/(1024*1024)+50, expire=3600)
+            set_metric(slug, float(m.rss)/(1024*1024)+50, expire=86400)
             slug="Heartbeat %s vms" % socket.gethostname()+"1"
-            set_metric(slug, float(m.vms)/(1024*1024)+50, expire=3600)
+            set_metric(slug, float(m.vms)/(1024*1024)+50, expire=86400)
 
             logger.debug("Send metric data")
 
@@ -210,7 +210,7 @@ class HeartbeatThread(CommunicationThread):
 
             slug = vhost.replace("/", "")+"-rss"
             logger.info("Sent metric for slug %s" % slug)
-            set_metric(slug, int(process.rss)/1024, expire=2400)
+            set_metric(slug, int(process.rss)/1024, expire=86400)
 
             #logger.info(data['ready_for_init'], data['in_sync'])
 
