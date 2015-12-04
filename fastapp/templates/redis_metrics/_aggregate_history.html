@@ -29,7 +29,11 @@ NOTE: This template gets a `metric_history` context that's organized like so:
 <script type="text/javascript" src="{% static 'redis_metrics/js/colors.js' %}"></script>
 <script type="text/javascript">
 var ctx = document.getElementById("{{chart_id}}{{granularity}}").getContext("2d");
-var options = {animation:false, responsive: true, datasetFill: false};
+{% verbatim %}
+var options = {animation:false, responsive: true, datasetFill: false,
+            legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].strokeColor%>\"><%if(datasets[i].label){%><%=datasets[i].label%><%}%></span></li><%}%></ul>"
+        };
+{% endverbatim %}
 var data = {
   labels: {{metric_history.periods|json}},
   datasets: [
