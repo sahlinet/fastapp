@@ -46,14 +46,14 @@ def inactivate():
         while True:
 
             m = p.memory_info()
-            slug="Heartbeat %s rss" % socket.gethostname()
-            set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
-            slug="Heartbeat %s vms" % socket.gethostname()
-            set_metric(slug, float(m.vms)/(1024*1024), expire=86400)
+            #slug="Heartbeat %s rss" % socket.gethostname()
+            #set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
+            #slug="Heartbeat %s vms" % socket.gethostname()
+            #set_metric(slug, float(m.vms)/(1024*1024), expire=86400)
 
-            slug="Heartbeat %s rss" % socket.gethostname()+"1"
+            slug="Heartbeat %s rss" % socket.gethostname()
             set_metric(slug, float(m.rss)/(1024*1024)+50, expire=86400)
-            slug="Heartbeat %s vms" % socket.gethostname()+"1"
+            slug="Heartbeat %s vms" % socket.gethostname()
             set_metric(slug, float(m.vms)/(1024*1024)+50, expire=86400)
 
             logger.debug("Send metric data")
