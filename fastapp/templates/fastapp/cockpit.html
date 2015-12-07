@@ -23,6 +23,13 @@
 
 				<div class="col-md-6">
 						{% get_slug_list "Heartbeat" as slug_list %}
+						<h3>Last 7 days</h3>
+						{% get_past_datetime 7 "d" as starttime %}
+						{% aggregate_history slug_list "daily" starttime %}
+				</div>
+
+				<div class="col-md-6">
+						{% get_slug_list "Heartbeat" as slug_list %}
 						<h3>Last 24 hours</h3>
 						{% get_past_datetime 24 "h" as starttime %}
 						{% aggregate_history slug_list "hourly" starttime %}
