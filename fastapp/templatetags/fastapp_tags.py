@@ -11,6 +11,8 @@ def get_past_datetime(delta, step):
         td = timedelta(hours=delta)
     elif step == "m":
         td = timedelta(minutes=delta)
+    elif step == "d":
+        td = timedelta(days=delta)
     else:
         raise Exception("specify correct step (h, m)")
     return datetime.now()-td
