@@ -11,10 +11,7 @@ import logging
 import datetime
 import inspect
 
-from copy import deepcopy
-
 from sqlalchemy import create_engine, text
-from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -25,8 +22,6 @@ from sqlalchemy.schema import CreateSchema
 from django.conf import settings
 
 from fastapp.plugins import register_plugin, Plugin, Singleton
-
-import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +110,8 @@ class DataStore(object):
 			self._execute("GRANT ALL ON ALL TABLES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
 			self._execute("GRANT ALL ON ALL SEQUENCES IN  SCHEMA %s to %s;" % (self.schema, self.schema))
 			self.session.commit()
-
+		else:
+			logger.warn("No schema specified")
 		self._prepare()
 		return "init_store '%s' done" % self.schema
 
@@ -152,6 +148,7 @@ class DataStore(object):
 		return result[0]
 
 	def _execute(self, sql, result=None):
+		logger.info(sql)
 		result = self.session.execute(sql)
 		self.session.commit()
 		return result
@@ -179,12 +176,16 @@ class PsqlDataStore(DataStore):
 				LIKE '%s%';""" % (k, v)
 
 
+class PsqlDataStoreSingleton(PsqlDataStore):
+	__metaclass__ = Singleton
+
+
 @register_plugin
 class DataStorePlugin(Plugin):
 
 	def attach_worker(self, **kwargs):
 		logger.info("Attach to worker")
-		return PsqlDataStore(schema=kwargs['USER'], **kwargs)
+		return PsqlDataStoreSingleton(schema=kwargs['USER'], **kwargs)
 
 	@classmethod
 	def init(cls):

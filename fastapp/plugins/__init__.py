@@ -13,10 +13,13 @@ class Singleton(type):
 
 	def __call__(cls,*args,**kw):
 		if cls.instance is None:
-			logger.debug("Create singleton instance for %s" % cls)
+			logger.info("Create singleton instance for %s" % cls)
 			cls.instance = super(Singleton, cls).__call__(*args, **kw)
 		else:
-			logger.debug("Return singleton instance for %s" % cls)
+			logger.info("Return singleton instance for %s" % cls)
+			logger.info(str(cls.__dict__))
+			logger.info(str(args))
+			logger.info(str(kw))
 		return cls.instance
 
 
@@ -68,7 +71,7 @@ def call_plugin_func(obj, func):
 	r_failed = {}
 	registry = PluginRegistry()
 	for plugin in registry.get():
-		logger.info("Handling plugin %s for %s starting" % (plugin.fullname, func))
+		logger.info("Handling plugin %s:%s for base %s starting" % (plugin.fullname, func, obj.name))
 		try:
 			plugin_func = getattr(plugin, func)
 			r = plugin_func(obj)
@@ -77,7 +80,10 @@ def call_plugin_func(obj, func):
 			logger.exception(e)
 			r_failed[plugin.name] = e
 		logger.info("Handling plugin %s for %s ended" % (plugin, func))
-	logger.info("Loaded %s with success, %s with errors" % (len(r_success), len(r_failed)))
+	if r_failed > 0:
+		logger.warn("Loaded %s with success, %s with errors" % (len(r_success), len(r_failed)))
+	else:
+		logger.info("Loaded %s with success, %s with errors" % (len(r_success), len(r_failed)))
 	return r_success, r_failed
 
 
