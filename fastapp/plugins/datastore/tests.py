@@ -33,6 +33,10 @@ class TestStringMethods(TestCase):
         obj_dict = DataObject(data=data)
         self.store.write_obj(obj_dict)
 
+    def test_password_config(self):
+        print self.store.persisted_config
+
+
     #@override_settings(DATABASES=db_settings)
     def test_save_json(self):
 

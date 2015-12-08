@@ -21,7 +21,10 @@ from sqlalchemy.schema import CreateSchema
 
 from django.conf import settings
 
-from fastapp.plugins import register_plugin, Plugin, Singleton
+from fastapp.plugins import Plugin, Singleton
+from fastapp.plugins.singleton import Singleton
+from fastapp.plugins.registry import register_plugin
+
 
 logger = logging.getLogger(__name__)
 

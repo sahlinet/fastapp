@@ -4,7 +4,9 @@ import requests
 import inspect
 from django.conf import settings
 
-from fastapp.plugins import register_plugin, Plugin
+from fastapp.plugins import Plugin
+from fastapp.plugins.singleton import Singleton
+from fastapp.plugins.registry import register_plugin
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ class DNSNamePlugin(Plugin):
 			if executor['ip6']:
 				dns.delete(dns_name, type="AAAA")
 
-	def executor_context(self, executor):
+	def _executor_context(self, executor):
 		context = {}
 		#for counter, executor in enumerate(base.executors):
 		#	k = "%s_executor_%s" % (base, counter)
@@ -128,7 +130,7 @@ class DNSNamePlugin(Plugin):
 		return context
 
 	def return_to_executor(self, executor):
-		return self.executor_context(executor)
+		return self._executor_context(executor)
 
 	def _make_dns_name(self, base, counter):
 		dns_name = "%s-%s-%i" % (base.user.username, base.name, counter)
