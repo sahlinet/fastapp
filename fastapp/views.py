@@ -37,6 +37,7 @@ from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, T
 from fastapp.models import RUNNING, FINISHED
 from fastapp import responses
 from fastapp.executors.remote import call_rpc_client, get_static
+from fastapp.plugins.datastore import PsqlDataStore
 
 from fastapp.importer import _handle_settings, _read_config
 
@@ -205,7 +206,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             mimetype = "image/x-icon"
         elif static_path.lower().endswith('.html'):
             mimetype = "text/html"
-            f = self._render_html(f, **dict((s.key, s.value) for s in base_model.setting.all()))
+            context_data = self._setup_context(base_model)
+            f = self._render_html(f, **context_data)
         elif static_path.lower().endswith('.map'):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):
@@ -218,6 +220,12 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         logger.info("deliver '%s' with '%s'" % (static_path, mimetype))
         return HttpResponse(f, content_type=mimetype)
 
+    def _setup_context(self, base_model):
+        data = dict((s.key, s.value) for s in base_model.setting.all())
+
+        plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
+        data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
+        return data
 
 class DjendMixin(object):
 
@@ -577,6 +585,7 @@ class DjendExecDeleteView(View):
     def dispatch(self, *args, **kwargs):
         return super(DjendExecRenameView, self).dispatch(*args, **kwargs)
 
+
 class DjendBaseRenameView(View):
 
     def post(self, request, *args, **kwargs):
@@ -589,6 +598,7 @@ class DjendBaseRenameView(View):
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(DjendBaseRenameView, self).dispatch(*args, **kwargs)
+
 
 class DjendBaseSaveView(View):
 
