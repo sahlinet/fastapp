@@ -98,8 +98,13 @@
 					{% endif %}
 
 					</td>
-					<td class="small"> {% for thread in process.threads.all %}
-						{{ thread.name }} [{{ thread.health}}] [{{ thread.updated|timesince }}]</br>
+
+					{% regroup process.threads.all by health as thread_state %}
+
+					<td class="small"> {% for state in thread_state %}
+
+						{{ state.grouper }} {{ state.list|length }}
+
 						{% endfor %}
 					</td>
 					<td> {{ process.version }} </td>
