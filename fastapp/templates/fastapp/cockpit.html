@@ -1,165 +1,64 @@
 {% extends "fastapp/default.html" %}
 
+{% load cache %}
 {% load redis_metric_tags %}
 {% load fastapp_tags %}
 
 {% block title %}{{ block.super }} - Cockpit {% endblock title %}
 
+{% block extra_header %}
+	{{ block.super }}
+	<link type="text/css" rel="stylesheet" href="/static/bower_components/jquery.tocify.js/src/stylesheets/jquery.tocify.css" />
+
+
+{% endblock %}
+
+{% block js_end_body %}
+	{{ block.super }}
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js">
+	</script>
+  <script type="text/javascript" src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js">
+	</script>
+  <!-- <script type="text/javascript" src="/static/bower_components/jquery.tocify.js/src/javascripts/jquery.tocify.min.js"></script> -->
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery.tocify/1.9.0/javascripts/jquery.tocify.min.js">
+	</script>
+<script type="text/javascript">
+//Executes your code when the DOM is ready.  Acts the same as $(document).ready().
+  $( document ).ready(function() {
+			$("#toc").tocify({
+				'selectors': "h1,h2,h3,h4,h5",
+  				'extendPage': false,
+			});
+	});
+</script>
+
+{% endblock %}
+
 {% block main %}
-
-<div class="container" >
+<div class="container">
 	<div class="row">
-
-		<div class="col-md-12">
-			<div><h1>Heartbeat Memory Usage</h1></div>
-
-				{% comment %}
-				{% get_past_datetime 30 "m" as starttime %}
-				<h2>Virtual</h2>
-				{% metric_history "Heartbeat Virtual Memory" "minutes" starttime False %}
-				<h2>Physical</h2>
-				{% metric_history "Heartbeat Physical Memory" "minutes" starttime False %}
-				{% endcomment %}
-
-				<div class="col-md-6">
-						{% get_slug_list "Heartbeat" as slug_list %}
-						<h3>Last 7 days</h3>
-						{% get_past_datetime 7 "d" as starttime %}
-						{% aggregate_history slug_list "daily" starttime %}
-				</div>
-
-				<div class="col-md-6">
-						{% get_slug_list "Heartbeat" as slug_list %}
-						<h3>Last 24 hours</h3>
-						{% get_past_datetime 24 "h" as starttime %}
-						{% aggregate_history slug_list "hourly" starttime %}
-				</div>
-				<div class="col-md-6">
-						<h3>Last 30 minutes</h3>
-						{% get_past_datetime 30 "m" as starttime %}
-						{% aggregate_history slug_list "minutes" starttime %}
-				</div>
+		<div class="col-md-4">
+				<div id="toc"></div>
 		</div>
+	<div class="container">
+		<div class="col-md-8">
+				{% cache 120 heartbeat %}
+				{% include "fastapp/cockpits/heartbeat.html" %}
+				{% endcache 120 %}
 
+				{% cache 30 serverthreads %}
+				{% include "fastapp/cockpits/serverthreads.html" %}
+				{% endcache %}
 
-		<div class="col-md-12">
-			<div><h1>Server Threads</h1></div>
-			<table class="table">
-				<tr>
-					<th>Name</th>
-					<th>Running</th>
-					<th>Last up</th>
-					<th>RSS</th>
-					<th>Threads</th>
-					<th>Version (fastapp)</th>
-				</tr>
-				{% for process in process_list %}
-				{% if "Thread" in process.name %}
-					<tr>
-						<td> {{ process.name }} </td>
-						<td> {{ process.is_up }} </td>
-						<td> {{ process.running | date:"c"}} </td>
-						<td> {{ process.rss }} </td>
-						<td class="small"> {% for thread in process.threads.all %}
-							{{ thread.name }} [{{ thread.health }}] [{{ thread.updated|timesince }}]</br>
-							{% endfor %}
-						</td>
-						<td> {{ process.version }} </td>
+				{% include "fastapp/cockpits/worker.html" %}
 
-					</tr>
-				{% endif %}
-				{% endfor %}
-			</table>
-		</div>
-		<div class="col-md-12">
-			<div><h1>Worker Processes</h1></div>
-			<table class="table">
-				<tr>
-					<th>Name</th>
-					<th>Running</th>
-					<th>Last up</th>
-					<th>RSS</th>
-					<th>Threads</th>
-					<th>Version (fastapp)</th>
-				</tr>
-				{% for process in process_list %}
-				{% if "Thread" not in process.name %}
-				<tr>
-					<td> {{ process.name }} </td>
-					<td> {{ process.is_up }} </td>
-					<td> {{ process.running | date:"c"}} </td>
-					<td> {{ process.rss }}
+				{% include "fastapp/cockpits/executors.html" %}
 
-					{% if process.is_up %}
-					{% with process.name|replacer:"/,"|add:"-rss" as slug %}
-						{% get_past_datetime 15 "m" as short_starttime %}
-						{% metric_history slug "minutes" short_starttime False %}
-					{% endwith %}
-					{% endif %}
-
-					</td>
-
-					{% regroup process.threads.all by health as thread_state %}
-
-					<td class="small"> {% for state in thread_state %}
-
-						{{ state.grouper }} {{ state.list|length }}
-
-						{% endfor %}
-					</td>
-					<td> {{ process.version }} </td>
-				</tr>
-				{% endif %}
-				{% endfor %}
-			</table>
-		</div>
-	<div class="row">
-		<div class="col-md-12">
-			<div><h1>Executors</h1></div>
-			<table class="table">
-				<tr>
-					<th>Username</th>
-					<th>Base name</th>
-					<th>Is running</th>
-					<th>Marked as started</th>
-					<th>PID</th>
-					<th>Num instances</th>
-					<th>Instances</th>
-					<th>Log (Docker only)</th>
-				</tr>
-				{% for executor in executors %}
-				<tr>
-					<td> {{ executor.base.user.username }} </td>
-					<td> {{ executor.base.name }} </td>
-					<td> {{ executor.is_running }} </td>
-					<td> {{ executor.started }} </td>
-					<td> {{ executor.pid }} </td>
-					<td> {{ executor.instances.count }} </td>
-					<td>
-						{% for instance in executor.instances.all %}
-						<p> {{ instance.is_alive }} </p>
-						<p> {{ instance.last_beat | date:"c"}} </p>
-						{% endfor %}
-					</td>
-					<td><a href="{% url 'base-log' executor.base.pk %}">Log</a></td>
-				</tr>
-				{% endfor %}
-			</table>
-		</div>
-	</div>
-
-	<div class="row">
-		<div class="col-md-12">
-			<div><h1>Plugins</h1></div>
-			{% for plugin in plugins %}
-			<h2>{{ plugin.name }}</h2>
-			{% with plugin.shortname|add:"/cockpit.html" as plugin_template %}
-				{% include plugin_template %}
-			{% endwith %}
-			{% endfor %}
+				{% cache 30 plugins %}
+				{% include "fastapp/cockpits/plugins.html" %}
+				{% endcache %}
 		</div>
 	</div>
 </div>
 </div>
-
 {% endblock %}

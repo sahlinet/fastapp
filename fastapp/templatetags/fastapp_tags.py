@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+import json
 
+from datetime import datetime, timedelta
 from django import template
 
 register = template.Library()
@@ -18,9 +19,17 @@ def get_past_datetime(delta, step):
     return datetime.now()-td
 
 @register.filter
+def iflist(value):
+    return isinstance(value, list)
+
+@register.filter
 def replacer(value, arg):
     args = arg.split(",")
     return value.replace(arg[0], arg[1])
+
+@register.filter
+def asjson(value):
+    return json.dumps(value)
 
 from redis_metrics.utils import get_r
 @register.assignment_tag

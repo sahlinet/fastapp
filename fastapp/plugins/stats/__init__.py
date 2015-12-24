@@ -21,8 +21,15 @@ class StatsPlugin(Plugin):
 
 	def cockpit_context(self):
 		data={}
+		if len(Transaction.objects.all()) > 0:
+			data.update({
+				'oldest_transaction': Transaction.objects.all().order_by('-created')[0].created,
+			})
+		else:
+			data.update({
+				'oldest_transaction': None,
+			})
 		data.update({
-			'oldest_transaction': Transaction.objects.all().order_by('-created')[0].created,
 			'count_transactions': Transaction.objects.all().count()
 		})
 		return data

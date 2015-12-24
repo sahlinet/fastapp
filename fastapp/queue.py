@@ -42,6 +42,7 @@ class RabbitmqAdmin(object):
         else:
             raise Exception("Set RABBITMQ_ADMIN to one of these values: "+str(RABBITMQ_ADMIN))
 
+
 class RabbitmqAdminCtl(RabbitmqAdmin):
 
     def __init__(self):
@@ -57,13 +58,15 @@ class RabbitmqAdminCtl(RabbitmqAdmin):
     def set_perms(self, vhost, username):
         subprocess.Popen("%s set_permissions -p %s %s \"^.*\" \".*\" \".*\" " % (self.rabbitmqctl, vhost, username), shell=True)
 
+
 class RabbitmqHttpApi(RabbitmqAdmin):
 
     API_URI = "/api/"
 
-    def _call(self, uri, data=None):
+    def _call(self, uri, data=None, method=None):
         logger.debug(uri)
-        logger.debug(str(data))
+        if data:
+            logger.debug(str(data))
 
         user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
         password = getattr(settings, "RABBITMQ_ADMIN_PASSWORD", "guest")
@@ -74,7 +77,11 @@ class RabbitmqHttpApi(RabbitmqAdmin):
         if data:
             data=json.dumps(data)
         url = "http://%s:%s" % (host, port)
-        r = requests.put(url+uri, data=data, headers={'content-type': "application/json"}, auth=(user, password))
+        if method == "GET":
+            r = requests.get(url+uri, headers={'content-type': "application/json"}, auth=(user, password))
+            return r.json()
+        else:
+            r = requests.put(url+uri, data=data, headers={'content-type': "application/json"}, auth=(user, password))
         if r.status_code != 204:
             logger.error(str((r.url, r.status_code, r.content)))
             sys.exit(1)
@@ -90,6 +97,30 @@ class RabbitmqHttpApi(RabbitmqAdmin):
     def set_perms(self, vhost, username, permissions):
         logger.info("Set perms for user %s (%s)" % (username, permissions))
         self._call("/api/permissions/%s/%s" % (urllib.quote_plus(vhost), username), data=permissions)
+
+    def get_vhosts(self):
+        return self._call("/api/vhosts/", method="GET")
+
+    def get_exchanges(self, vhost=None):
+        if vhost:
+            return self._call("/api/exchanges/%s" % vhost, method="GET")
+        else:
+            return self._call("/api/exchanges/", method="GET")
+
+    def get_queues(self, vhost=None):
+        if vhost:
+            return self._call("/api/queues/%s" % vhost, method="GET")
+        else:
+            return self._call("/api/queues/", method="GET")
+
+    def get_overview(self):
+        return self._call("/api/overview/", method="GET")
+
+    def get_channels(self):
+        return self._call("/api/channels/", method="GET")
+
+    def test_vhost(self, vhost=None):
+        return self._call("/api/aliveness-test/%s" % vhost, method="GET")
 
 def create_vhost(base):
     # create the vhosts, users and permissions
@@ -119,6 +150,10 @@ def create_vhost(base):
         # add permissions for server user on vhost
         service.set_perms(vhost, RABBITMQ_SERVER_USER, SERVER_VHOST_PERMISSIONS)
         service.set_perms(vhost, CORE_RECEIVER_USERNAME, SERVER_VHOST_PERMISSIONS)
+
+        # add permissions for server user on vhost
+        admin_user = getattr(settings, "RABBITMQ_ADMIN_USER", "guest")
+        service.set_perms(vhost, admin_user, SERVER_VHOST_PERMISSIONS)
 
     except Exception, e:
         logger.exception(e)
