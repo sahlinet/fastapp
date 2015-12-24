@@ -491,7 +491,7 @@ class Executor(models.Model):
     @property
     def implementation(self):
         s_exec = getattr(settings, 'FASTAPP_WORKER_IMPLEMENTATION',
-                                   'fastapp.executors.local.SpawnExecutor')
+                                   'fastapp.executors.worker_engines.spawnproc.SpawnExecutor')
         regex = re.compile("(.*)\.(.*)")
         r = regex.search(s_exec)
         s_mod = r.group(1)

@@ -59,7 +59,7 @@ Workers are spawned from server process.
 
 >  !!!!
 
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.SpawnExecutor"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.spawnproc.SpawnExecutor"
 
 or
 
@@ -67,7 +67,7 @@ or
 
 Workers are started in a Docker container, Docker environment must be set. Thus `kwargs_from_env()` from docker-py must work. Tested with boot2docker.
 
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerExecutor"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.docker.DockerExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
@@ -80,7 +80,7 @@ or
 
 The server process has access to the docker.sock file. Either because the server is running on the docker host or the socket file is added as volume to the server container with `-v /var/run/docker.sock:/var/run/docker.sock`
 
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.DockerSocketExecutor"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.docker.DockerSocketExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
@@ -92,7 +92,7 @@ or
 
 Workers are started in a Docker container.
 
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.RemoteDockerExecutor"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.docker.RemoteDockerExecutor"
     FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
@@ -138,12 +138,12 @@ or
 
 Workers are started in a Docker container running on [Tutum.co](https://www.tutum.co/).
 
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.local.TutumExecutor"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.tutum.TutumExecutor"
     TUTUM_USERNAME = "tutumuser"
     TUTUM_APIKEY = "asdf123asdf123asdf123asdf123"
-	TUTUM_WORKER_IMAGE_NAME = "%(platform)s-%(name)s"			# must end in a unique service name in an account
+	  TUTUM_WORKER_IMAGE_NAME = "%(platform)s-%(name)s"			# must end in a unique service name in an account
 
-	FASTAPP_DOCKER_MEM_LIMIT = "128m"
+	  FASTAPP_DOCKER_MEM_LIMIT = "128m"
     FASTAPP_DOCKER_CPU_SHARES = 512
 
     FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
