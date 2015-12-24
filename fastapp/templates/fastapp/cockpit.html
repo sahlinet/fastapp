@@ -8,9 +8,7 @@
 
 {% block extra_header %}
 	{{ block.super }}
-	<link type="text/css" rel="stylesheet" href="/static/bower_components/jquery.tocify.js/src/stylesheets/jquery.tocify.css" />
-
-
+	<link type="text/css" rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jquery.tocify/1.9.0/stylesheets/jquery.tocify.min.css"/>
 {% endblock %}
 
 {% block js_end_body %}
@@ -27,7 +25,7 @@
   $( document ).ready(function() {
 			$("#toc").tocify({
 				'selectors': "h1,h2,h3,h4,h5",
-  				'extendPage': false,
+  			'extendPage': false,
 			});
 	});
 </script>
@@ -37,7 +35,7 @@
 {% block main %}
 <div class="container">
 	<div class="row">
-		<div class="col-md-4">
+		<div class="hidden-sm hidden-xs col-md-4">
 				<div id="toc"></div>
 		</div>
 	<div class="container">
