@@ -82,7 +82,7 @@ class ResponseUnavailableViewMixing():
             response = HttpResponse()
             if "html" in request.META['HTTP_ACCEPT']:
                 response.content_type = "text/html"
-                response.content = "Base is not available"
+                response.content = "Content cannot delivered"
             response.status_code = 503
             return response
         else:
@@ -222,6 +222,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
 
     def _setup_context(self, base_model):
         data = dict((s.key, s.value) for s in base_model.setting.all())
+
+        data['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
 
         plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
         data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
@@ -634,6 +636,7 @@ class DjendBaseSaveView(View):
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(DjendBaseSaveView, self).dispatch(*args, **kwargs)
+
 
 class DjendBaseView(TemplateView, ContextMixin):
 
