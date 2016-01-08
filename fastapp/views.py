@@ -76,6 +76,7 @@ class CockpitView(TemplateView):
 class LiveView(TemplateView):
     pass
 
+
 class ResponseUnavailableViewMixing():
     def verify(self, request, base_model):
         if not base_model.state:

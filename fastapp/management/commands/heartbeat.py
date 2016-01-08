@@ -5,7 +5,8 @@ import threading
 
 from django.core.management.base import BaseCommand
 
-from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE, AsyncResponseThread
+from fastapp.executors.heartbeat import HeartbeatThread, inactivate, update_status, HEARTBEAT_QUEUE
+from fastapp.executors.async import AsyncResponseThread
 from fastapp.log import LogReceiverThread
 from django.conf import settings
 from fastapp.queue import RabbitmqAdmin
