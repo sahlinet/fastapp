@@ -14,15 +14,16 @@ from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 from django.core import serializers
 from django.conf import settings
-from django.db import DatabaseError
-from django.db import transaction
+from django.db import DatabaseError, transaction
 
 from fastapp.executors.remote import distribute
-from fastapp.models import Base, Instance, Process, Thread, Transaction
-from fastapp.queue import CommunicationThread
-
+from fastapp.models import Base, Instance, Process, Thread, Transaction, Apy, Setting
 from fastapp.models import FINISHED
-from fastapp.utils import load_setting
+from fastapp.queue import CommunicationThread
+from fastapp.views import DjendExecView
+
+from fastapp.plugins import call_plugin_func
+from fastapp import __version__
 
 logger = logging.getLogger(__name__)
 
