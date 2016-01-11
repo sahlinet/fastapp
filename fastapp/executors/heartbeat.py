@@ -17,13 +17,13 @@ from django.conf import settings
 from django.db import DatabaseError, transaction
 
 from fastapp.executors.remote import distribute
-from fastapp.models import Base, Instance, Process, Thread, Transaction, Apy, Setting
-from fastapp.models import FINISHED
+from fastapp.models import Base, Instance, Process, Thread, Apy, Setting
 from fastapp.queue import CommunicationThread
 from fastapp.views import DjendExecView
 
 from fastapp.plugins import call_plugin_func
 from fastapp import __version__
+from fastapp.utils import load_setting
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
-
+            logger.info("Inactivate Thread run")
             m = p.memory_info()
             #slug="Heartbeat %s rss" % socket.gethostname()
             #set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
@@ -128,7 +128,6 @@ def update_status(parent_name, thread_count, threads):
         logger.exception(e)
 
 
-
 class HeartbeatThread(CommunicationThread):
 
     def send_message(self):
@@ -153,7 +152,6 @@ class HeartbeatThread(CommunicationThread):
 
         if not self.in_sync:
             self.ready_for_init = False
-        import fastapp
         payload = {
     		'in_sync': self.in_sync,
             'ready_for_init': self.ready_for_init,
@@ -162,7 +160,7 @@ class HeartbeatThread(CommunicationThread):
                 'list': thread_list_status
             },
     		'rss': rss,
-            'version': fastapp.__version__,
+            'version': __version__,
 	    }
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',
@@ -182,9 +180,9 @@ class HeartbeatThread(CommunicationThread):
         self.schedule_next_message()
 
     def on_message(self, ch, method, props, body):
-	"""
-	Server functionality for storing status and statistics.
-	"""
+    	"""
+    	Server functionality for storing status and statistics.
+    	"""
 
         try:
             data = json.loads(body)
@@ -315,25 +313,3 @@ class HeartbeatThread(CommunicationThread):
                     #self.PUBLISH_INTERVAL)
         self._connection.add_timeout(settings.FASTAPP_PUBLISH_INTERVAL,
                                      self.send_message)
-
-
-
-
-class AsyncResponseThread(CommunicationThread):
-
-    def on_message(self, ch, method, props, body):
-        try:
-            logger.debug(self.name+": "+sys._getframe().f_code.co_name)
-            data = json.loads(body)
-
-            logger.info("Async response received for rid '%s'" % data['rid'])
-            logger.info(data)
-
-            transaction = Transaction.objects.get(pk=data['rid'])
-            transaction.tout = data
-            transaction.status = FINISHED
-            transaction.save()
-
-        except Exception, e:
-            logger.exception(e)
-        time.sleep(0.1)
