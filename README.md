@@ -134,20 +134,13 @@ Following stuff is needed for login to one private repository as you would do wi
 
 or
 
-#### Tutum
+#### Rancher
 
-Workers are started in a Docker container running on [Tutum.co](https://www.tutum.co/).
-
-    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.tutum.TutumExecutor"
-    TUTUM_USERNAME = "tutumuser"
-    TUTUM_APIKEY = "asdf123asdf123asdf123asdf123"
-	  TUTUM_WORKER_IMAGE_NAME = "%(platform)s-%(name)s"			# must end in a unique service name in an account
-
-	  FASTAPP_DOCKER_MEM_LIMIT = "128m"
-    FASTAPP_DOCKER_CPU_SHARES = 512
-
-    FASTAPP_DOCKER_IMAGE = "tutum.co/philipsahli/skyblue-planet-worker:develop"
-
+  FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.rancher.RancherApiExecutor"
+  RANCHER_ACCESS_KEY="asdfasdf"
+	RANCHER_ACCESS_SECRET="asdfasdf"
+	RANCHER_ENVIRONMENT_ID="xnx"
+	RANCHER_URL="http://rancher.xy.xy:8080"
 
 ## Cache
 
