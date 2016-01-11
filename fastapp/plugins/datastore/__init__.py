@@ -95,18 +95,22 @@ class DataStore(object):
 				self._execute("CREATE USER %s WITH PASSWORD '%s'" % (self.schema,
 					self.schema))
 			except Exception, e:
-				logger.error(repr(e))
 				self.session.rollback()
-				logger.info("Could not create user '%s', does already exist?" % self.schema)
+				if "already exists" in repr(e):
+					logger.info("Could not create user '%s', already exists." % self.schema)
+				else:
+					logger.error("Could not create user '%s'." % self.schema)
 
 			# Schema
 			try:
 				self.engine.execute(CreateSchema(self.schema))
 				logger.info("Schema created")
 			except Exception, e:
-				logger.error(repr(e))
-				logger.info("Could not create schema '%s', probably it already exists" % self.schema)
 				self.session.rollback()
+				if "already exists" in repr(e):
+					logger.info("Could not create schema '%s', already exists." % self.schema)
+				else:
+					logger.error("Could not create schema '%s'." % self.schema)
 
 			# Permissions
 			self._execute("GRANT USAGE ON SCHEMA %s to %s;" % (self.schema, self.schema))
