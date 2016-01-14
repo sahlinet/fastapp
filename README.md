@@ -7,16 +7,16 @@ django-fastapp is a reusable Django app which lets you prototype apps in the bro
 
 Install required modules
 
-	pip install django-fastapp
+    pip install django-fastapp
 
 
 Add fastapp to settings.INSTALLED_APPS
 
-	        "fastapp",
+            "fastapp",
 
 Add fastapp to your urls.py
 
-	("^fastapp/", include("fastapp.urls")),
+    ("^fastapp/", include("fastapp.urls")),
 
 
 # Configuration
@@ -25,15 +25,15 @@ Add fastapp to your urls.py
 
 ### Threads
 
-	# Server
-	FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT = 10       # How many heartbeat listener threads are started
-	FASTAPP_ASYNC_LISTENER_THREADCOUNT = 2			  # How many asynchronous response threads are started
-	FASTAPP_LOG_LISTENER_THREADCOUNT = 2			  # How many log listener threads are started
-	FASTAPP_CONSOLE_SENDER_THREADCOUNT = 2            # How many console threads are started
+    # Server
+    FASTAPP_HEARTBEAT_LISTENER_THREADCOUNT = 10       # How many heartbeat listener threads are started
+    FASTAPP_ASYNC_LISTENER_THREADCOUNT = 2              # How many asynchronous response threads are started
+    FASTAPP_LOG_LISTENER_THREADCOUNT = 2              # How many log listener threads are started
+    FASTAPP_CONSOLE_SENDER_THREADCOUNT = 2            # How many console threads are started
 
-	# Client
-	FASTAPP_WORKER_THREADCOUNT = 30                   # How many worker threads are started
-	FASTAPP_PUBLISH_INTERVAL = 5                      # How often the worker sends a heartbeat message
+    # Client
+    FASTAPP_WORKER_THREADCOUNT = 30                   # How many worker threads are started
+    FASTAPP_PUBLISH_INTERVAL = 5                      # How often the worker sends a heartbeat message
 
 ### Worker
 
@@ -41,12 +41,12 @@ todo
 
 ### Cleanup
 
-	FASTAPP_CLEANUP_OLDER_THAN_N_HOURS				# Cleanup transactions and logs
-	FASTAPP_CLEANUP_INTERVAL_MINUTES					# Cleanup interval
+    FASTAPP_CLEANUP_OLDER_THAN_N_HOURS                # Cleanup transactions and logs
+    FASTAPP_CLEANUP_INTERVAL_MINUTES                    # Cleanup interval
 
 ### Static Files
 
-	FASTAPP_STATIC_CACHE_SECONDS							# How many seconds a static file got cached
+    FASTAPP_STATIC_CACHE_SECONDS                            # How many seconds a static file got cached
 
 
 #### Spawn Process
@@ -102,73 +102,73 @@ Docker image to use:
 
 Point to the docker instance and the stuff for TLS authentication.
 
-	DOCKER_TLS_URL = "https://IPADDRESS:2376"
+    DOCKER_TLS_URL = "https://IPADDRESS:2376"
 
 If you are using a swarm cluster use port 3376:
 
-	DOCKER_TLS_URL = "https://IPADDRESS:3376"
+    DOCKER_TLS_URL = "https://IPADDRESS:3376"
 
 `load_var_to_file` expects the content from the files in an environment variable.
 
 The content of the pem file must be on one line, do so:
 
-	cat $FILE | awk 1 ORS='\\n'
+    cat $FILE | awk 1 ORS='\\n'
 
 You can also set a filepath if the files are on the machine.
 
-	DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")   # $HOME/.docker/xy/certs/cert.pem
-	DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")			# $HOME/.docker/xy/certs/key.pem
-	# DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA") 		# $HOME/.docker/xy/certs/ca.pem
+    DOCKER_CLIENT_CERT = load_var_to_file("DOCKER_CLIENT_CERT")   # $HOME/.docker/xy/certs/cert.pem
+    DOCKER_CLIENT_KEY = load_var_to_file("DOCKER_CLIENT_KEY")            # $HOME/.docker/xy/certs/key.pem
+    # DOCKER_CLIENT_CA = load_var_to_file("DOCKER_CLIENT_CA")         # $HOME/.docker/xy/certs/ca.pem
 
 The certificates needs to be one lined with a '\n' as separator.
 
-	awk 1 ORS='\\n' cert.pem
-	awk 1 ORS='\\n' key.pem
+    awk 1 ORS='\\n' cert.pem
+    awk 1 ORS='\\n' key.pem
 
 Following stuff is needed for login to one private repository as you would do with `docker login`
 
-	DOCKER_LOGIN_USER = "username1"
-	DOCKER_LOGIN_PASS = "api_key"
-	DOCKER_LOGIN_EMAIL = "username@example.com"
-	DOCKER_LOGIN_HOST= "https://tutum.co/v1/"
+    DOCKER_LOGIN_USER = "username1"
+    DOCKER_LOGIN_PASS = "api_key"
+    DOCKER_LOGIN_EMAIL = "username@example.com"
+    DOCKER_LOGIN_HOST= "https://tutum.co/v1/"
 
 or
 
 #### Rancher
 
-  FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.rancher.RancherApiExecutor"
-  RANCHER_ACCESS_KEY="asdfasdf"
-	RANCHER_ACCESS_SECRET="asdfasdf"
-	RANCHER_ENVIRONMENT_ID="xnx"
-	RANCHER_URL="http://rancher.xy.xy:8080"
+    FASTAPP_WORKER_IMPLEMENTATION = "fastapp.executors.worker_engines.rancher.RancherApiExecutor"
+    RANCHER_ACCESS_KEY="asdfasdf"
+    RANCHER_ACCESS_SECRET="asdfasdf"
+    RANCHER_ENVIRONMENT_ID="xnx"
+    RANCHER_URL="http://rancher.xy.xy:8080"
 
 ## Cache
 
 Configure a cache backend.
 
-	CACHES = {
-	    "default": {
-	        "BACKEND": "django_redis.cache.RedisCache",
-	        "LOCATION": "redis://127.0.0.1:6379/1",
-	        "OPTIONS": {
-	            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-	        }
-	    }
-	}
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        }
+    }
 
 For best performance use redis and also for storing the sessions:
 
-	SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-	SESSION_CACHE_ALIAS = "default"
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
 
 ### Queue
 
 For asynchronous communication RabbitMQ is used. The admin user is used to create virtual hosts, users and their permissions.
 
-	RABBITMQ_ADMIN_USER = "admin"
-	RABBITMQ_ADMIN_PASSWORD = "admin"
-	RABBITMQ_HOST = "localhost"
-	RABBITMQ_PORT = 5672
+    RABBITMQ_ADMIN_USER = "admin"
+    RABBITMQ_ADMIN_PASSWORD = "admin"
+    RABBITMQ_HOST = "localhost"
+    RABBITMQ_PORT = 5672
     RABBITMQ_HTTP_API_PORT = 15672
 
 Following credentials are used for heartbeating between workers and server.
@@ -182,15 +182,15 @@ Specify on the server the setting `WORKER_RABBITMQ_HOST` and `WORKER_RABBITMQ_PO
 
 Create a Dropbox App and enter the key and secret.
 
-	# django-fastapp
-	DROPBOX_CONSUMER_KEY = "xxxxxx"
-	DROPBOX_CONSUMER_SECRET = "xxxxxx"
-	DROPBOX_REDIRECT_URL = "http://localhost:8000"
+    # django-fastapp
+    DROPBOX_CONSUMER_KEY = "xxxxxx"
+    DROPBOX_CONSUMER_SECRET = "xxxxxx"
+    DROPBOX_REDIRECT_URL = "http://localhost:8000"
 
 Development only (runserver) for loading static files, root path used for loading static files:
 
-	FASTAPP_REPOSITORIES_PATH = "/Users/fatrix/Dropbox/Repositories"
-	FASTAPP_DEV_STORAGE_DROPBOX_PATH="/Users/fatrix/Dropbox/Apps/planet dev"
+    FASTAPP_REPOSITORIES_PATH = "/Users/fatrix/Dropbox/Repositories"
+    FASTAPP_DEV_STORAGE_DROPBOX_PATH="/Users/fatrix/Dropbox/Apps/planet dev"
 
 
 # Running

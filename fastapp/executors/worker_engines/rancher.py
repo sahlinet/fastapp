@@ -1,15 +1,9 @@
-import sys
-import os
 import logging
 import requests
 
 from django.conf import settings
-from django.contrib.sites.models import Site
-from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.executors.worker_engines import BaseExecutor, ContainerNotFound
-from fastapp.utils import load_setting, load_var_to_file
-from fastapp.plugins import call_plugin_func
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +34,14 @@ class RancherApiExecutor(BaseExecutor):
         else:
             logger.info("GET to %s" % url)
             r = requests.get(url, auth=self.auth)
-        logger.debug(r.text)
+        #logger.debug(r.text)
         try:
             json_response = r.json()
         except:
             json_response = None
+        logger.debug(r.status_code)
+        if r.status_code == 422:
+            logger.error(r.text)
         return r.status_code, json_response
 
     def _get_container(self, id):
@@ -53,6 +50,8 @@ class RancherApiExecutor(BaseExecutor):
             logger.debug("Container not found (%s)" % id)
             raise ContainerNotFound()
         logger.debug("Container found (%s)" % id)
+
+
         return response
 
     def _container_exists(self, id):
@@ -126,7 +125,7 @@ class RancherApiExecutor(BaseExecutor):
 
                 		],
                 		"labels": {
-                			"io.rancher.scheduler.affinity:host_label": "nodelabel=nodelabel",
+                			#"io.rancher.scheduler.affinity:host_label": "nodelabel=nodelabel",
                 			"io.rancher.container.pull_image":  "always",
                 			"io.rancher.container.dns": False
                 		},
@@ -150,7 +149,7 @@ class RancherApiExecutor(BaseExecutor):
                 		"healthState": None,
                 		"hostname": None,
                 		"kind": None,
-                		"memory": 100663296,
+                		#"memory": 100663296,
                 		"memorySwap": None,
                 		"pidMode": None,
                 		"removeTime": None,
@@ -185,18 +184,33 @@ class RancherApiExecutor(BaseExecutor):
             status_code, response = self._call_rancher("/", json_data)
             id = response['id']
 
-        status_code, response = self._call_rancher("/%s/?action=activate" % id, force_post=True)
+        import time
+        time.sleep(3)
+        status_code, response = self._call_rancher("/%s?action=activate" % id, force_post=True)
 
-        return response['id']
+        timeout = 30
+        c = 0
+        while c < timeout:
+            c=c+1
+            import time
+            time.sleep(2)
+
+            if self.state(id):
+                logger.info("Started")
+                return id
+
+        logger.error("Timed out waiting for state 'active'")
+        return id
+
 
     def stop(self, id, *args, **kwargs):
         if self._container_exists(id):
-            status_code, response = self._call_rancher("/%s/?action=deactivate" % id, force_post=True)
+            status_code, response = self._call_rancher("/%s?action=deactivate" % id, force_post=True)
         return True
 
     def destroy(self, id, *args, **kwargs):
         if self._container_exists(id):
-            status_code, response = self._call_rancher("/%s/?action=remove" % id, force_post=True)
+            status_code, response = self._call_rancher("/%s?action=remove" % id, force_post=True)
         return True
 
     def log(self, id, *args, **kwargs):

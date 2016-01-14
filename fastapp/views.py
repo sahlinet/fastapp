@@ -83,7 +83,7 @@ class ResponseUnavailableViewMixing():
             response = HttpResponse()
             if "html" in request.META['HTTP_ACCEPT']:
                 response.content_type = "text/html"
-                response.content = "Content cannot delivered"
+                response.content = "Content cannot be delivered"
             response.status_code = 503
             return response
         else:
@@ -229,6 +229,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
         data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
         return data
+
 
 class DjendMixin(object):
 
