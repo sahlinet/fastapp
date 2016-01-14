@@ -1,14 +1,13 @@
 import logging
 import time
 import json
+import sys
 
-from datetime import datetime, timedelta
-
-from fastapp.executors.remote import distribute
 from fastapp.models import Transaction, FINISHED
 from fastapp.queue import CommunicationThread
 
 logger = logging.getLogger(__name__)
+
 
 class AsyncResponseThread(CommunicationThread):
 
