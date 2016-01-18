@@ -28,13 +28,13 @@ class RancherApiExecutor(BaseExecutor):
 
     def _call_rancher(self, uri_appendix, data=None, force_post=False):
         url = self.url+"%s" % uri_appendix
-    	if data or force_post:
+        if data or force_post:
             logger.info("POST to %s" % url)
             r = requests.post(url, json=data, auth=self.auth)
         else:
             logger.info("GET to %s" % url)
             r = requests.get(url, auth=self.auth)
-        #logger.debug(r.text)
+        # logger.debug(r.text)
         try:
             json_response = r.json()
         except:
@@ -45,7 +45,7 @@ class RancherApiExecutor(BaseExecutor):
         return r.status_code, json_response
 
     def _get_container(self, id):
-    	status_code, response = self._call_rancher("/%s" % id)
+        status_code, response = self._call_rancher("/%s" % id)
         if status_code == 404:
             logger.debug("Container not found (%s)" % id)
             raise ContainerNotFound()
@@ -75,6 +75,16 @@ class RancherApiExecutor(BaseExecutor):
 
     def start(self, id, *args, **kwargs):
         if not self._container_exists(id):
+
+            # #"10034:8080/tcp"
+            self.service_ports = []
+            if kwargs.has_key('service_ports'):
+                self.service_ports = kwargs.get('service_ports')
+            self.port_bindings = []
+            for port in self.service_ports:
+                self.port_bindings.append("%s:%s/tcp" % (port, port))
+
+            print self.port_bindings
 
             env = {
                     'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
@@ -129,9 +139,7 @@ class RancherApiExecutor(BaseExecutor):
                 			"io.rancher.container.pull_image":  "always",
                 			"io.rancher.container.dns": False
                 		},
-                		"ports": [
-                			#"10034:8080/tcp"
-                		],
+                		"ports": self.port_bindings,
                 		"command": self._start_command,
                 		"environment": env,
                 		"healthCheck": None,
@@ -153,32 +161,30 @@ class RancherApiExecutor(BaseExecutor):
                 		"memorySwap": None,
                 		"pidMode": None,
                 		"removeTime": None,
-                		"removed": None,
-                		"startCount": None,
-                		"systemContainer": None,
-                		"token": None,
-                		"user": None,
-                		"uuid": None,
-                		"volumeDriver": None,
-                		"workingDir": None,
-                		"networkLaunchConfig": None
-                	},
-                	"secondaryLaunchConfigs": [
-
-                	],
-                	"name": self.name,
-                	"createIndex": None,
-                	"created": None,
-                	"description": None,
-                	"externalId": None,
+                	    "removed": None,
+                        "startCount": None,
+                	    "systemContainer": None,
+                        "token": None,
+                        "user": None,
+                	    "uuid": None,
+                	    "volumeDriver": None,
+                	    "workingDir": None,
+                	    "networkLaunchConfig": None
+                    },
+                    "secondaryLaunchConfigs": [],
+                    "name": self.name,
+                    "createIndex": None,
+                    "created": None,
+                    "description": None,
+                    "externalId": None,
                 	"kind": None,
                 	"removeTime": None,
-                	"removed": None,
-                	"selectorContainer": None,
-                	"selectorLink": None,
-                	"uuid": None,
-                	"vip": None,
-                	"fqdn": None
+                    "removed": None,
+                    "selectorContainer": None,
+                    "selectorLink": None,
+                    "uuid": None,
+                    "vip": None,
+                    "fqdn": None
                 }
             logger.debug(json_data)
             status_code, response = self._call_rancher("/", json_data)
@@ -188,7 +194,7 @@ class RancherApiExecutor(BaseExecutor):
         time.sleep(3)
         status_code, response = self._call_rancher("/%s?action=activate" % id, force_post=True)
 
-        timeout = 30
+        timeout = 600
         c = 0
         while c < timeout:
             c=c+1
@@ -216,13 +222,23 @@ class RancherApiExecutor(BaseExecutor):
     def log(self, id, *args, **kwargs):
         pass
 
-    #def addresses(self, id, *args, **kwargs):
-    #    pass
-
     def state(self, id):
         try:
             container = self._get_container(id)
         except ContainerNotFound:
             return False
-        logger.info("Worker is in state: "+container['state'])
+        logger.info("Worker is in state: %s (%s)" % (container['state'], container['transitioningMessage']))
         return (container['state'] == "active")
+
+    def addresses(self, id, port=None):
+
+        logging.info("Get addresses for %s" % id)
+        ip = self.get_instances(id)['data'][0]['primaryIpAddress']
+        return {
+            'ip': ip,
+            'ip6': None
+            }
+
+    def get_instances(self, id):
+        status_code, response = self._call_rancher("/%s/instances" % (id))
+        return response
