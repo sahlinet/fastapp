@@ -450,11 +450,15 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                     # attach plugins
                     plugins = PluginRegistry()
                     for plugin in plugins.all_plugins:
-                        logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
-                        setattr(func, plugin.shortname, plugin.attach_worker(**pluginconfig[plugin.name]))
-                        if not hasattr(func, plugin.shortname):
-                            logger.warning("Func is None")
-                        logger.info("Func '%s' attached to _do" % func.datastore)
+                        try:
+                            logger.info("Attach %s with settings: %s" % (plugin.name, pluginconfig[plugin.name].keys()))
+                            setattr(func, plugin.shortname, plugin.attach_worker(**pluginconfig[plugin.name]))
+                            if not hasattr(func, plugin.shortname):
+                                logger.warning("Func is None")
+                            logger.info("Func '%s' attached to _do" % func.datastore)
+                        except Exception, e:
+                            print e
+                            logger.error("Not able to attach %s, pluginconfig is: %s" % (plugin, pluginconfig))
 
                 # execution
                 returned = func(func)
