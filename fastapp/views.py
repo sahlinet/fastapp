@@ -412,8 +412,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             # look for transaction
             transaction = Transaction.objects.get(pk=rid)
             if transaction.tout:
-                logger.debug(transaction.tout)
-                #data = json.loads(transaction.tout)
                 data = transaction.tout
             else:
                 data = {'status': transaction.get_status_display()}
