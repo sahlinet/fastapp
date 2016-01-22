@@ -24,7 +24,6 @@ from django.db import transaction
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import serializers
-from django.core.validators import RegexValidator
 
 from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
@@ -197,6 +196,37 @@ class Base(models.Model):
 
     @property
     def state(self):
+        """
+        States:
+            - DELETING
+            - DESTROYED
+            - STOPPED
+            - CREATING
+            - STARTING
+            - STARTED
+            - INITIALIZING
+            - RUNNING
+
+        Restart:
+            - RUNNING
+            - STOPPED
+            - STARTING
+            - STARTED
+            - RUNNING
+
+        Creation:
+            - CREATING
+            - STARTING
+            - STARTED
+            - INITIALIZING
+            - RUNNING
+
+        Destroy:
+            - RUNNING / STOPPED
+            - DELETING
+            - DESTROYED
+        """
+
         try:
             return self.executor.is_running()
         except (IndexError, Executor.DoesNotExist):
@@ -529,7 +559,6 @@ class Executor(models.Model):
         try:
             self.pid = self.implementation.start(self.pid, **kwargs)
         except Exception, e:
-            logger.exception(e)
             raise e
 
         logger.info("%s: worker started with pid %s" % (self, self.pid))
