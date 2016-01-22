@@ -1,4 +1,3 @@
-import sys
 import os
 import logging
 
@@ -8,7 +7,6 @@ from docker.utils import kwargs_from_env
 from docker.errors import APIError
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 
 from fastapp.executors.worker_engines import BaseExecutor, ContainerNotFound
@@ -46,8 +44,6 @@ class DockerExecutor(BaseExecutor):
         self.port_bindings = {}
         for port in self.service_ports:
             self.port_bindings[port] = port
-        logger.info(self.service_ports)
-        logger.info(self.port_bindings)
 
         if not self._container_exists(id):
             logger.info("Create container for %s" % self.vhost)
@@ -66,11 +62,12 @@ class DockerExecutor(BaseExecutor):
             if self.executor.ip6:
                 env['SERVICE_IP6'] = self.executor.ip6
 
-            if os.environ.has_key('PROFILE_DO_FUNC'):
+            if "PROFILE_DO_FUNC" in os.environ:
                 env['PROFILE_DO_FUNC'] = True
 
             # feed environment variables with vars from plugins
-            success, failed = call_plugin_func(self.executor, "executor_context")
+            success, failed = call_plugin_func(self.executor,
+                                               "executor_context")
             if len(failed.keys()) > 0:
                 logger.warning("Problem with executor_context for plugin (%s)" % str(failed))
             for plugin, context in success.items():
@@ -78,17 +75,17 @@ class DockerExecutor(BaseExecutor):
                 env.update(context)
 
             container = self.api.create_container(
-                image = DOCKER_IMAGE,
-                name = self.name,
-                detach = True,
-                ports = self.service_ports,
-                #mem_limit = MEM_LIMIT,
-                #cpu_shares = CPU_SHARES,
-                environment = env,
+                image=DOCKER_IMAGE,
+                name=self.name,
+                detach=True,
+                ports=self.service_ports,
+                mem_limit=MEM_LIMIT,
+                #cpu_shares=CPU_SHARES,
+                environment=env,
                 host_config=docker.utils.create_host_config(
                     port_bindings=self.port_bindings
                     ),
-                entrypoint = self._start_command
+                entrypoint=self._start_command
             )
 
         else:
