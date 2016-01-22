@@ -39,7 +39,6 @@ import psutil
 
 def inactivate():
 
-    pid = os.getpid()
     p = psutil.Process(os.getpid())
 
     transaction.set_autocommit(False)
@@ -60,7 +59,7 @@ def inactivate():
             logger.debug("Send metric data")
 
             time.sleep(0.1)
-            now=datetime.now().replace(tzinfo=pytz.UTC)
+            now = datetime.now().replace(tzinfo=pytz.UTC)
             for instance in Instance.objects.filter(last_beat__lte=now-timedelta(minutes=1), is_alive=True):
                 logger.info("inactive instance '%s' detected, mark stopped" % instance)
                 instance.mark_down()
@@ -83,6 +82,7 @@ def inactivate():
     except Exception, e:
         logger.exception(e)
         transaction.rollback()
+
 
 def update_status(parent_name, thread_count, threads):
     try:
@@ -131,9 +131,9 @@ def update_status(parent_name, thread_count, threads):
 class HeartbeatThread(CommunicationThread):
 
     def send_message(self):
-	"""
-	Client functionality for heartbeating and sending statistics.
-	"""
+    	"""
+        Client functionality for heartbeating and sending statistics.
+        """
         logger.debug("send heartbeat to %s:%s" % (self.vhost, HEARTBEAT_QUEUE))
         pid = os.getpid()
         args = ["ps", "-p", str(pid), "-o", "rss="]
@@ -141,7 +141,7 @@ class HeartbeatThread(CommunicationThread):
         (out, err) = proc.communicate()
         rss = str(out).rstrip().strip().lstrip()
 
-        thread_list_status = [ thread.state for thread in self.thread_list]
+        thread_list_status = [thread.state for thread in self.thread_list]
 
         if self.ready_for_init:
             self.ready_for_init = False
@@ -166,9 +166,9 @@ class HeartbeatThread(CommunicationThread):
         self.channel.basic_publish(exchange='',
                 routing_key=HEARTBEAT_QUEUE,
                 properties=pika.BasicProperties(
-                    expiration = str(2000)
+                    expiration=str(2000)
                 ),
-                body=json.dumps(payload)
+            body=json.dumps(payload)
             )
 
         if not self.in_sync:
