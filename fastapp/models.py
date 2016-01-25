@@ -2,7 +2,6 @@
 
 import urllib
 import ConfigParser
-from configobj import ConfigObj
 import io
 import StringIO
 import gevent
@@ -11,24 +10,28 @@ import pytz
 import random
 import zipfile
 import re
+
+from configobj import ConfigObj
 from datetime import datetime, timedelta
 from jsonfield import JSONField
 
-from django.db import models
+
+from django.db import models, transaction
 from django.template import Template
 from django_extensions.db.fields import UUIDField, ShortUUIDField
 from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
+from django.dispatch import receiver, Signal
 from django.db.models import F
-from django.db import transaction
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import serializers
+from django.utils import timezone
 
 from fastapp.queue import generate_vhost_configuration, create_vhost
 from fastapp.executors.remote import distribute, CONFIGURATION_EVENT, SETTINGS_EVENT
 from fastapp.utils import Connection
 from fastapp.plugins import call_plugin_func
+from fastapp.plugins import PluginRegistry
 
 from swampdragon.models import SelfPublishModel
 from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
@@ -47,7 +50,9 @@ index_template = """{% extends "fastapp/base.html" %}
 class AuthProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="authprofile")
     access_token = models.CharField(max_length=72, help_text="Access token for dropbox-auth")
-    dropbox_userid = models.CharField(max_length=32, help_text="Userid on dropbox", default=None, null=True)
+    dropbox_userid = models.CharField(max_length=32,
+                                      help_text="Userid on dropbox",
+                                      default=None, null=True)
 
     def __unicode__(self):
         return self.user.username
@@ -128,7 +133,8 @@ class Base(models.Model):
         config.readfp(io.BytesIO(connection.get_file_content(app_config)))
         if put:
             if exec_name:
-                connection.put_file("%s/%s.py" % (self.name, exec_name), self.execs.get(name=exec_name).module)
+                connection.put_file("%s/%s.py" % (self.name, exec_name),
+                                self.execs.get(name=exec_name).module)
                 connection.put_file(app_config, self.config)
             else:
                 raise Exception("exec_name not specified")
@@ -344,7 +350,6 @@ def create_random():
     rand = random.SystemRandom().randint(10000000, 99999999)
     return rand
 
-from django.utils import timezone
 
 
 class Transaction(SelfPublishModel, models.Model):
@@ -481,7 +486,6 @@ class Thread(models.Model):
 def default_pass():
     return get_user_model().objects.make_random_password()
 
-from fastapp.plugins import PluginRegistry
 
 class Executor(models.Model):
     base = models.OneToOneField(Base, related_name="executor")
@@ -624,8 +628,7 @@ class TransportEndpoint(models.Model):
     override_settings_pub = models.BooleanField(default=True)
 
 
-import django.dispatch
-ready_to_sync = django.dispatch.Signal()
+ready_to_sync = Signal()
 
 
 @receiver(ready_to_sync, sender=Base)
