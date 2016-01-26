@@ -12,8 +12,10 @@ from bunch import Bunch
 from django.conf import settings
 
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
+from fastapp.queue import connect_to_queue
 from fastapp.utils import load_setting, profileit
 from fastapp.plugins import PluginRegistry
+from fastapp import responses
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,6 @@ def distribute(event, body, vhost, username, password):
             self.password = password
             logger.debug("exchanging message to vhost : %s" % self.vhost)
             logger.debug("exchanging message to vhost username: %s" % self.username)
-            logger.debug("exchanging message to vhost password: %s" % self.password)
             self.connection = connect_to_queuemanager(
                 host=settings.RABBITMQ_HOST,
                 vhost=vhost,
@@ -231,7 +232,6 @@ class ExecutorServerThread(CommunicationThread):
                 }
 
     def on_message(self, ch, method, props, body):
-        #logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         try:
             if method.exchange == "configuration":
                 if props.app_id == "configuration":
@@ -284,13 +284,13 @@ class ExecutorServerThread(CommunicationThread):
                                 load_setting("CORE_SENDER_USERNAME"),
                                 load_setting("FASTAPP_CORE_SENDER_PASSWORD"),
                                 self.port
-                            )
+                                )
                         channel = connection.channel()
                         response_data.update({'rid': json.loads(body)['rid']})
                         channel.basic_publish(exchange='',
-                            routing_key="async_callback",
-                            body=json.dumps(response_data)
-                        )
+                                              routing_key="async_callback",
+                                              body=json.dumps(response_data)
+                                              )
                         connection.close()
 
                     else:
@@ -302,7 +302,7 @@ class ExecutorServerThread(CommunicationThread):
                             exception_message = repr(e)
                             #trc = traceback.format_exc()
                             status = STATE_NOK
-                            response_data_json= json.dumps({
+                            response_data_json = json.dumps({
                                 "status": status,
                                 "returned": None,
                                 "exception": exception,
@@ -312,12 +312,13 @@ class ExecutorServerThread(CommunicationThread):
                         ch.basic_publish(exchange='',
                                          routing_key=props.reply_to,
                                          properties=pika.BasicProperties(
-                                            correlation_id = props.correlation_id,
+                                            correlation_id=props.correlation_id,
                                             delivery_mode=1,
                                             ),
                                          body=response_data_json)
-                    ch.basic_ack(delivery_tag = method.delivery_tag)
-                logger.info("Response sent %s (%s)" % (self.name, str(props.reply_to)))
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                logger.info("Response sent %s (%s)" % (self.name,
+                                                       str(props.reply_to)))
         except Exception, e:
             logger.exception(e)
 
@@ -325,13 +326,12 @@ class ExecutorServerThread(CommunicationThread):
 class ApyNotFound(Exception):
     pass
 
+
 class ApyError(Exception):
     pass
 
-from fastapp.queue import connect_to_queue
 
 def log_to_queue(tid, level, msg):
-    #logger.info("Send log message")
     host = settings.RABBITMQ_HOST
     port = settings.RABBITMQ_PORT
     vhost = load_setting("CORE_VHOST")
@@ -339,14 +339,9 @@ def log_to_queue(tid, level, msg):
     password = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
     log_queue_name = load_setting("LOGS_QUEUE")
 
-    channel = connect_to_queue(host, log_queue_name, vhost, username=username, password=password, port=port)
+    channel = connect_to_queue(host, log_queue_name, vhost,
+                               username=username, password=password, port=port)
 
-    #logger.info(vhost)
-    #logger.info(log_queue_name)
-    #logger.info(username)
-    #logger.info(password)
-    #logger.info(host)
-    #logger.info(port)
     payload = {
         'rid': tid,
         'level': level,
@@ -357,23 +352,25 @@ def log_to_queue(tid, level, msg):
                           routing_key=log_queue_name,
                           body=json.dumps(payload),
                           properties=pika.BasicProperties(
-                            delivery_mode=1,
-                         ),
-                        )
-    #logger.info(channel)
+                              delivery_mode=1,
+                          ))
     channel.close()
     channel.connection.close()
     del channel.connection
     del channel
 
+
 def info(tid, msg):
     log_to_queue(tid, logging.INFO, msg)
+
 
 def warning(tid, msg):
     log_to_queue(tid, logging.WARNING, msg)
 
+
 def debug(tid, msg):
     log_to_queue(tid, logging.DEBUG, msg)
+
 
 def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
@@ -381,7 +378,9 @@ def error(tid, msg):
 
 @profileit
 def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfig={}):
-        exception = None;  exception_message = None; returned = None
+        exception = None
+        exception_message = None
+        returned = None
         status = STATE_OK
 
         logger.info("DATA: "+str(data))
@@ -393,37 +392,31 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
         response_class = None
 
         # worker does not know apy
-        if not functions.has_key(model['fields']['name']):
+        if model['fields']['name'] not in functions:
             status = STATE_NOT_FOUND
-            logger.warn("method %s not found in functions, known: %s" % (model['fields']['name'], str(functions.keys())))
+            logger.warn("method %s not found in functions, known: %s" %
+                        (model['fields']['name'], str(functions.keys())))
         # go ahead
         else:
             func = functions[model['fields']['name']]
             logger.debug("do %s" % request)
             username = copy.copy(request['user']['username'])
 
-            # debug incoming request
-            if request['method'] == "GET":
-                query_string = copy.copy(request['GET'])
-            else:
-                query_string = copy.copy(request['POST'])
-
             logger.debug("START DO")
             try:
 
-                func.username=username
-                func.request=request
+                func.username = username
+                func.request = request
 
-                func.rid=data['rid']
+                func.rid = data['rid']
 
                 func.name = model['fields']['name']
 
                 # attach GET and POST data
-                func.GET=copy.deepcopy(request['GET'])
-                func.POST=copy.deepcopy(request['POST'])
+                func.GET = copy.deepcopy(request['GET'])
+                func.POST = copy.deepcopy(request['POST'])
 
                 # attach Responses classes
-                from fastapp import responses
                 func.responses = responses
 
                 # attach log functions
@@ -437,7 +430,8 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                 setting_dict1 = Bunch()
                 for key, value in setting_dict.iteritems():
                     setting_dict1.update({key: value})
-                setting_dict1.update({'STATIC_DIR': "/%s/%s/static" % ("fastapp", base_name)})
+                setting_dict1.update({'STATIC_DIR': "/%s/%s/static" %
+                                     ("fastapp", base_name)})
                 func.settings = setting_dict1
 
                 # attach foreign_functions
@@ -455,7 +449,7 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                             setattr(func, plugin.shortname, plugin.attach_worker(**pluginconfig[plugin.name]))
                             if not hasattr(func, plugin.shortname):
                                 logger.warning("Func is None")
-                            logger.info("Func '%s' attached to _do" % func.datastore)
+                            logger.info("Func '%s' attached to _do" % plugin.shortname)
                         except Exception, e:
                             print e
                             logger.error("Not able to attach %s, pluginconfig is: %s" % (plugin, pluginconfig))
@@ -478,10 +472,13 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                 error(data['rid'], repr(e) + ": " + trc)
 
             logger.debug("END DO")
-        return_data = {"status": status, "returned": returned, "exception": exception, "exception_message" : exception_message, "response_class": response_class}
+        return_data = {"status": status, "returned": returned,
+                       "exception": exception,
+                       "exception_message": exception_message, "response_class": response_class}
         if exception_message:
             return_data['exception_message'] = exception_message
         return return_data
+
 
 def get_static(path, vhost, username, password, async=False):
 
@@ -495,11 +492,11 @@ def get_static(path, vhost, username, password, async=False):
             # get needed stuff
             self.vhost = vhost
             self.connection = connect_to_queuemanager(
-                    host=settings.RABBITMQ_HOST,
-                    vhost=vhost,
-                    username=username,
-                    password=password,
-                    port=settings.RABBITMQ_PORT
+                host=settings.RABBITMQ_HOST,
+                vhost=vhost,
+                username=username,
+                password=password,
+                port=settings.RABBITMQ_PORT
                 )
 
             logger.debug("exchanging message to vhost: %s" % self.vhost)
@@ -508,7 +505,6 @@ def get_static(path, vhost, username, password, async=False):
 
             result = self.channel.queue_declare(exclusive=True)
 
-            #if not async:
             self.callback_queue = result.method.queue
             self.channel.basic_consume(self.on_response, no_ack=True,
                                        queue=self.callback_queue)
@@ -523,7 +519,8 @@ def get_static(path, vhost, username, password, async=False):
                 self.response = body
                 logger.debug("from static queue: "+body[:100])
             else:
-                logger.warn("correlation_id did not match (%s!=%s)" % (self.corr_id, props.correlation_id))
+                logger.warn("correlation_id did not match (%s!=%s)" %
+                            (self.corr_id, props.correlation_id))
 
         def call(self, n):
             if self.callback_queue != "/static_callback":
@@ -537,11 +534,11 @@ def get_static(path, vhost, username, password, async=False):
             self.channel.basic_publish(exchange='',
                                        routing_key=STATIC_QUEUE,
                                        properties=pika.BasicProperties(
-                                             reply_to = self.callback_queue,
-                                             delivery_mode=1,
-                                             correlation_id = self.corr_id,
-                                             expiration=str(expire)
-                                             ),
+                                           reply_to=self.callback_queue,
+                                           delivery_mode=1,
+                                           correlation_id=self.corr_id,
+                                           expiration=str(expire)
+                                           ),
                                        body=str(n))
             while self.response is None and not async:
                 self.connection.process_data_events()
@@ -559,21 +556,23 @@ def get_static(path, vhost, username, password, async=False):
         response = executor.call(path)
     except Exception, e:
         logger.exception(e)
-        response = json.dumps({u'status': u'TIMEOUT', u'exception': None, u'returned': None, 'id': u'cannot_import'})
+        response = json.dumps({u'status': u'TIMEOUT', u'exception': None,
+                               u'returned': None, 'id': u'cannot_import'})
     finally:
         executor.end()
     return response
 
 
 class StaticServerThread(CommunicationThread):
-    def __init__(self, *args, **kwargs ):
+
+    def __init__(self, *args, **kwargs):
         return super(StaticServerThread, self).__init__(*args, **kwargs)
 
     def on_message(self, ch, method, props, body):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         logger.debug(body)
         body = json.loads(body)
-        logger.info(body)
+        #logger.info(body)
 
         try:
             logger.debug(method.routing_key)
@@ -590,12 +589,14 @@ class StaticServerThread(CommunicationThread):
                             full_path = os.path.join(p, path.replace(base_name+"/", ""))
                             try:
                                 f = open(full_path, 'r')
+                                last_modified = os.stat(filepath).st_mtime
                             except Exception, e:
                                 logger.warning(e)
                                 logger.warning("Could not open file %s" % full_path)
                             rc = "OK"
                             response_data.update({
-                                'file': base64.b64encode(f.read())
+                                'file': base64.b64encode(f.read()),
+                                'LM': last_modified
                                 })
                             f.close()
                     if not f:
@@ -618,5 +619,6 @@ class StaticServerThread(CommunicationThread):
                     #logger.info("message published: %s" % str(publish_result))
                     #logger.info("ack message")
                     ch.basic_ack(delivery_tag = method.delivery_tag)
+                    logger.info("Static-Request %s response in %s" % (body['path'], self.name))
         except Exception, e:
             logger.exception(e)

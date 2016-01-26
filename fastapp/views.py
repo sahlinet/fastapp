@@ -392,7 +392,7 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
 
     #@profile
     @never_cache
-    def get(self, request, *args, **kwargs):
+    def get(self, request, **kwargs):
         # get base
         base_model = get_object_or_404(Base, name=kwargs['base'])
 

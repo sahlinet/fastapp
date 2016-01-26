@@ -12,16 +12,16 @@ MEM_LIMIT = "96m"
 #CPU_SHARES = 512
 
 DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
-                            'philipsahli/skyblue-planet-lite-worker:develop')
+                    'philipsahli/skyblue-planet-lite-worker:develop')
 
 
 class RancherApiExecutor(BaseExecutor):
 
     def __init__(self, *args, **kwargs):
-    	self.auth=requests.auth.HTTPBasicAuth(settings.RANCHER_ACCESS_KEY, settings.RANCHER_ACCESS_SECRET)
+        self.auth=requests.auth.HTTPBasicAuth(settings.RANCHER_ACCESS_KEY, settings.RANCHER_ACCESS_SECRET)
         self.environment_id = settings.RANCHER_ENVIRONMENT_ID
 
-    	self.url = settings.RANCHER_URL + "/v1/services"
+        self.url = settings.RANCHER_URL + "/v1/services"
         logging.info("Using URL to rancher: %s" % self.url)
 
         super(RancherApiExecutor, self).__init__(*args, **kwargs)
@@ -50,8 +50,6 @@ class RancherApiExecutor(BaseExecutor):
             logger.debug("Container not found (%s)" % id)
             raise ContainerNotFound()
         logger.debug("Container found (%s)" % id)
-
-
         return response
 
     def _container_exists(self, id):
@@ -65,12 +63,12 @@ class RancherApiExecutor(BaseExecutor):
     @property
     def _start_command(self):
         start_command = "%s %smanage.py start_worker --vhost=%s --base=%s --username=%s --password=%s" % (
-                    "/home/planet/.virtualenvs/planet/bin/python",
-                    "/home/planet/code/app/",
-                    self.vhost,
-                    self.base_name,
-                    self.base_name, self.password
-            )
+                        "/home/planet/.virtualenvs/planet/bin/python",
+                        "/home/planet/code/app/",
+                        self.vhost,
+                        self.base_name,
+                        self.base_name, self.password
+        )
         return start_command.split(" ")
 
     def start(self, id, *args, **kwargs):
@@ -84,107 +82,105 @@ class RancherApiExecutor(BaseExecutor):
             for port in self.service_ports:
                 self.port_bindings.append("%s:%s/tcp" % (port, port))
 
-            print self.port_bindings
-
             env = {
-                    'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
-                    'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
-                    'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
-                    'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
-                    'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
-                    'EXECUTOR': "docker",
-                    'SERVICE_PORT': self.executor.port,
-                    'SERVICE_IP': self.executor.ip
+                'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
+                'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
+                'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
+                'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
+                'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
+                'EXECUTOR': "docker",
+                'SERVICE_PORT': self.executor.port,
+                'SERVICE_IP': self.executor.ip
                 }
             json_data = {
-                	"scale": 1,
-                	"type": "service",
-                	"environmentId": self.environment_id,
-                	"launchConfig": {
-                		"networkMode": "managed",
-                		"privileged": False,
-                		"publishAllPorts": False,
-                		"readOnly": False,
-                		"startOnCreate": True,
-                		"stdinOpen": True,
-                		"tty": True,
-                		"type": "launchConfig",
-                		"restartPolicy": {
-                			"name": "always"
-                		},
-                		"imageUuid": "docker:"+DOCKER_IMAGE,
-                		"dataVolumes": [
-
-                		],
-                		"dataVolumesFrom": [
-
-                		],
-                		"dns": [
-                			"8.8.8.8"
-                		],
-                		"dnsSearch": [
-
-                		],
-                		"capAdd": [
-
-                		],
-                		"capDrop": [
-
-                		],
-                		"devices": [
-
-                		],
-                		"labels": {
-                			#"io.rancher.scheduler.affinity:host_label": "nodelabel=nodelabel",
-                			"io.rancher.container.pull_image":  "always",
-                			"io.rancher.container.dns": False
-                		},
-                		"ports": self.port_bindings,
-                		"command": self._start_command,
-                		"environment": env,
-                		"healthCheck": None,
-                		"allocationState": None,
-                		"count": None,
-                		"cpuSet": None,
-                		"cpuShares": 1024,
-                		"createIndex": None,
-                		"created": None,
-                		"deploymentUnitUuid": None,
-                		"description": None,
-                		"domainName": None,
-                		"externalId": None,
-                		"firstRunning": None,
-                		"healthState": None,
-                		"hostname": None,
-                		"kind": None,
-                		#"memory": 100663296,
-                		"memorySwap": None,
-                		"pidMode": None,
-                		"removeTime": None,
-                	    "removed": None,
-                        "startCount": None,
-                	    "systemContainer": None,
-                        "token": None,
-                        "user": None,
-                	    "uuid": None,
-                	    "volumeDriver": None,
-                	    "workingDir": None,
-                	    "networkLaunchConfig": None
+                "scale": 1,
+                "type": "service",
+                "environmentId": self.environment_id,
+                "launchConfig": {
+                    "networkMode": "managed",
+                    "privileged": False,
+                    "publishAllPorts": False,
+                    "readOnly": False,
+                    "startOnCreate": True,
+                    "stdinOpen": True,
+                    "tty": True,
+                    "type": "launchConfig",
+                    "restartPolicy": {
+                        "name": "always"
                     },
-                    "secondaryLaunchConfigs": [],
-                    "name": self.name,
+                    "imageUuid": "docker:"+DOCKER_IMAGE,
+                    "dataVolumes": [
+
+                    ],
+                    "dataVolumesFrom": [
+
+                    ],
+                    "dns": [
+                        "8.8.8.8"
+                    ],
+                    "dnsSearch": [
+
+                    ],
+                    "capAdd": [
+
+                    ],
+                    "capDrop": [
+
+                    ],
+                    "devices": [
+
+                    ],
+                    "labels": {
+                        #"io.rancher.scheduler.affinity:host_label": "nodelabel=nodelabel",
+                        "io.rancher.container.pull_image":  "always",
+                        "io.rancher.container.dns": False
+                    },
+                    "ports": self.port_bindings,
+                    "command": self._start_command,
+                    "environment": env,
+                    "healthCheck": None,
+                    "allocationState": None,
+                    "count": None,
+                    "cpuSet": None,
+                    "cpuShares": 1024,
                     "createIndex": None,
                     "created": None,
+                    "deploymentUnitUuid": None,
                     "description": None,
+                    "domainName": None,
                     "externalId": None,
-                	"kind": None,
-                	"removeTime": None,
+                    "firstRunning": None,
+                    "healthState": None,
+                    "hostname": None,
+                    "kind": None,
+                    #"memory": 100663296,
+                    "memorySwap": None,
+                    "pidMode": None,
+                    "removeTime": None,
                     "removed": None,
-                    "selectorContainer": None,
-                    "selectorLink": None,
+                    "startCount": None,
+                    "systemContainer": None,
+                    "token": None,
+                    "user": None,
                     "uuid": None,
-                    "vip": None,
-                    "fqdn": None
+                    "volumeDriver": None,
+                    "workingDir": None,
+                    "networkLaunchConfig": None
+                },
+                "secondaryLaunchConfigs": [],
+                "name": self.name,
+                "createIndex": None,
+                "created": None,
+                "description": None,
+                "externalId": None,
+                "kind": None,
+                "removeTime": None,
+                "removed": None,
+                "selectorContainer": None,
+                "selectorLink": None,
+                "uuid": None,
+                "vip": None,
+                "fqdn": None
                 }
             logger.debug(json_data)
             status_code, response = self._call_rancher("/", json_data)

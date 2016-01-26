@@ -24,6 +24,10 @@ from fastapp.views import DjendExecView
 from fastapp.plugins import call_plugin_func
 from fastapp import __version__
 from fastapp.utils import load_setting
+from fastapp.utils import profileit
+
+from redis_metrics import metric, set_metric
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +38,6 @@ FOREIGN_CONFIGURATION_QUEUE = "fconfiguration"
 SETTING_QUEUE = "setting"
 PLUGIN_CONFIG_QUEUE = "pluginconfig"
 
-from redis_metrics import metric, set_metric
-import psutil
 
 def inactivate():
 
@@ -95,7 +97,7 @@ def update_status(parent_name, thread_count, threads):
             proc = subprocess.Popen(args, stdout=subprocess.PIPE)
             (out, err) = proc.communicate()
             rss = str(out).rstrip().strip().lstrip()
-            #logger.debug("MEM-Usage of '%s': %s" % (parent_name, rss))
+            # TODO: send metrics to newrelic
             process, created = Process.objects.get_or_create(name=parent_name)
             process.rss = int(rss)
             process.save()
@@ -179,6 +181,7 @@ class HeartbeatThread(CommunicationThread):
 
         self.schedule_next_message()
 
+    #@profileit
     def on_message(self, ch, method, props, body):
     	"""
     	Server functionality for storing status and statistics.
@@ -191,7 +194,6 @@ class HeartbeatThread(CommunicationThread):
             logger.info("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
             # store timestamp in DB
-            from fastapp.models import Instance
             try:
                 instance = Instance.objects.get(executor__base__name=base)
             except Instance.DoesNotExist, e:
@@ -237,7 +239,6 @@ class HeartbeatThread(CommunicationThread):
                     pass
 
             if not data['in_sync']:
-                from fastapp.models import Apy, Setting
                 instances = list(Apy.objects.filter(base__name=base))
                 for instance in instances:
                     distribute(CONFIGURATION_QUEUE, serializers.serialize("json", [instance,]),
@@ -263,7 +264,6 @@ class HeartbeatThread(CommunicationThread):
                     )
 
                 # Plugin config
-                from fastapp.plugins import call_plugin_func
                 success, failed = call_plugin_func(base_obj, "config_for_workers")
                 logger.info("Plugin to sync - success: "+str(success))
                 logger.info("Plugin to sync - failed: "+str(failed))
@@ -278,28 +278,27 @@ class HeartbeatThread(CommunicationThread):
             if data.has_key('ready_for_init') and data['ready_for_init']:
 
                 ## execute init exec
-		from fastapp.models import Apy
                 try:
                     init = base_obj.apys.get(name='init')
                     url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.name})
 
                     request_factory = RequestFactory()
                     request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name})
-                    # TODO: fails if user admin is not created
+                    # TODO: fails if user admin does not exist
                     request.user = get_user_model().objects.get(username='admin')
 
-                    from fastapp.views import DjendExecView
                     view = DjendExecView()
                     response = view.get(request, base=base_obj.name, id=init.name)
                     logger.info("Init method called for base %s, response_code: %s" % (base_obj.name, response.status_code))
 
                 except Apy.DoesNotExist, e:
-		    logger.info("No init exec")
+                    logger.info("No init exec for base '%s'" % base_obj.name)
 
                 except Exception, e:
                     logger.exception(e)
                     print e
 
+            del ch, method, body, data
 
 
         except Exception, e:
