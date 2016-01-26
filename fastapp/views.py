@@ -186,7 +186,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         client = dropbox.client.DropboxClient(auth_token)
                         try:
                             # TODO: read file only when necessary
-                            f, metadata = client.get_file_and_metadata(static_path).read()
+                            f, metadata = client.get_file_and_metadata(static_path)
+                            f = f.read()
                             last_modified = metadata['modified']
                             logger.info("File %s loaded from dropbox" % static_path)
                         except Exception, e:
