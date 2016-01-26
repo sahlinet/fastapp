@@ -188,8 +188,11 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                             # TODO: read file only when necessary
                             f, metadata = client.get_file_and_metadata(static_path)
                             f = f.read()
-                            last_modified = metadata['modified']
-                            logger.info("File %s loaded from dropbox" % static_path)
+
+                            # "modified": "Tue, 19 Jul 2011 21:55:38 +0000",
+                            dropbox_frmt = "%a, %d %b %Y %H:%M:%S +0000"
+                            last_modified = datetime.strptime(metadata['modified'], dropbox_frmt)
+                            logger.info("File %s loaded from dropbox (lm: %s)" % (static_path, last_modified))
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
@@ -203,7 +206,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
             logger.info("found in cache: '%s'" % static_path)
-            last_modified = cache_obj['lm']
+            last_modified = datetime.fromtimestamp(cache_obj['lm'])
 
         # default
         mimetype = "text/plain"
@@ -904,7 +907,8 @@ def process_file(path, metadata, client, user):
         else:
             logger.warn("Path %s ignored" % path)
             if "static" in path:
-                cache_key = "%s-%s-%s" % (base_model.user.username, base_model.name, static_path)
+                base_obj = Base.objects.get(name=base_name, user=user)
+                cache_key = "%s-%s-%s" % (base_obj.user.username, base_obj.name, static_path)
                 logger.info("Delete cache entry: %s" % cache_key)
                 cache.delete(cache_key)
 
