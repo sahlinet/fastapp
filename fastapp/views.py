@@ -21,7 +21,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic import View, TemplateView
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError, HttpResponsePermanentRedirect
+from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError, HttpResponsePermanentRedirect, HttpResponseNotModified
 from django.views.generic.base import ContextMixin
 from django.conf import settings
 from django.views.decorators.cache import never_cache
@@ -100,14 +100,16 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         c = Context(kwargs)
         return t.render(c)
 
-    @never_cache
-    def get(self, request, *args, **kwargs):
+
+    def get(self, request, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
         logger.info("get %s" % static_path)
         channel = channel_name_for_user(request)
         info(channel, "get %s" % static_path)
 
         base_model = Base.objects.get(name=kwargs['base'])
+
+        last_modified = None
 
         # if not base_model.state:
         #    response = HttpResponse()
@@ -120,7 +122,13 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         if response:
             return response
 
-        f = cache.get(base_model.name+"-"+static_path)
+        cache_key = "%s-%s-%s" % (base_model.user.username, base_model.name, static_path)
+        cache_obj = cache.get(cache_key)
+
+        f = None
+        if cache_obj:
+            f = cache_obj.get('f')
+
         if not f:
             try:
                 logger.info("not in cache: %s" % static_path)
@@ -132,8 +140,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     try:
                         logger.debug("load %s from local filesystem (repositories)" % static_path)
                         full_path = os.path.join(REPOSITORIES_PATH, static_path)
-                        logger.debug(full_path)
                         f = open(full_path, 'r')
+                        last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
                     except IOError, e:
                         logger.warning(e)
                     if not f:
@@ -142,6 +150,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                             logger.debug("load %s from local filesystem (dropbox app)" % static_path)
                             filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
                             f = open(filepath, 'r')
+                            last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
                         except IOError, e:
                             logger.warning(e)
                             warn(channel, static_path + " not found")
@@ -153,9 +162,10 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         json.dumps({"base_name": base_model.name, "path": static_path}),
                         generate_vhost_configuration(
                             base_model.user.username,
-                            base_model.name),
-                            base_model.name,
-                            base_model.executor.password
+                            base_model.name
+                            ),
+                        base_model.name,
+                        base_model.executor.password
                         )
                     data = json.loads(response_data)
 
@@ -167,6 +177,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     elif data['status'] == "OK":
                         logger.info("File %s received from worker" % static_path)
                         f = base64.b64decode(data['file'])
+                        last_modified = datetime.fromtimestamp(data['LM'])
                     # get from dropbox
                     elif data['status'] == "NOT_FOUND":
                         logger.info("File not found from worker, try to load from dropbox")
@@ -174,18 +185,24 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         auth_token = base_model.user.authprofile.access_token
                         client = dropbox.client.DropboxClient(auth_token)
                         try:
-                            f = client.get_file(static_path).read()
+                            # TODO: read file only when necessary
+                            f, metadata = client.get_file_and_metadata(static_path).read()
+                            last_modified = metadata['modified']
                             logger.info("File %s loaded from dropbox" % static_path)
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
-                    cache.set(base_model.name+"-"+static_path, f, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
+                    cache.set(cache_key, {
+                        'f': f,
+                        'lm': last_modified
+                    }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
                     logger.debug("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
                 logger.warning("not found: '%s'" % static_path)
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
             logger.info("found in cache: '%s'" % static_path)
+            last_modified = cache_obj['lm']
 
         # default
         mimetype = "text/plain"
@@ -219,15 +236,35 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             logger.warning("suffix not recognized in '%s'" % static_path)
             return HttpResponseServerError("Static file suffix not recognized")
         logger.info("deliver '%s' with '%s'" % (static_path, mimetype))
-        return HttpResponse(f, content_type=mimetype)
+
+        return self._handle_cache(request, mimetype, last_modified, f)
+
+
+    def _handle_cache(self, request, mimetype, last_modified, file):
+        # handle browser caching
+        frmt = "%d %b %Y %H:%M:%S"
+        if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
+        if last_modified and if_modified_since:
+            if (last_modified <= datetime.strptime(if_modified_since, frmt)):
+                return HttpResponseNotModified()
+        response = HttpResponse(file, content_type=mimetype)
+        response['Cache-Control'] = "public"
+        response['Last-Modified'] = last_modified.strftime(frmt)
+        return response
+        #return HttpResponse(f, content_type=mimetype)
+
 
     def _setup_context(self, base_model):
         data = dict((s.key, s.value) for s in base_model.setting.all())
 
         data['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
 
-        plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-        data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
+        try:
+            plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
+            data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
+        except KeyError:
+            pass
+
         return data
 
 
@@ -865,6 +902,11 @@ def process_file(path, metadata, client, user):
                 logger.info("Apy %s updated" % apy.name)
         else:
             logger.warn("Path %s ignored" % path)
+            if "static" in path:
+                cache_key = "%s-%s-%s" % (base_model.user.username, base_model.name, static_path)
+                logger.info("Delete cache entry: %s" % cache_key)
+                cache.delete(cache_key)
+
     except Exception, e:
         logger.error("Exception handling path %s" % path)
         logger.exception(e)
