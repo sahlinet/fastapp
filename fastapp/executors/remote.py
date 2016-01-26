@@ -269,6 +269,13 @@ class ExecutorServerThread(CommunicationThread):
                     logger.error("Invalid event arrived (%s)" % props.app_id)
 
             if method.routing_key == RPC_QUEUE:
+
+                #import gc
+                #import objgraph
+                #gc.collect()
+                #objgraph.show_most_common_types(limit=10)
+                #objgraph.show_growth()
+                
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
                 try:
                     response_data = {}

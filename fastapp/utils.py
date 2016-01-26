@@ -348,13 +348,13 @@ def profileit(func):
     """
     def wrapper(*args, **kwargs):
         prof = cProfile.Profile()
-        if not os.environ.has_key("PROFILE_DO_FUNC"):
-            return func(*args, **kwargs)
+        #if not os.environ.has_key("PROFILE_DO_FUNC"):
+        #    return func(*args, **kwargs)
         retval = prof.runcall(func, *args, **kwargs)
 		# Note use of name from outer scope
 		#prof.dump_stats(name)
         import pstats
         s = pstats.Stats(prof).sort_stats('time')
-        s.print_stats(30)
+        s.print_stats(8)
         return retval
     return wrapper
