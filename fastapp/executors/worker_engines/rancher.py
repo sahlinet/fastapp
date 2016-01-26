@@ -26,8 +26,11 @@ class RancherApiExecutor(BaseExecutor):
 
         super(RancherApiExecutor, self).__init__(*args, **kwargs)
 
-    def _call_rancher(self, uri_appendix, data=None, force_post=False):
-        url = self.url+"%s" % uri_appendix
+    def _call_rancher(self, uri_appendix, data=None, force_post=False, full_url=None):
+        if not full_url:
+            url = self.url+"%s" % uri_appendix
+        else:
+            url = full_url
         if data or force_post:
             logger.info("POST to %s" % url)
             r = requests.post(url, json=data, auth=self.auth)
@@ -41,7 +44,7 @@ class RancherApiExecutor(BaseExecutor):
             json_response = None
         logger.debug(r.status_code)
         if r.status_code == 422:
-            logger.error(r.text)
+            logger.error("422 status_code when calling %s, %s" % (url, r.text))
         return r.status_code, json_response
 
     def _get_container(self, id):
@@ -220,6 +223,7 @@ class RancherApiExecutor(BaseExecutor):
 
     def state(self, id):
         try:
+            # TODO: should use a caching mechanismus, is called on every request
             container = self._get_container(id)
         except ContainerNotFound:
             return False
@@ -227,9 +231,21 @@ class RancherApiExecutor(BaseExecutor):
         return (container['state'] == "active")
 
     def addresses(self, id, port=None):
+        """
+        Service -> Instances -> 0 -> Ports -> 0 (10013) -> publicIpAddress
+        """
 
         logging.info("Get addresses for %s" % id)
-        ip = self.get_instances(id)['data'][0]['primaryIpAddress']
+        #ip = self.get_instances(id)['data'][0]['primaryIpAddress']
+
+        status_code, response_json = self._call_rancher(None,
+                    full_url=self.get_instances(id)['data'][0]['links']['ports'])
+        publicIpAddress_url = response_json['data'][0]['links']['publicIpAddress']
+        status_code, response_json = self._call_rancher(None,
+                    full_url=publicIpAddress_url)
+        ip = response_json['address']
+        logging.info("Found addresses for %s: %s" % (id, ip))
+
         return {
             'ip': ip,
             'ip6': None
