@@ -306,7 +306,6 @@ class HeartbeatThread(CommunicationThread):
         time.sleep(0.1)
 
 
-
     def schedule_next_message(self):
         #logger.info('Next beat in %0.1f seconds',
                     #self.PUBLISH_INTERVAL)
