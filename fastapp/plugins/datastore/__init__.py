@@ -44,7 +44,7 @@ class DataStore(object):
 
 	ENGINE = 'sqlite:///:memory:'
 
-	def __init__(self, schema=None, *args, **kwargs):
+	def __init__(self, schema=None, password=None, *args, **kwargs):
 		if schema:
 			self.schema = schema.replace("-", "_")
 		else:
@@ -52,6 +52,8 @@ class DataStore(object):
 		self.kwargs = kwargs
 		logger.info("Working with schema: %s" % schema)
 		logger.info("Working with config: %s" % str(kwargs))
+
+		self.password = password
 
 		# set schema for table creation
 		DataObject.__table__.schema = self.schema
@@ -93,7 +95,7 @@ class DataStore(object):
 			# User
 			try:
 				self._execute("CREATE USER %s WITH PASSWORD '%s'" % (self.schema,
-					self.schema))
+					self.password))
 			except Exception, e:
 				self.session.rollback()
 				if "already exists" in repr(e):
@@ -192,7 +194,8 @@ class DataStorePlugin(Plugin):
 
 	def attach_worker(self, **kwargs):
 		logger.info("Attach to worker")
-		return PsqlDataStoreSingleton(schema=kwargs['USER'], **kwargs)
+		return PsqlDataStoreSingleton(schema=kwargs['USER'],
+		 							  password=kwargs['PASSWORD'], **kwargs)
 
 	@classmethod
 	def init(cls):
@@ -204,17 +207,17 @@ class DataStorePlugin(Plugin):
 	def config(self, base):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
 		plugin_settings['USER'] = base.name.replace("-", "_")
-		plugin_settings['PASSWORD'] = base.name.replace("-", "_")
+		plugin_settings['PASSWORD'] = base.executor.password
 		return plugin_settings
 
 	def on_start_base(self, base):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-		store = PsqlDataStore(schema=base.name, **plugin_settings)
+		store = PsqlDataStore(schema=base.name, password=base.executor.password,
+							  keep=False, **plugin_settings)
 		return store.init_store()
 
 	def cockpit_context(self):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-		#self.store = PsqlDataStore(**plugin_settings)
 		SCHEMAS = "SELECT schema_name FROM information_schema.schemata;"
 		TABLESPACES = """SELECT array_to_json(array_agg(row_to_json(t))) FROM (
 				SELECT *, pg_tablespace_size(spcname) FROM pg_tablespace
@@ -222,7 +225,7 @@ class DataStorePlugin(Plugin):
 		CONNECTIONS = "SELECT * FROM pg_stat_activity;"
 
 		return {
-			'SCHEMAS': [row for row in PsqlDataStore(**plugin_settings)._execute(SCHEMAS)],
-			'TABLESPACES': [row for row in PsqlDataStore(**plugin_settings)._execute(TABLESPACES)][0],
-			'CONNECTIONS': [row for row in PsqlDataStore(**plugin_settings)._execute(CONNECTIONS)],
+			'SCHEMAS': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(SCHEMAS)],
+			'TABLESPACES': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(TABLESPACES)][0],
+			'CONNECTIONS': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(CONNECTIONS)],
 		}
