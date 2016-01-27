@@ -1,5 +1,6 @@
 import logging
 import requests
+import time
 
 from django.conf import settings
 
@@ -50,7 +51,10 @@ class RancherApiExecutor(BaseExecutor):
     def _get_container(self, id):
         status_code, response = self._call_rancher("/%s" % id)
         if status_code == 404:
-            logger.debug("Container not found (%s)" % id)
+            logger.debug("Container not found (%s) -> 404" % id)
+            raise ContainerNotFound()
+        if json_response['state'] == "removed":
+            logger.debug("Container not found (%s) -> state = removed" % id)
             raise ContainerNotFound()
         logger.debug("Container found (%s)" % id)
         return response
@@ -189,7 +193,6 @@ class RancherApiExecutor(BaseExecutor):
             status_code, response = self._call_rancher("/", json_data)
             id = response['id']
 
-        import time
         time.sleep(3)
         status_code, response = self._call_rancher("/%s?action=activate" % id, force_post=True)
 
@@ -206,7 +209,6 @@ class RancherApiExecutor(BaseExecutor):
 
         logger.error("Timed out waiting for state 'active'")
         return id
-
 
     def stop(self, id, *args, **kwargs):
         if self._container_exists(id):
