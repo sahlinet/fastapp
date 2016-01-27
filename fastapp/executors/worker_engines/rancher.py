@@ -53,7 +53,7 @@ class RancherApiExecutor(BaseExecutor):
         if status_code == 404:
             logger.debug("Container not found (%s) -> 404" % id)
             raise ContainerNotFound()
-        if json_response['state'] == "removed":
+        if "removed" in response['state']:
             logger.debug("Container not found (%s) -> state = removed" % id)
             raise ContainerNotFound()
         logger.debug("Container found (%s)" % id)
