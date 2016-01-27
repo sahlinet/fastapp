@@ -358,3 +358,13 @@ def profileit(func):
         s.print_stats(8)
         return retval
     return wrapper
+
+
+def totimestamp(t):
+    logger.info("totimestamp: %s" % t)
+    return (t-datetime.datetime(1970, 1, 1)).total_seconds()
+
+
+def fromtimestamp(t):
+    logger.info("fromtimestamp: %s" % t)
+    return datetime.datetime.fromtimestamp(t)

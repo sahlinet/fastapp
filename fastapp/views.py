@@ -30,7 +30,7 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
-from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
+from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client, totimestamp, fromtimestamp
 
 from fastapp.queue import generate_vhost_configuration
 from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread, Transaction
@@ -127,14 +127,14 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
 
         f = None
         if cache_obj:
-            f = cache_obj.get('f')
+            f = cache_obj.get('f', None)
 
         if not f:
             try:
                 logger.info("not in cache: %s" % static_path)
 
                 REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
-                if "runserver" in sys.argv and REPOSITORIES_PATH:
+                if "runserver1" in sys.argv and REPOSITORIES_PATH:
                     # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:
@@ -198,7 +198,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                             raise e
                     cache.set(cache_key, {
                         'f': f,
-                        'lm': last_modified
+                        'lm': totimestamp(last_modified)
                     }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
                     logger.debug("cache it: '%s'" % static_path)
             except (ErrorResponse, IOError), e:
@@ -206,7 +206,12 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                 return HttpResponseNotFound("Not found: "+static_path)
         else:
             logger.info("found in cache: '%s'" % static_path)
-            last_modified = datetime.fromtimestamp(cache_obj['lm'])
+            logger.info("last_modified in cache: %s" % cache_obj['lm'])
+            try:
+                last_modified = fromtimestamp(cache_obj['lm'])
+            except Exception, e:
+                logger.exception(e)
+                last_modified = None
 
         # default
         mimetype = "text/plain"
@@ -252,8 +257,9 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             if (last_modified <= datetime.strptime(if_modified_since, frmt)):
                 return HttpResponseNotModified()
         response = HttpResponse(file, content_type=mimetype)
-        response['Cache-Control'] = "public"
-        response['Last-Modified'] = last_modified.strftime(frmt)
+        if last_modified:
+            response['Cache-Control'] = "public"
+            response['Last-Modified'] = last_modified.strftime(frmt)
         return response
         #return HttpResponse(f, content_type=mimetype)
 
@@ -908,7 +914,7 @@ def process_file(path, metadata, client, user):
             logger.warn("Path %s ignored" % path)
             if "static" in path:
                 base_obj = Base.objects.get(name=base_name, user=user)
-                cache_key = "%s-%s-%s" % (base_obj.user.username, base_obj.name, static_path)
+                cache_key = "%s-%s-%s" % (base_obj.user.username, base_obj.name, path)
                 logger.info("Delete cache entry: %s" % cache_key)
                 cache.delete(cache_key)
 

@@ -13,7 +13,7 @@ from django.conf import settings
 
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
 from fastapp.queue import connect_to_queue
-from fastapp.utils import load_setting, profileit
+from fastapp.utils import load_setting, profileit, totimestamp
 from fastapp.plugins import PluginRegistry
 from fastapp import responses
 
@@ -275,7 +275,7 @@ class ExecutorServerThread(CommunicationThread):
                 #gc.collect()
                 #objgraph.show_most_common_types(limit=10)
                 #objgraph.show_growth()
-                
+
                 logger.info("Request received in %s (%s)" % (self.name, str(props.reply_to)))
                 try:
                     response_data = {}
@@ -603,7 +603,7 @@ class StaticServerThread(CommunicationThread):
                             rc = "OK"
                             response_data.update({
                                 'file': base64.b64encode(f.read()),
-                                'LM': last_modified
+                                'LM': totimestamp(last_modified)
                                 })
                             f.close()
                     if not f:
