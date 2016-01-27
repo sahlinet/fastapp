@@ -920,7 +920,7 @@ def process_file(path, metadata, client, user):
                     cache.delete(cache_key)
                 except Exception, e:
                     logger.error("problem cleaning cache for static file %s" % path)
-                    logger.warn("Looking for %s for user %s" % (base_name, user.name))
+                    logger.warn("Looking for %s for user %s" % (base_name, user.username))
 
     except Exception, e:
         logger.error("Exception handling path %s" % path)
