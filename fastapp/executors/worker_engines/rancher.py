@@ -192,7 +192,7 @@ class RancherApiExecutor(BaseExecutor):
             logger.debug(json_data)
             status_code, response = self._call_rancher("/", json_data)
             id = response['id']
-
+        import time
         time.sleep(3)
         status_code, response = self._call_rancher("/%s?action=activate" % id, force_post=True)
 
