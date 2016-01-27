@@ -913,10 +913,14 @@ def process_file(path, metadata, client, user):
         else:
             logger.warn("Path %s ignored" % path)
             if "static" in path:
-                base_obj = Base.objects.get(name=base_name, user=user)
-                cache_key = "%s-%s-%s" % (base_obj.user.username, base_obj.name, path)
-                logger.info("Delete cache entry: %s" % cache_key)
-                cache.delete(cache_key)
+                try:
+                    base_obj = Base.objects.get(name=base_name, user=user)
+                    cache_key = "%s-%s-%s" % (base_obj.user.username, base_obj.name, path)
+                    logger.info("Delete cache entry: %s" % cache_key)
+                    cache.delete(cache_key)
+                except Exception, e:
+                    logger.error("problem cleaning cache for static file %s" % path)
+                    logger.warn("Looking for %s for user %s" % (base_name, user.name))
 
     except Exception, e:
         logger.error("Exception handling path %s" % path)
