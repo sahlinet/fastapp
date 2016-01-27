@@ -76,7 +76,7 @@ def inactivate():
                         logger.error("Start worker for not running base: %s" % base.name)
                         base.executor.start()
             except DatabaseError, e:
-                logger.warning("Executor '%s' was locked with select_for_update" % base.name)
+                logger.warning("Executor(s) was locked with select_for_update")
                 transaction.rollback()
             transaction.commit()
             time.sleep(10)
