@@ -134,13 +134,13 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                 logger.info("not in cache: %s" % static_path)
 
                 REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
-                if "runserver1" in sys.argv and REPOSITORIES_PATH:
+                if "runserver" in sys.argv and REPOSITORIES_PATH:
                     # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:
                         logger.debug("load %s from local filesystem (repositories)" % static_path)
-                        full_path = os.path.join(REPOSITORIES_PATH, static_path)
-                        f = open(full_path, 'r')
+                        filepath = os.path.join(REPOSITORIES_PATH, static_path)
+                        f = open(filepath, 'r')
                         last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
                     except IOError, e:
                         logger.warning(e)

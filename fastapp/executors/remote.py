@@ -596,7 +596,7 @@ class StaticServerThread(CommunicationThread):
                             full_path = os.path.join(p, path.replace(base_name+"/", ""))
                             try:
                                 f = open(full_path, 'r')
-                                last_modified = os.stat(filepath).st_mtime
+                                last_modified = os.stat(full_path).st_mtime
                             except Exception, e:
                                 logger.warning(e)
                                 logger.warning("Could not open file %s" % full_path)
