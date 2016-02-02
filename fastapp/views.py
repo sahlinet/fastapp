@@ -260,6 +260,9 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         if last_modified:
             response['Cache-Control'] = "public"
             response['Last-Modified'] = last_modified.strftime(frmt)
+        if file.endswith("png") or file.endswith("css") or file.endswith("js") \
+                or file.endswith("woff"):
+            response['Cache-Control'] = "max-age=120"
         return response
         #return HttpResponse(f, content_type=mimetype)
 
