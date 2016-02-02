@@ -175,9 +175,9 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     elif data['status'] == "TIMEOUT":
                         return HttpResponseServerError("Timeout")
                     elif data['status'] == "OK":
-                        logger.info("File %s received from worker" % static_path)
                         f = base64.b64decode(data['file'])
                         last_modified = datetime.fromtimestamp(data['LM'])
+                        logger.info("File %s received from worker with timestamp: %s" % (static_path, str(last_modified)))
                     # get from dropbox
                     elif data['status'] == "NOT_FOUND":
                         logger.info("File not found from worker, try to load from dropbox")

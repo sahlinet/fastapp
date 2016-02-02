@@ -603,7 +603,7 @@ class StaticServerThread(CommunicationThread):
                             rc = "OK"
                             response_data.update({
                                 'file': base64.b64encode(f.read()),
-                                'LM': totimestamp(last_modified)
+                                'LM': last_modified
                                 })
                             f.close()
                     if not f:
