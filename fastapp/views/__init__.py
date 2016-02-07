@@ -1,11 +1,8 @@
-import os
-import base64
 import logging
 import json
 import dropbox
 import time
 import copy
-import sys
 import threading
 import re
 from StringIO import StringIO
@@ -21,23 +18,21 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.views.generic import View, TemplateView
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError, HttpResponsePermanentRedirect, HttpResponseNotModified
+from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError, HttpResponsePermanentRedirect
 from django.views.generic.base import ContextMixin
 from django.conf import settings
 from django.views.decorators.cache import never_cache
 from django.core import serializers
 from dropbox.rest import ErrorResponse
 from django.core.cache import cache
-from django.template import Context, Template
+from django.template import Template
 
-from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client, totimestamp, fromtimestamp
-
+from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 from fastapp.queue import generate_vhost_configuration
 from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread, Transaction
 from fastapp.models import RUNNING, FINISHED
 from fastapp import responses
-from fastapp.executors.remote import call_rpc_client, get_static
-from fastapp.plugins.datastore import PsqlDataStore
+from fastapp.executors.remote import call_rpc_client
 
 from fastapp.importer import _handle_settings, _read_config
 
@@ -88,197 +83,6 @@ class ResponseUnavailableViewMixing():
             return response
         else:
             return None
-
-
-class DjendStaticView(ResponseUnavailableViewMixing, View):
-
-    def _render_html(self, t, **kwargs):
-        if type(t) == str:
-            t = Template(t)
-        else:
-            t = Template(t.read())
-        c = Context(kwargs)
-        return t.render(c)
-
-
-    def get(self, request, **kwargs):
-        static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
-        logger.info("get %s" % static_path)
-        channel = channel_name_for_user(request)
-        info(channel, "get %s" % static_path)
-
-        base_model = Base.objects.get(name=kwargs['base'])
-
-        last_modified = None
-
-        # if not base_model.state:
-        #    response = HttpResponse()
-        #    if "html" in request.META['HTTP_ACCEPT']:
-        #        response.content_type = "text/html"
-        #        response.content = "Base is not available"
-        #    response.status_code=503
-        #    return response
-        response = self.verify(request, base_model)
-        if response:
-            return response
-
-        cache_key = "%s-%s-%s" % (base_model.user.username, base_model.name, static_path)
-        cache_obj = cache.get(cache_key)
-
-        f = None
-        if cache_obj:
-            f = cache_obj.get('f', None)
-
-        if not f:
-            try:
-                logger.info("not in cache: %s" % static_path)
-
-                REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
-                if "runserver" in sys.argv and REPOSITORIES_PATH:
-                    # for debugging with local runserver not loading from repository or dropbox directory
-                    # but from local filesystem
-                    try:
-                        logger.debug("load %s from local filesystem (repositories)" % static_path)
-                        filepath = os.path.join(REPOSITORIES_PATH, static_path)
-                        f = open(filepath, 'r')
-                        last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
-                    except IOError, e:
-                        logger.warning(e)
-                    if not f:
-                        try:
-                            DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
-                            logger.debug("load %s from local filesystem (dropbox app)" % static_path)
-                            filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
-                            f = open(filepath, 'r')
-                            last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
-                        except IOError, e:
-                            logger.warning(e)
-                            warn(channel, static_path + " not found")
-                            return HttpResponseNotFound(static_path + " not found")
-                else:
-                    # try to load from installed module in worker
-                    logger.info("load %s from module in worker" % static_path)
-                    response_data = get_static(
-                        json.dumps({"base_name": base_model.name, "path": static_path}),
-                        generate_vhost_configuration(
-                            base_model.user.username,
-                            base_model.name
-                            ),
-                        base_model.name,
-                        base_model.executor.password
-                        )
-                    data = json.loads(response_data)
-
-                    if data['status'] == "ERROR":
-                        logger.error("ERROR response from worker")
-                        raise Exception(response_data)
-                    elif data['status'] == "TIMEOUT":
-                        return HttpResponseServerError("Timeout")
-                    elif data['status'] == "OK":
-                        f = base64.b64decode(data['file'])
-                        last_modified = datetime.fromtimestamp(data['LM'])
-                        logger.info("File %s received from worker with timestamp: %s" % (static_path, str(last_modified)))
-                    # get from dropbox
-                    elif data['status'] == "NOT_FOUND":
-                        logger.info("File not found from worker, try to load from dropbox")
-                        # get file from dropbox
-                        auth_token = base_model.user.authprofile.access_token
-                        client = dropbox.client.DropboxClient(auth_token)
-                        try:
-                            # TODO: read file only when necessary
-                            f, metadata = client.get_file_and_metadata(static_path)
-                            f = f.read()
-
-                            # "modified": "Tue, 19 Jul 2011 21:55:38 +0000",
-                            dropbox_frmt = "%a, %d %b %Y %H:%M:%S +0000"
-                            last_modified = datetime.strptime(metadata['modified'], dropbox_frmt)
-                            logger.info("File %s loaded from dropbox (lm: %s)" % (static_path, last_modified))
-                        except Exception, e:
-                            logger.warning("File not found on dropbox")
-                            raise e
-                    cache.set(cache_key, {
-                        'f': f,
-                        'lm': totimestamp(last_modified)
-                    }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
-                    logger.debug("cache it: '%s'" % static_path)
-            except (ErrorResponse, IOError), e:
-                logger.warning("not found: '%s'" % static_path)
-                return HttpResponseNotFound("Not found: "+static_path)
-        else:
-            logger.info("found in cache: '%s'" % static_path)
-            logger.info("last_modified in cache: %s" % cache_obj['lm'])
-            try:
-                last_modified = fromtimestamp(cache_obj['lm'])
-            except Exception, e:
-                logger.exception(e)
-                last_modified = None
-
-        # default
-        mimetype = "text/plain"
-        if static_path.endswith('.js'):
-            mimetype = "text/javascript"
-        elif static_path.endswith('.css'):
-            mimetype = "text/css"
-        elif static_path.endswith('.png'):
-            mimetype = "image/png"
-        elif static_path.endswith('.woff'):
-            mimetype = "application/x-font-woff"
-        elif static_path.endswith('.svg'):
-            mimetype = "image/svg+xml"
-        elif static_path.endswith('.ttf'):
-            mimetype = "application/x-font-ttf"
-        elif static_path.lower().endswith('.jpg'):
-            mimetype = "image/jpeg"
-        elif static_path.lower().endswith('.ico'):
-            mimetype = "image/x-icon"
-        elif static_path.lower().endswith('.html'):
-            mimetype = "text/html"
-            context_data = self._setup_context(base_model)
-            f = self._render_html(f, **context_data)
-        elif static_path.lower().endswith('.map'):
-            mimetype = "application/json"
-        elif static_path.lower().endswith('.gif'):
-            mimetype = "image/gif"
-        elif static_path.lower().endswith('.swf'):
-            mimetype = "application/x-shockwave-flash"
-        else:
-            logger.warning("suffix not recognized in '%s'" % static_path)
-            return HttpResponseServerError("Static file suffix not recognized")
-        logger.info("deliver '%s' with '%s'" % (static_path, mimetype))
-
-        return self._handle_cache(request, mimetype, last_modified, f)
-
-
-    def _handle_cache(self, request, mimetype, last_modified, file):
-        # handle browser caching
-        frmt = "%d %b %Y %H:%M:%S"
-        if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
-        if last_modified and if_modified_since:
-            if (last_modified <= datetime.strptime(if_modified_since, frmt)):
-                return HttpResponseNotModified()
-        response = HttpResponse(file, content_type=mimetype)
-        if last_modified:
-            response['Cache-Control'] = "public"
-            response['Last-Modified'] = last_modified.strftime(frmt)
-        if file.endswith("png") or file.endswith("css") or file.endswith("js") \
-                or file.endswith("woff"):
-            response['Cache-Control'] = "max-age=120"
-        return response
-        #return HttpResponse(f, content_type=mimetype)
-
-
-    def _setup_context(self, base_model):
-        data = dict((s.key, s.value) for s in base_model.setting.all())
-
-        data['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
-
-        try:
-            plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-            data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
-        except KeyError:
-            pass
-
-        return data
 
 
 class DjendMixin(object):
@@ -991,7 +795,7 @@ class DropboxNotifyView(View):
 @csrf_exempt
 def login_or_sharedkey(function):
     def wrapper(request, *args, **kwargs):
-        logger.debug("authenticate %s" % request.user)
+        # logger.debug("authenticate %s" % request.user)
         user=request.user
 
         # if logged in

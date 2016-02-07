@@ -5,9 +5,10 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
         DjendBaseSaveView, \
         DjendBaseCreateView, \
         DjendExecDeleteView, \
-        DjendExecView, DjendStaticView, \
+        DjendExecView, \
         login_or_sharedkey, dropbox_auth_finish, dropbox_auth_start, dropbox_auth_disconnect, DjendView, \
         DjendBaseRenameView, CockpitView, DropboxNotifyView
+from fastapp.views.static import DjendStaticView
 from rest_framework import routers
 
 from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
