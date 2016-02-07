@@ -9,11 +9,11 @@ class Singleton(type):
 
     def __call__(cls, keep=True, *args, **kwargs):
         if cls.instance is None:
-            logger.info("Create singleton instance for %s with args (keep=%s): %s, %s" % (cls, keep, args, kwargs))
+            logger.debug("Create singleton instance for %s with args (keep=%s): %s, %s" % (cls, keep, args, kwargs))
             if keep:
                 cls.instance = super(Singleton, cls).__call__(*args, **kwargs)
             else:
                 return super(Singleton, cls).__call__(*args, **kwargs)
         else:
-            logger.info("Return singleton instance for %s with args: %s, %s" % (cls, args, kwargs))
+            logger.debug("Return singleton instance for %s with args: %s, %s" % (cls, args, kwargs))
         return cls.instance

@@ -13,7 +13,7 @@ from django.conf import settings
 
 from fastapp.queue import connect_to_queuemanager, CommunicationThread
 from fastapp.queue import connect_to_queue
-from fastapp.utils import load_setting, profileit, totimestamp
+from fastapp.utils import load_setting, profileit
 from fastapp.plugins import PluginRegistry
 from fastapp import responses
 
@@ -579,35 +579,45 @@ class StaticServerThread(CommunicationThread):
         logger.debug(self.name+": "+sys._getframe().f_code.co_name)
         logger.debug(body)
         body = json.loads(body)
-        #logger.info(body)
+
+        rc = None
 
         try:
-            logger.debug(method.routing_key)
+            # logger.debug(method.routing_key)
             if method.routing_key == STATIC_QUEUE:
                 logger.info("Static-Request %s received in %s" % (body['path'], self.name))
                 try:
                     path = body['path']
                     response_data = {}
                     base_name = body['base_name']
-                    f=None
+                    f = None
+                    full_path = None
                     for p in sys.path:
+                        logger.info("Checking in path '%s'" % p)
                         if base_name in p:
                             logger.info(p+" found")
-                            full_path = os.path.join(p, path.replace(base_name+"/", ""))
+                            full_path = os.path.join(p,
+                                         path.replace(base_name+"/", "")
+                                         )
+                            logger.info("%s:  found" % full_path)
                             try:
                                 f = open(full_path, 'r')
                                 last_modified = os.stat(full_path).st_mtime
+                                rc = "OK"
+                                response_data.update({
+                                    'file': base64.b64encode(f.read()),
+                                    'LM': last_modified
+                                    })
                             except Exception, e:
                                 logger.warning(e)
                                 logger.warning("Could not open file %s" % full_path)
-                            rc = "OK"
-                            response_data.update({
-                                'file': base64.b64encode(f.read()),
-                                'LM': last_modified
-                                })
-                            f.close()
+                                rc = "ERROR"
+                            finally:
+                                break
+                                if f:
+                                    f.close()
                     if not f:
-                        logger.warning("not found")
+                        logger.warning("%s not found" % full_path)
                         rc = "NOT_FOUND"
 
                 except Exception, e:
@@ -615,17 +625,16 @@ class StaticServerThread(CommunicationThread):
                     logger.exception(e)
                 finally:
                     response_data.update({'status': rc})
-                    #logger.info(props.reply_to)
                     publish_result = ch.basic_publish(exchange='',
                                      routing_key=props.reply_to,
                                      properties=pika.BasicProperties(
-                                        correlation_id = props.correlation_id,
+                                        correlation_id=props.correlation_id,
                                         delivery_mode=1,
                                         ),
                                      body=json.dumps(response_data))
                     #logger.info("message published: %s" % str(publish_result))
                     #logger.info("ack message")
-                    ch.basic_ack(delivery_tag = method.delivery_tag)
-                    logger.info("Static-Request %s response in %s" % (body['path'], self.name))
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    logger.info("Static-Request %s response in %s (%s)" % (body['path'], self.name, rc))
         except Exception, e:
             logger.exception(e)

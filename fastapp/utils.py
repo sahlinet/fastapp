@@ -361,7 +361,7 @@ def profileit(func):
 
 
 def totimestamp(t):
-    logger.info("totimestamp: %s" % t)
+    logger.debug("totimestamp: %s" % t)
     return (t-datetime.datetime(1970, 1, 1)).total_seconds()
 
 
