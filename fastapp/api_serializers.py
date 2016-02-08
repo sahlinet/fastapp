@@ -30,12 +30,13 @@ class PublicApySerializer(serializers.ModelSerializer):
     Return all Apy objects which are made public. Enrich
     """
     first_lastname = serializers.SerializerMethodField(method_name="creator")
+    base = serializers.SerializerMethodField(method_name="base_name")
     url = serializers.SerializerMethodField(method_name="detail_view")
 
     class Meta:
         model = Apy
         fields = ('id', 'name', 'module', 'description',
-                  'first_lastname', 'url')
+                  'first_lastname', 'url', 'base')
 
     def creator(self, obj):
         try:
@@ -43,6 +44,9 @@ class PublicApySerializer(serializers.ModelSerializer):
             return user.first_name + " " + user.last_name
         except Base.DoesNotExist, e:
             logger.warn(e)
+
+    def base_name(self, obj):
+        return obj.base.name
 
     def detail_view(self, obj):
         return reverse('public-apy-detail', args=[obj.pk],

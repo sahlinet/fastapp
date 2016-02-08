@@ -68,12 +68,14 @@
                    <thead>
                       <th>Name</th>
                       <th>Description</th>
+                      <th>Base</th>
                       <th>Creator</th>
                       <th>Actions</th>
                     </thead>
                     <tr ng-repeat="foreign_apy in public_apys | filter:search:strict ">
                         <td>{{ foreign_apy.name }}</th>
                         <td>{{ foreign_apy.description }}</th>
+                        <td>{{ foreign_apy.base }}</th>
                         <td>{{ foreign_apy.first_lastname }}</th>
                         <td>
                             <button ng-show="is_related(foreign_apy)" class="btn btn-default btn-xs" ng-click="relate(foreign_apy)">Unrelate</button>
