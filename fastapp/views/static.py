@@ -18,7 +18,7 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Context, Template
 
-from fastapp.utils import warn, totimestamp, fromtimestamp
+from fastapp.utils import totimestamp, fromtimestamp
 
 from fastapp.queue import generate_vhost_configuration
 from fastapp.models import Base
@@ -149,6 +149,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             except (ErrorResponse, IOError), e:
                 logger.exception(e)
                 logger.warning("%s: not found" % static_path)
+                logger.info("%s: 404" % file)
                 return HttpResponseNotFound("Not Found: "+static_path)
         else:
             logger.info("%s: found in cache" % static_path)
@@ -165,6 +166,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             mimetype = "text/javascript"
         elif static_path.endswith('.css'):
             mimetype = "text/css"
+        elif static_path.endswith('.json'):
+            mimetype = "application/json"
         elif static_path.endswith('.png'):
             mimetype = "image/png"
         elif static_path.endswith('.woff'):
@@ -189,17 +192,22 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             mimetype = "application/x-shockwave-flash"
         else:
             logger.warning("%s: suffix not recognized" % static_path)
+            logger.info("%s: 500" % file)
             return HttpResponseServerError("Staticfile suffix not recognized")
         logger.info("%s: with '%s'" % (static_path, mimetype))
 
-        return self._handle_cache(request, mimetype, last_modified, f)
+        return self._handle_cache(static_path, request, mimetype, last_modified, f)
 
-    def _handle_cache(self, request, mimetype, last_modified, file):
+    def _handle_cache(self, static_path, request, mimetype, last_modified, file):
         # handle browser caching
         frmt = "%d %b %Y %H:%M:%S"
         if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
         if last_modified and if_modified_since:
-            if (last_modified <= datetime.strptime(if_modified_since, frmt)):
+            if_modified_since_dt = datetime.strptime(if_modified_since, frmt)
+            last_modified = last_modified.replace(microsecond=0)
+            logger.debug("%s: checking if last_modified '%s' or smaller/equal of if_modified_since '%s'" % (static_path, last_modified, if_modified_since_dt))
+            if (last_modified <= if_modified_since_dt):
+                logger.info("%s: 304" % file)
                 return HttpResponseNotModified()
         response = HttpResponse(file, content_type=mimetype)
         if last_modified:
@@ -208,6 +216,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         if file.endswith("png") or file.endswith("css") or file.endswith("js") \
                 or file.endswith("woff"):
             response['Cache-Control'] = "max-age=120"
+        logger.info("%s: 200" % static_path)
         return response
 
 
