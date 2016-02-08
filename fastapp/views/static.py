@@ -207,14 +207,14 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             last_modified = last_modified.replace(microsecond=0)
             logger.debug("%s: checking if last_modified '%s' or smaller/equal of if_modified_since '%s'" % (static_path, last_modified, if_modified_since_dt))
             if (last_modified <= if_modified_since_dt):
-                logger.info("%s: 304" % file)
+                logger.info("%s: 304" % static_path)
                 return HttpResponseNotModified()
         response = HttpResponse(file, content_type=mimetype)
         if last_modified:
             response['Cache-Control'] = "public"
             response['Last-Modified'] = last_modified.strftime(frmt)
-        if file.endswith("png") or file.endswith("css") or file.endswith("js") \
-                or file.endswith("woff"):
+        if static_path.endswith("png") or static_path.endswith("css") or static_path.endswith("js") \
+                or static_path.endswith("woff"):
             response['Cache-Control'] = "max-age=120"
         logger.info("%s: 200" % static_path)
         return response
