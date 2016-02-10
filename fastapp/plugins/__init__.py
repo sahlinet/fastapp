@@ -1,11 +1,8 @@
-import os
 import logging
-
-from django.conf import settings
 
 from fastapp.plugins.models import PluginUserConfig
 from fastapp.plugins.singleton import Singleton
-from fastapp.plugins.registry import PluginRegistry, register_plugin
+from fastapp.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
