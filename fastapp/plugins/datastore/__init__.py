@@ -21,7 +21,7 @@ from sqlalchemy.schema import CreateSchema
 
 from django.conf import settings
 
-from fastapp.plugins import Plugin, Singleton
+from fastapp.plugins import Plugin
 from fastapp.plugins.singleton import Singleton
 from fastapp.plugins.registry import register_plugin
 
