@@ -12,15 +12,13 @@
     window.username = "{{ username }}";
 </script>
 
-<!-- {% load compress %} -->
-<script type="text/javascript" src="{{ DRAGON_URL }}settings.js">
-</script> {% compress js %}
 <!-- JQuery -->
-<!-- <script src="https://code.jquery.com/jquery-1.10.2.min.js"> -->
 <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
 <!-- AngularJS -->
 <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.min.js">
 </script>
+<script type="text/javascript" src="{{ DRAGON_URL }}settings.js"></script>
+{% compress js %}
 <script type="text/javascript" src="/static/bower_components/swampdragon/dist/swampdragon.js">
 </script>
 <script type="text/javascript" src="/static/bower_components/swampdragon/dist/datamapper.js">
@@ -43,10 +41,9 @@
 </script>
 <script type="text/javascript" src="{{ STATIC_URL }}bower_components/angular-xeditable/dist/js/xeditable.js">
 </script>{% endcompress %}
-{% compress js %}
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular-cookies.js"> </script>
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.min.js">
-</script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular-resource.min.js"></script>
+{% compress js %}
 <script type="text/javascript" src="{{ STATIC_URL }}bower_components/ng-grid/build/ng-grid.js">
 </script>
 <script src="{{ STATIC_URL }}bower_components/angular-bootstrap/ui-bootstrap.min.js">
@@ -59,18 +56,18 @@
 </script>
 <script src="{{ STATIC_URL }}js/app/app.js">
 </script>
-<script src="{{ STATIC_URL }}js/app/controllers.js">
-</script>{% endcompress %}
+<script src="{{ STATIC_URL }}js/app/controllers.js"></script>
 <script src="{{ STATIC_URL }}bower_components/ng-file-upload/angular-file-upload.js">
 </script>
 <script src="{{ STATIC_URL }}js/angular-base64.min.js">
-</script>{% compress js %}
+</script>
 <script src="{{ STATIC_URL }}js/app/app.js">
 </script>
 <script src="{{ STATIC_URL }}js/fastapp.js">
 </script>{% endcompress %}
 <!-- CodeMirror -->
-<link rel="stylesheet" href="{{ STATIC_URL }}codemirror/css/codemirror.css" />{% compress js %}
+<link rel="stylesheet" href="{{ STATIC_URL }}codemirror/css/codemirror.css" />
+{% compress js %}
 <script src="{{ STATIC_URL }}codemirror/js/codemirror.js">
 </script>
 <script src="{{ STATIC_URL }}codemirror/js/javascript.js">
