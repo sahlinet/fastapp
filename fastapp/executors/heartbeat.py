@@ -26,7 +26,7 @@ from fastapp.utils import load_setting
 #from fastapp.utils import profileit
 
 from redis_metrics import metric, set_metric
-#import psutil
+import psutil
 
 logger = logging.getLogger(__name__)
 
