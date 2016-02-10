@@ -2,7 +2,7 @@ import logging
 
 from fastapp.plugins.models import PluginUserConfig
 from fastapp.plugins.singleton import Singleton
-from fastapp.plugins.registry import PluginRegistry
+from fastapp.plugins.registry import PluginRegistry, register_plugin
 
 logger = logging.getLogger(__name__)
 

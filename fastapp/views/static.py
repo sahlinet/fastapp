@@ -78,7 +78,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                 logger.info("%s: not in cache" % static_path)
 
                 REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
-                if "runserver1" in sys.argv and REPOSITORIES_PATH:
+                if "runserver" in sys.argv and REPOSITORIES_PATH:
                     # for debugging with local runserver not loading from repository or dropbox directory
                     # but from local filesystem
                     try:

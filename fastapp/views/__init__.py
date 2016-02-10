@@ -27,9 +27,6 @@ from dropbox.rest import ErrorResponse
 from django.core.cache import cache
 from django.template import Template
 
-from threadpool import ThreadPool
-from random import uniform
-
 from fastapp.utils import UnAuthorized, Connection, NoBasesFound, message, info, warn, channel_name_for_user, send_client
 from fastapp.queue import generate_vhost_configuration
 from fastapp.models import AuthProfile, Base, Apy, Setting, Executor, Process, Thread, Transaction
@@ -749,6 +746,9 @@ def process_user(uid):
     client = Connection(token)
 
     has_more = True
+
+    from threadpool import ThreadPool
+    from random import uniform
 
 
     while has_more:
