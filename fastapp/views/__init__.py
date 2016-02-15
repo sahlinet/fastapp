@@ -747,7 +747,7 @@ def process_user(uid):
 
     has_more = True
 
-    from threadpool import ThreadPool
+    from fastapp.threadpool import ThreadPool
     from random import uniform
 
 
