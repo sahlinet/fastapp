@@ -168,7 +168,6 @@ def connect_to_queuemanager(host, vhost, username, password, port):
         connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, heartbeat_interval=40, credentials=credentials))
     except Exception, e:
         logger.error("Cannot connect to: %s, %s, %s, %s" % (host, port, vhost, username))
-        logger.exception(e)
         raise e
     return connection
 
@@ -241,8 +240,8 @@ class CommunicationThread(threading.Thread):
                 self.is_connected = True
             except Exception, e:
                 self.is_connected = False
-                logger.warning('cannot connect to %s' % str(self.parameters))
-                logger.exception(e)
+                logger.exception('cannot connect to %s, reconnect in 3s.' % str(self.parameters))
+                logger.error(e)
                 time.sleep(3)
                 continue
 
