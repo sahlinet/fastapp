@@ -25,7 +25,7 @@ from fastapp import __version__
 from fastapp.utils import load_setting
 #from fastapp.utils import profileit
 
-from redis_metrics import metric, set_metric
+from redis_metrics import set_metric
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -52,12 +52,12 @@ def inactivate():
             #slug="Heartbeat %s vms" % socket.gethostname()
             #set_metric(slug, float(m.vms)/(1024*1024), expire=86400)
 
-            slug="Heartbeat %s rss" % socket.gethostname()
+            slug = "Heartbeat %s rss" % socket.gethostname()
             set_metric(slug, float(m.rss)/(1024*1024)+50, expire=86400)
-            slug="Heartbeat %s vms" % socket.gethostname()
+            slug = "Heartbeat %s vms" % socket.gethostname()
             set_metric(slug, float(m.vms)/(1024*1024)+50, expire=86400)
 
-            logger.debug("Send metric data")
+            # logger.debug("Send metric data")
 
             time.sleep(0.1)
             now = datetime.now().replace(tzinfo=pytz.UTC)
@@ -153,23 +153,23 @@ class HeartbeatThread(CommunicationThread):
         if not self.in_sync:
             self.ready_for_init = False
         payload = {
-    		'in_sync': self.in_sync,
+            'in_sync': self.in_sync,
             'ready_for_init': self.ready_for_init,
             'threads': {
                 'count': len(self.thread_list),
                 'list': thread_list_status
             },
-    		'rss': rss,
+            'rss': rss,
             'version': __version__,
-	    }
+        }
         payload.update(self.additional_payload)
         self.channel.basic_publish(exchange='',
-                routing_key=HEARTBEAT_QUEUE,
-                properties=pika.BasicProperties(
-                    expiration=str(2000)
-                ),
-            body=json.dumps(payload)
-            )
+                                   routing_key=HEARTBEAT_QUEUE,
+                                   properties=pika.BasicProperties(
+                                            expiration=str(2000)
+                                       ),
+                                   body=json.dumps(payload)
+                                   )
 
         if not self.in_sync:
             print "Set to true ready_for_init"
@@ -182,14 +182,14 @@ class HeartbeatThread(CommunicationThread):
     #@profileit
     def on_message(self, ch, method, props, body):
     	"""
-    	Server functionality for storing status and statistics.
-    	"""
+        Server functionality for storing status and statistics.
+        """
 
         try:
             data = json.loads(body)
             vhost = data['vhost']
             base = vhost.split("-", 1)[1]
-            logger.info("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
+            logger.debug("** '%s' Heartbeat received from '%s'" % (self.name, vhost))
 
             # store timestamp in DB
             try:
@@ -208,7 +208,7 @@ class HeartbeatThread(CommunicationThread):
             process.save()
 
             slug = vhost.replace("/", "")+"-rss"
-            logger.info("Sent metric for slug %s" % slug)
+            # logger.info("Sent metric for slug %s" % slug)
             set_metric(slug, int(process.rss)/1024, expire=86400)
 
             #logger.info(data['ready_for_init'], data['in_sync'])
