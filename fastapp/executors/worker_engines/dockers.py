@@ -201,6 +201,18 @@ class DockerSocketExecutor(DockerExecutor):
 
         BaseExecutor.__init__(self, *args, **kwargs)
 
+    def _pre_start(self):
+        super(DockerSocketExecutor, self)._pre_start()
+
+        try:
+            if ":" in DOCKER_IMAGE:
+                out = self.api.pull(repository=DOCKER_IMAGE.split(":")[0], tag=DOCKER_IMAGE.split(":")[1])
+            else:
+                out = self.api.pull(repository=DOCKER_IMAGE)
+            logger.info(out)
+        except APIError, e:
+            logger.warn("Not able to pull image")
+            logger.warn(e)
 
 class RemoteDockerExecutor(DockerExecutor):
 
