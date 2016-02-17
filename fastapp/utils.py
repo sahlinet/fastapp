@@ -327,7 +327,8 @@ def call_apy(base_name, apy_name):
         url = reverse('exec', kwargs={'base': apy.base.name, 'id': apy.name})
 
         request_factory = RequestFactory()
-        request = request_factory.get(url, data={'base': apy.base.name, 'id': apy.name})
+        request = request_factory.get(url, data={'base': apy.base.name,
+                                                 'id': apy.name})
         # TODO: fails if user admin is not created
         request.user = get_user_model().objects.get(username='admin')
         request.META['HTTP_ACCEPT'] = "text/html"
