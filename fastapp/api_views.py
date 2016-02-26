@@ -68,7 +68,6 @@ class ApyViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         name = self.kwargs['name']
-        print "get_queryset"
         get_object_or_404(Base, user=self.request.user, name=name)
         return Apy.objects.filter(base__user=self.request.user, base__name=name)
 
@@ -285,8 +284,8 @@ class BaseExportViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Base.objects.all()._clone().filter(user=self.request.user)
 
-    def export(self, request, pk):
-        base = self.get_queryset().get(id=pk)
+    def export(self, request, name):
+        base = self.get_queryset().get(name=name)
         f = base.export()
         logger.info(f)
 

@@ -99,13 +99,13 @@ class ApiTestCase(BaseTestCase):
 
     def test_get_all_apys_for_base(self):
         self.client1.login(username='user1', password='pass')
-        response = self.client1.get("/fastapp/api/base/%s/apy/" % self.base1.id)
+        response = self.client1.get("/fastapp/api/base/%s/apy/" % self.base1.name)
         self.assertEqual(200, response.status_code)
         assert json.loads(response.content)
 
     def test_get_one_apy_for_base(self):
         self.client1.login(username='user1', password='pass')
-        response = self.client1.get("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id))
+        response = self.client1.get("/fastapp/api/base/%s/apy/%s/" % (self.base1.name, self.base1_apy1.id))
         self.assertEqual(200, response.status_code)
         self.assertTrue(json.loads(response.content).has_key('id'))
 
@@ -113,11 +113,11 @@ class ApiTestCase(BaseTestCase):
     def test_clone_apy_for_base_and_delete(self, distribute_mock):
         distribute_mock.return_value = True
         self.client1.login(username='user1', password='pass')
-        response = self.client1.post("/fastapp/api/base/%s/apy/%s/clone/" % (self.base1.id, self.base1_apy1.id))
+        response = self.client1.post("/fastapp/api/base/%s/apy/%s/clone/" % (self.base1.name, self.base1_apy1.id))
         self.assertEqual(200, response.status_code)
         assert json.loads(response.content)
 
-        response = self.client1.delete("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, json.loads(response.content)['id']))
+        response = self.client1.delete("/fastapp/api/base/%s/apy/%s/" % (self.base1.name, json.loads(response.content)['id']))
         self.assertEqual(204, response.status_code)
 
 
@@ -259,7 +259,7 @@ class SettingTestCase(BaseTestCase):
         distribute_mock.return_value
         self.client1.login(username='user1', password='pass')
         json_data = {u'key': u'key', 'value': 'value'}
-        response = self.client1.post("/fastapp/api/base/%s/setting/" % self.base1.id, json_data)
+        response = self.client1.post("/fastapp/api/base/%s/setting/" % self.base1.name, json_data)
         self.assertEqual(201, response.status_code)
         json_data_response = {"id": 23, "key": "key", "public": False, "value": u"value"}
         self.assertJSONEqual(response.content, json_data_response)
@@ -267,15 +267,15 @@ class SettingTestCase(BaseTestCase):
 
         # change
         setting_id = json_data_response['id']
-        response = self.client1.put("/fastapp/api/base/%s/setting/%s/" % (self.base1.id, setting_id), json.dumps(json_data), content_type="application/json")
+        response = self.client1.put("/fastapp/api/base/%s/setting/%s/" % (self.base1.name, setting_id), json.dumps(json_data), content_type="application/json")
         self.assertEqual(200, response.status_code)
 
         # partial update
-        response = self.client1.patch("/fastapp/api/base/%s/setting/%s/" % (self.base1.id, setting_id), json.dumps(json_data), content_type="application/json")
+        response = self.client1.patch("/fastapp/api/base/%s/setting/%s/" % (self.base1.name, setting_id), json.dumps(json_data), content_type="application/json")
         self.assertEqual(200, response.status_code)
 
         # delete
-        response = self.client1.delete("/fastapp/api/base/%s/setting/%s/" % (self.base1.id, setting_id), content_type="application/json")
+        response = self.client1.delete("/fastapp/api/base/%s/setting/%s/" % (self.base1.name, setting_id), content_type="application/json")
         self.assertEqual(204, response.status_code)
 
 
@@ -304,7 +304,7 @@ class ImportTestCase(BaseTestCase):
         mock_metadata.return_value = metadata
 
         self.client1.login(username='user1', password='pass')
-        response = self.client1.get("/fastapp/api/base/%s/export/" % self.base1.id)
+        response = self.client1.get("/fastapp/api/base/%s/export/" % self.base1.name)
         self.assertEqual(200, response.status_code)
 
         f = StringIO.StringIO()
@@ -356,6 +356,7 @@ class ImportTestCase(BaseTestCase):
         response = self.client1.post("/fastapp/api/base/import/",
                                      {'name': new_base_name,
                                       'file': open(tempfile_name)})
+        import pdb; pdb.set_trace()
         self.assertEqual(201, response.status_code)
         responsed_name = json.loads(response.content)['name']
         self.assertEqual(responsed_name, new_base_name)
@@ -410,7 +411,7 @@ import asdf
         self.base1_apy1.module = "import asdf, blublub"
 
         self.client1.login(username='user1', password='pass')
-        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id),
+        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.name, self.base1_apy1.id),
                 data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
             )
         self.assertEqual(500, response.status_code)
@@ -421,7 +422,7 @@ import asdf
 print django"""
 
         self.client1.login(username='user1', password='pass')
-        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id),
+        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.name, self.base1_apy1.id),
                 data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
             )
         print response.content
@@ -431,7 +432,7 @@ print django"""
         self.base1_apy1.module = "def blu()"
 
         self.client1.login(username='user1', password='pass')
-        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.id, self.base1_apy1.id),
+        response = self.client1.patch("/fastapp/api/base/%s/apy/%s/" % (self.base1.name, self.base1_apy1.id),
                 data = json.dumps({'module': self.base1_apy1.module}), content_type='application/json'
             )
         self.assertEqual(500, response.status_code)

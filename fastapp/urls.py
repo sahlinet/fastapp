@@ -51,6 +51,9 @@ urlpatterns = patterns('',
     url(r'^api/transportendpoints/$', TransportEndpointViewSet.as_view({'get': 'list', 'post': 'create'}), name='transportendpoint-list'),
     url(r'^api/transportendpoints/(?P<pk>\d+)/$', TransportEndpointViewSet.as_view({'put': 'update'}), name='transportendpoint-list'),
     url(r'^api/base/$', BaseViewSet.as_view({'get': 'list', 'post': 'create'}), name='base-list'),
+
+    url(r'^api/base/import/$', csrf_exempt(BaseImportViewSet.as_view({'post': 'imp'})), name='base-import'),
+    
     # Base CRUD operations
     url(r'^api/base/(?P<name>[\w-]+)/$', BaseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='base-detail'),
 
@@ -64,7 +67,6 @@ urlpatterns = patterns('',
     url(r'^api/base/(?P<name>[\w-]+)/destroy/$', BaseViewSet.as_view({'post': 'destroy'}), name='base-destroy'),
     url(r'^api/base/(?P<name>[\w-]+)/export/$', BaseExportViewSet.as_view({'get': 'export'}), name='base-export'),
     url(r'^api/base/(?P<name>[\w-]+)/transport/$', BaseViewSet.as_view({'post': 'transport'}), name='base-transport'),
-    url(r'^api/base/import/$', csrf_exempt(BaseImportViewSet.as_view({'post': 'imp'})), name='base-import'),
     url(r'^api/base/(?P<name>[\w-]+)/apy/$', ApyViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),
     url(r'^api/public-apy/$', PublicApyViewSet.as_view({'get': 'list'}), name='public-apy-list'),
     url(r'^api/public-apy/(?P<pk>\d+)/$', PublicApyViewSet.as_view({'get': 'retrieve'}), name='public-apy-detail'),

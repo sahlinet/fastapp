@@ -325,7 +325,7 @@ class Apy(models.Model):
         self.counter.save()
 
     def get_exec_url(self):
-        return "/fastapp/base/%s/exec/%s/?json=" % (self.base.name, self.name)
+        return "/fastapp/base/%s/exec/%s/?json=" % (self.base.name, self.id)
 
     def save_and_sync(self, **kwargs):
         ready_to_sync.send(self.__class__, instance=self)
