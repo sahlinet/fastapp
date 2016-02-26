@@ -356,7 +356,6 @@ class ImportTestCase(BaseTestCase):
         response = self.client1.post("/fastapp/api/base/import/",
                                      {'name': new_base_name,
                                       'file': open(tempfile_name)})
-        import pdb; pdb.set_trace()
         self.assertEqual(201, response.status_code)
         responsed_name = json.loads(response.content)['name']
         self.assertEqual(responsed_name, new_base_name)
