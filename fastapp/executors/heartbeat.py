@@ -278,15 +278,15 @@ class HeartbeatThread(CommunicationThread):
                 ## execute init exec
                 try:
                     init = base_obj.apys.get(name='init')
-                    url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.name})
+                    url = reverse('exec', kwargs={'base': base_obj.name, 'id': init.id})
 
                     request_factory = RequestFactory()
-                    request = request_factory.get(url, data={'base': base_obj.name, 'id': init.name})
+                    request = request_factory.get(url, data={'base': base_obj.name, 'id': init.id})
                     # TODO: fails if user admin does not exist
                     request.user = get_user_model().objects.get(username='admin')
 
                     view = DjendExecView()
-                    response = view.get(request, base=base_obj.name, id=init.name)
+                    response = view.get(request, base=base_obj.name, id=init.id)
                     logger.info("Init method called for base %s, response_code: %s" % (base_obj.name, response.status_code))
 
                 except Apy.DoesNotExist, e:

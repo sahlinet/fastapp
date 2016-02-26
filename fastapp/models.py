@@ -263,12 +263,14 @@ class Base(models.Model):
             logger.debug("create executor for base %s" % self)
             executor = Executor(base=self)
             executor.save()
-        r = self.executor.start()
+        if not self.executor.is_running():
+            r = self.executor.start()
 
-        # call plugin
-        call_plugin_func(self, "on_start_base")
+            # call plugin
+            call_plugin_func(self, "on_start_base")
 
-        return r
+            return r
+        return None
 
     def stop(self):
         return self.executor.stop()
@@ -328,6 +330,9 @@ class Apy(models.Model):
     def save_and_sync(self, **kwargs):
         ready_to_sync.send(self.__class__, instance=self)
         self.save(**kwargs)
+
+    def __str__(self):
+        return "%s %s" % (self. name, str(self.id))
 
 
 class Counter(models.Model):

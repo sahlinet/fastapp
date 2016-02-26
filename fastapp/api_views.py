@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 
 from django.db import transaction
 from django.core.management import call_command
+from django.core.urlresolvers import reverse
 
 from rest_framework import renderers
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
@@ -35,14 +36,15 @@ logger = logging.getLogger(__name__)
 class SettingViewSet(viewsets.ModelViewSet):
     model = Setting
     serializer_class = SettingSerializer
+    authentication_classes = (TokenAuthentication, SessionAuthentication,)
     renderer_classes = [JSONRenderer, JSONPRenderer]
 
     def get_queryset(self):
-        base_pk = self.kwargs['base_pk']
-        return Setting.objects.filter(base__user=self.request.user, base__pk=base_pk)
+        name = self.kwargs['name']
+        return Setting.objects.filter(base__user=self.request.user, base__name=name)
 
     def pre_save(self, obj):
-        obj.base = Base.objects.get(id=self.kwargs['base_pk'])
+        obj.base = Base.objects.get(name=self.kwargs['name'])
 
 
 class TransportEndpointViewSet(viewsets.ModelViewSet):
@@ -61,14 +63,17 @@ class ApyViewSet(viewsets.ModelViewSet):
     model = Apy
     serializer_class = ApySerializer
     renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (TokenAuthentication, SessionAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
-        base_pk = self.kwargs['base_pk']
-        return Apy.objects.filter(base__user=self.request.user, base__pk=base_pk)
+        name = self.kwargs['name']
+        print "get_queryset"
+        get_object_or_404(Base, user=self.request.user, name=name)
+        return Apy.objects.filter(base__user=self.request.user, base__name=name)
 
     def pre_save(self, obj):
-        obj.base = Base.objects.get(id=self.kwargs['base_pk'], user=self.request.user)
+        obj.base = Base.objects.get(name=self.kwargs['name'], user=self.request.user)
         result, warnings, errors = check_code(obj.module, obj.name)
         warnings_prep = []
         errors_prep = []
@@ -96,11 +101,21 @@ class ApyViewSet(viewsets.ModelViewSet):
             }
             raise APIException(response_data)
 
-    def post_save(self, obj, created=False):
-        pass
+    def execute(self, request, name, apy_name):
+        apy_obj = get_object_or_404(Apy, base__user=self.request.user,
+                                     base__name=name,
+                                     name=apy_name
+        )
+        from fastapp.views import DjendExecView
+        kwargs = {
+            'base': name,
+            'id': apy_obj.id
+        }
+        return DjendExecView.as_view()(self.request, **kwargs)
+        #return reverse('exec', args=[name, apy_name])
 
-    def clone(self, request, base_pk, pk):
-        base = get_object_or_404(Base, id=base_pk,
+    def clone(self, request, name, pk):
+        base = get_object_or_404(Base, name=name,
                         user=User.objects.get(username=request.user.username))
         clone_count = base.apys.filter(name__startswith="%s_clone" % pk).count()
         created = False
@@ -173,46 +188,47 @@ class BaseViewSet(viewsets.ModelViewSet):
     renderer_classes = [JSONRenderer, JSONPRenderer]
     authentication_classes = (TokenAuthentication, SessionAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
+    lookup_field = 'name'
 
     def get_queryset(self):
         return Base.objects.all()._clone().filter(user=self.request.user)
 
-    def start(self, request, pk):
+    def start(self, request, name):
         transaction.set_autocommit(False)
-        logger.info("starting %s" % pk)
-        base = self.get_queryset().get(id=pk)
+        logger.info("starting %s" % name)
+        base = self.get_queryset().select_for_update(nowait=True).get(name=name)
         base.start()
         transaction.commit()
-        return self.retrieve(request, pk=pk)
+        return self.retrieve(request, name=name)
 
-    def stop(self, request, pk):
+    def stop(self, request, name):
         transaction.set_autocommit(False)
-        base = self.get_queryset().select_for_update(nowait=True).get(id=pk)
+        base = self.get_queryset().select_for_update(nowait=True).get(name=name)
         logger.info("stopping %s" % base.name)
         base.stop()
         transaction.commit()
-        return self.retrieve(request, pk=pk)
+        return self.retrieve(request, name=name)
 
-    def restart(self, request, pk):
+    def restart(self, request, name):
         transaction.set_autocommit(False)
-        logger.info("restarting %s" % pk)
-        base = self.get_queryset().get(id=pk)
+        logger.info("restarting %s" % name)
+        base = self.get_queryset().get(name=name)
         base.stop()
         base.start()
         transaction.commit()
-        return self.retrieve(request, pk=pk)
+        return self.retrieve(request, name=name)
 
-    def destroy(self, request, pk):
+    def destroy(self, request, name):
         transaction.set_autocommit(False)
-        logger.info("destroying %s: " % pk)
-        base = self.get_queryset().get(id=pk)
+        logger.info("destroying %s: " % name)
+        base = self.get_queryset().get(name=name)
         base.stop()
         base.destroy()
         transaction.commit()
-        return self.retrieve(request, pk=pk)
+        return self.retrieve(request, name=name)
 
-    def transport(self, request, pk):
-        base = self.get_queryset().get(pk=pk)
+    def transport(self, request, name):
+        base = self.get_queryset().get(name=name)
         transport_url = self.request.DATA['url']
         transport_token = self.request.DATA['token']
         zf = base.export()
@@ -239,15 +255,15 @@ class BaseViewSet(viewsets.ModelViewSet):
         s = "transport %s" % transport_url
         if r.status_code == 201:
             logger.info("%s success" % s)
-            return self.retrieve(request, pk=pk)
+            return self.retrieve(request, name=name)
         else:
             print r.status_code
             logger.error("%s failed with returncode %s" % (s, r.status_code))
             raise Exception("%s failed" % s)
 
     @link()
-    def apy(self, request, pk=None):
-        queryset = Apy.objects.filter(base__pk=pk)
+    def apy(self, request, name):
+        queryset = Apy.objects.filter(base__name=name)
         serializer = ApySerializer(queryset,
                 context={'request': request}, many=True)
         return Response(serializer.data)
