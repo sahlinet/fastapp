@@ -18,75 +18,75 @@ baseServices.factory('Bases', ['$resource', function($resource) {
 }]);
 baseServices.factory('Base', ['$resource', '$cookies', function($resource,
 	$cookies) {
-	return $resource('/fastapp/api/base/:name/', {}, {
+	return $resource('/fastapp/api/base/:baseId/', {}, {
 		get: {
 			method: 'GET',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false
 		},
 		update: {
 			method: 'PUT',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false
 		},
 		start: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false,
 			headers: {
 				'X-CSRFToken': $cookies.csrftoken
 			},
-			url: '/fastapp/api/base/:name/start'
+			url: '/fastapp/api/base/:baseId/start'
 		},
 		stop: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false,
 			headers: {
 				'X-CSRFToken': $cookies.csrftoken
 			},
-			url: '/fastapp/api/base/:name/stop'
+			url: '/fastapp/api/base/:baseId/stop'
 		},
 		restart: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false,
 			headers: {
 				'X-CSRFToken': $cookies.csrftoken
 			},
-			url: '/fastapp/api/base/:name/restart'
+			url: '/fastapp/api/base/:baseId/restart'
 		},
 		destroy: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false,
 			headers: {
 				'X-CSRFToken': $cookies.csrftoken
 			},
-			url: '/fastapp/api/base/:name/destroy'
+			url: '/fastapp/api/base/:baseId/destroy'
 		},
 		transport: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'baseId'
 			},
 			isArray: false,
 			headers: {
 				'X-CSRFToken': $cookies.csrftoken
 			},
-			url: '/fastapp/api/base/:name/transport'
+			url: '/fastapp/api/base/:baseId/transport'
 		},
 	});
 }]);
@@ -94,18 +94,18 @@ baseServices.factory('Base', ['$resource', '$cookies', function($resource,
 // apy
 baseServices.factory('Apy', ['$resource', '$cookies', function($resource,
 	$cookies) {
-	return $resource('/fastapp/api/base/:name/apy', {}, {
+	return $resource('/fastapp/api/base/:baseId/apy', {}, {
 		all: {
 			method: 'GET',
 			params: {
-				name: 'name'
+				baseId: 'id'
 			},
 			isArray: true
 		},
 		create: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'id'
 			},
 			isArray: false,
 			headers: {
@@ -129,11 +129,11 @@ baseServices.factory('PublicApy', ['$resource', '$cookies', function($resource,
 // apy
 baseServices.factory('Apy1', ['$resource', '$cookies', function($resource,
 	$cookies) {
-	return $resource('/fastapp/api/base/:name/apy/:id', {}, {
+	return $resource('/fastapp/api/base/:baseId/apy/:id', {}, {
 		update: {
 			method: 'PUT',
 			params: {
-				name: 'name',
+				baseId: 'id',
 				id: 'id'
 			},
 			isArray: false,
@@ -144,7 +144,7 @@ baseServices.factory('Apy1', ['$resource', '$cookies', function($resource,
 		get: {
 			method: 'GET',
 			params: {
-				name: 'name',
+				baseId: 'id',
 				id: 'id'
 			},
 			isArray: false,
@@ -155,7 +155,7 @@ baseServices.factory('Apy1', ['$resource', '$cookies', function($resource,
 		delete: {
 			method: 'DELETE',
 			params: {
-				name: 'name',
+				baseId: 'id',
 				id: 'id'
 			},
 			isArray: false,
@@ -175,24 +175,36 @@ baseServices.factory('Apy1', ['$resource', '$cookies', function($resource,
 			},
 			url: '/fastapp/api/base/:baseId/apy/:id/clone'
 		},
+		execute: {
+			method: 'GET',
+			params: {
+				baseName: 'baseName',
+				name: 'name'
+			},
+			isArray: false,
+			headers: {
+				'X-CSRFToken': $cookies.csrftoken
+			},
+			url: '/fastapp/base/:baseName/exec/:name'
+		},
 	});
 }]);
 
 // settings
 baseServices.factory('Settings', ['$resource', '$cookies', function($resource,
 	$cookies) {
-	return $resource('/fastapp/api/base/:name/setting', {}, {
+	return $resource('/fastapp/api/base/:baseId/setting', {}, {
 		all: {
 			method: 'GET',
 			params: {
-				name: 'name'
+				baseId: 'id'
 			},
 			isArray: true
 		},
 		create: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				baseId: 'id'
 			},
 			isArray: false,
 			headers: {
@@ -203,11 +215,11 @@ baseServices.factory('Settings', ['$resource', '$cookies', function($resource,
 }]);
 baseServices.factory('Setting', ['$resource', '$cookies', function($resource,
 	$cookies) {
-	return $resource('/fastapp/api/base/:name/setting/:id', {}, {
+	return $resource('/fastapp/api/base/:baseId/setting/:id', {}, {
 		update: {
 			method: 'PUT',
 			params: {
-				name: 'name',
+				baseId: 'id',
 				id: 'id'
 			},
 			isArray: false,
@@ -218,7 +230,7 @@ baseServices.factory('Setting', ['$resource', '$cookies', function($resource,
 		delete: {
 			method: 'DELETE',
 			params: {
-				name: 'name',
+				baseId: 'id',
 				id: 'id'
 			},
 			isArray: false,

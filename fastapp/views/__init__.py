@@ -246,19 +246,20 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
 
     #@profile
     @never_cache
-    def get(self, request, *args, **kwargs):
+    def get(self, request, **kwargs):
         # get base
         base_model = get_object_or_404(Base, name=kwargs['base'])
 
         response = self.verify(request, base_model)
         if response:
             return response
+
         # get exec from database
         try:
-            exec_model = base_model.apys.get(id=kwargs['id'])
+            exec_model = base_model.apys.get(name=kwargs['id'])
         except Apy.DoesNotExist:
             #warning(channel_name_for_user(request), "404 on %s" % request.META['PATH_INFO'])
-            return HttpResponseNotFound("'%s' not found"     % request.META['PATH_INFO'])
+            return HttpResponseNotFound("404 on %s"     % request.META['PATH_INFO'])
 
         rid = request.GET.get('rid', None)
         if rid:
@@ -746,7 +747,7 @@ def process_user(uid):
 
     has_more = True
 
-    from fastapp.threadpool import ThreadPool
+    from threadpool import ThreadPool
     from random import uniform
 
 

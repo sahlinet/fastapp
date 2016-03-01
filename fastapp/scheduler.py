@@ -5,7 +5,8 @@ from django.conf import settings
 from pytz import utc
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 from django.core.management import call_command
@@ -38,8 +39,7 @@ def update_job(apy, scheduler):
             scheduler.reschedule_job(job_id, trigger='cron', **kwargs)
             logger.info("Job '%s' rescheduled" % job_id)
         else:
-            job_id = scheduler.add_job(call_apy, 'cron', args=[apy.base.name,
-                                       apy.name], id=job_id, **kwargs)
+            job_id = scheduler.add_job(call_apy, 'cron', args=[apy.base.name, apy.name], id=job_id, **kwargs)
             logger.info("Job '%s' added" % job_id)
     else:
         if scheduler.get_job(job_id):
@@ -62,14 +62,13 @@ def start_scheduler():
         'max_instances': 1
     }
 
-    scheduler = BackgroundScheduler(executors=executors1, jobstores=jobstores,
-                                    job_defaults=job_defaults, timezone=utc)
+    scheduler = BackgroundScheduler(executors=executors1, jobstores=jobstores, job_defaults=job_defaults, timezone=utc)
+
+    from pytz import timezone
 
     # Cleanup
     if hasattr(settings, "FASTAPP_CLEANUP_INTERVAL_MINUTES"):
-        job_id = scheduler.add_job(call_command,
-                    'interval', minutes=int(settings.FASTAPP_CLEANUP_INTERVAL_MINUTES),
-                                args=["cleanup_transactions"])
+        job_id = scheduler.add_job(call_command, 'interval', minutes=int(settings.FASTAPP_CLEANUP_INTERVAL_MINUTES), args=["cleanup_transactions"])
         logger.info(job_id)
 
     time.sleep(1)

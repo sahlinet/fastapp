@@ -267,7 +267,9 @@ class Base(models.Model):
             r = self.executor.start()
 
             # call plugin
+            logger.info("on_start_base starting...")
             call_plugin_func(self, "on_start_base")
+            logger.info("on_start_base done...")
 
             return r
         return None
@@ -566,7 +568,9 @@ class Executor(models.Model):
             kwargs['service_ports'] = [self.port]
 
         try:
+            logger.info("START Start with implementation")
             self.pid = self.implementation.start(self.pid, **kwargs)
+            logger.info("END Start with implementation")
         except Exception, e:
             raise e
 

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import zipfile
 import requests
+import json
 from threading import Thread
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, views
 from rest_framework import status
 
 from django.utils.decorators import method_decorator
@@ -12,19 +13,17 @@ from django.shortcuts import get_object_or_404
 
 from django.db import transaction
 from django.core.management import call_command
-from django.core.urlresolvers import reverse
 
 from rest_framework import renderers
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication, BasicAuthentication
+from rest_framework.response import Response
+from rest_framework.decorators import link
+from rest_framework.exceptions import APIException
 
 from fastapp.importer import import_base
 from fastapp.models import Base, Apy, Setting, TransportEndpoint
 from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
 from fastapp.utils import check_code
-
-from rest_framework.decorators import link
-from rest_framework.response import Response
-from rest_framework.exceptions import APIException
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
