@@ -327,14 +327,15 @@ def call_apy(base_name, apy_name):
         url = reverse('exec', kwargs={'base': apy.base.name, 'id': apy.id})
 
         request_factory = RequestFactory()
-        request = request_factory.get(url, data={'base': apy.base.name, 'id': apy.id})
+        request = request_factory.get(url, data={'json': "", 'base': apy.base.name,
+                                                 'id': apy.id})
         # TODO: fails if user admin is not created
         request.user = get_user_model().objects.get(username='admin')
         request.META['HTTP_ACCEPT'] = "text/html"
 
         from fastapp.views import DjendExecView
         view = DjendExecView()
-        response = view.get(request, base=apy.base.name, id=apy.name)
+        response = view.get(request, base=apy.base.name, id=apy.id)
         logger.info("method called for base %s, response_code: %s" % (apy.base.name, response.status_code))
         logger.info("END call_apy %s" % apy.name)
     except Exception, e:
