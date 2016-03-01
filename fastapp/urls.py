@@ -58,7 +58,7 @@ urlpatterns = patterns('',
     # Base CRUD operations
     url(r'^api/base/(?P<name>[\w-]+)/$', BaseViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='base-detail'),
 
-    url(r'^api/config/$', ServerConfigViewSet.as_view(), name='settings'),
+    #url(r'^api/config/$', ServerConfigViewSet.as_view(), name='settings'),
 
     url(r'^api/base/destroy_all/$', BaseAdminViewSet.as_view({'get': 'destroy_all'}), name='bases-destroy'),
     url(r'^api/base/recreate_all/$', BaseAdminViewSet.as_view({'get': 'recreate_all'}), name='bases-recreate'),
