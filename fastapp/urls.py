@@ -11,7 +11,8 @@ from fastapp.views import DjendBaseView, DjendBaseDeleteView, \
 from fastapp.views.static import DjendStaticView
 from rest_framework import routers
 
-from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet, ServerConfigViewSet
+#from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet, ServerConfigViewSet
+from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
 
 from django.views.decorators.cache import never_cache
 
