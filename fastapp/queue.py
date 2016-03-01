@@ -191,9 +191,10 @@ def connect_to_queue(host, queue, vhost, username, password, port):
             pass
         raise e
 
+
 class CommunicationThread(threading.Thread):
 
-    def __init__(self, name, host, port, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}, ttl=None):
+    def __init__(self, name, host, port, vhost, username, password, queues_produce=[], queues_consume=[], topic_receiver=[], additional_payload={}, ttl=None, **kwargs):
         threading.Thread.__init__(self)
         self.name = name
         self.additional_payload=additional_payload
@@ -217,6 +218,8 @@ class CommunicationThread(threading.Thread):
         self.exchange_count = len(self.topic_receiver)
 
         self.ttl = ttl
+
+        self.kwargs = kwargs
 
     @property
     def state(self):
