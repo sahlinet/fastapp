@@ -32,6 +32,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class ServerConfigViewSet(views.APIView):
+
+
+    renderer_classes = (JSONRenderer, )
+
+    def get(self, *args, **kwargs):
+        from django.conf import settings
+        data = {'QUEUE_HOST_ADDR': settings.WORKER_RABBITMQ_HOST,
+                'QUEUE_HOST_PORT': settings.WORKER_RABBITMQ_PORT,
+                'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
+                'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL
+        }
+        return Response(data)
+
+
 class SettingViewSet(viewsets.ModelViewSet):
     model = Setting
     serializer_class = SettingSerializer

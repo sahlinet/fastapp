@@ -324,10 +324,10 @@ def call_apy(base_name, apy_name):
         from fastapp.models import Apy
         apy = Apy.objects.get(name=apy_name, base__name=base_name)
         logger.info("START call_apy %s" % apy.name)
-        url = reverse('exec', kwargs={'base': apy.base.name, 'id': apy.name})
+        url = reverse('exec', kwargs={'base': apy.base.name, 'id': apy.id})
 
         request_factory = RequestFactory()
-        request = request_factory.get(url, data={'base': apy.base.name, 'id': apy.name})
+        request = request_factory.get(url, data={'base': apy.base.name, 'id': apy.id})
         # TODO: fails if user admin is not created
         request.user = get_user_model().objects.get(username='admin')
         request.META['HTTP_ACCEPT'] = "text/html"
