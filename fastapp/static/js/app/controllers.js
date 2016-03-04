@@ -304,7 +304,7 @@
 
           $scope.create = function() {
               Apy.create({
-                  'baseId': window.active_base_id
+                  'name': window.active_base
               }, {
                   'name': $scope.new_exec_name
               }, function(apy) {
@@ -378,7 +378,8 @@
 
           $scope.executeNewWindow = function(apy) {
               window.open("/fastapp/api/base/" + window.active_base +
-                  "/apy/" + apy.name + "/execute/?json=", "_blank");
+                  "/apy/" + apy.name + "/execute/?json=",
+                  "_blank");
           };
 
           $scope.printcurl = function(apy) {

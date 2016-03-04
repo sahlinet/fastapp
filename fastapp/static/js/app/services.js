@@ -105,7 +105,7 @@ baseServices.factory('Apy', ['$resource', '$cookies', function($resource,
 		create: {
 			method: 'POST',
 			params: {
-				name: 'name'
+				name: 'apyname'
 			},
 			isArray: false,
 			headers: {
