@@ -9,8 +9,8 @@ from fastapp.executors.worker_engines import BaseExecutor, ContainerNotFound
 logger = logging.getLogger(__name__)
 
 
-MEM_LIMIT = "96m"
-#CPU_SHARES = 512
+MEM_LIMIT_MB = 128
+CPU_SHARES = 1024
 
 DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
                     'philipsahli/skyblue-planet-lite-worker:develop')
@@ -149,7 +149,7 @@ class RancherApiExecutor(BaseExecutor):
                     "allocationState": None,
                     "count": None,
                     "cpuSet": None,
-                    "cpuShares": 1024,
+                    "cpuShares": int(CPU_SHARES),
                     "createIndex": None,
                     "created": None,
                     "deploymentUnitUuid": None,
@@ -160,7 +160,7 @@ class RancherApiExecutor(BaseExecutor):
                     "healthState": None,
                     "hostname": None,
                     "kind": None,
-                    #"memory": 100663296,
+                    "memory": int(MEM_LIMIT_MB)*1024*1024,
                     "memorySwap": None,
                     "pidMode": None,
                     "removeTime": None,
