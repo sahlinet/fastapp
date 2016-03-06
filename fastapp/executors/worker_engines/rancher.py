@@ -9,7 +9,7 @@ from fastapp.executors.worker_engines import BaseExecutor, ContainerNotFound
 logger = logging.getLogger(__name__)
 
 
-MEM_LIMIT_MB = 128
+MEM_LIMIT_MB = 256
 CPU_SHARES = 1024
 
 DOCKER_IMAGE = getattr(settings, 'FASTAPP_DOCKER_IMAGE',
