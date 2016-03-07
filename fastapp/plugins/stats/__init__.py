@@ -19,7 +19,7 @@ class StatsPlugin(Plugin):
 		template_path = os.path.join(plugin_path, "templates")
 		settings.TEMPLATE_DIRS = settings.TEMPLATE_DIRS + (template_path,)
 
-	def cockpit_context(self):
+	def cockpit_context_deactivated(self):
 		data={}
 		if len(Transaction.objects.all()) > 0:
 			data.update({

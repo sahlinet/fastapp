@@ -22,7 +22,7 @@ class TutumLogsPlugin(Plugin):
 		plugin_settings = settings.FASTAPP_PLUGINS_CONFIG[self.fullname]
 		return plugin_settings
 
-	def cockpit_context(self):
+	def cockpit_context_deactivated(self):
 		logs = []
 		try:
 			plugin_settings = settings.FASTAPP_PLUGINS_CONFIG[self.fullname]
