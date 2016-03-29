@@ -37,8 +37,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         threads = []
         threads_static = []
-
-        print options
         
         username = options['username']
         password = options['password']
