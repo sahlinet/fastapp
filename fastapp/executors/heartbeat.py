@@ -266,11 +266,11 @@ class HeartbeatThread(CommunicationThread):
                 logger.info("Plugin to sync - success: "+str(success))
                 logger.info("Plugin to sync - failed: "+str(failed))
                 for plugin, config in success.items():
-                    logger.info("Send '%s' config '%s' to %s" % (plugin, config, instance.base.name))
+                    logger.info("Send '%s' config '%s' to %s" % (plugin, config, base.name))
                     distribute(PLUGIN_CONFIG_QUEUE, json.dumps({plugin: config}),
                             vhost,
-                            instance.base.name,
-                            instance.base.executor.password
+                            base_obj.name,
+                            base_obj.executor.password
                     )
 
             if data.has_key('ready_for_init') and data['ready_for_init']:
