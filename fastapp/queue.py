@@ -159,9 +159,14 @@ def create_vhost(base):
         logger.exception(e)
         raise
 
-#from memory_profiler import profile as memory_profile
+import gc, objgraph
+from memory_profiler import profile as memory_profile
 #@memory_profile
 def connect_to_queuemanager(host, vhost, username, password, port):
+
+    objgraph.show_most_common_types(limit=5)
+    objgraph.show_growth(limit=3)
+
     credentials = pika.PlainCredentials(username, password)
     logger.debug("Trying to connect to: %s, %s, %s, %s" % (host, port, vhost, username))
     try:
@@ -169,6 +174,17 @@ def connect_to_queuemanager(host, vhost, username, password, port):
     except Exception, e:
         logger.error("Cannot connect to: %s, %s, %s, %s" % (host, port, vhost, username))
         raise e
+    print gc.collect()
+
+
+    objgraph.show_growth()
+
+    import random
+    objgraph.show_chain(
+        objgraph.find_backref_chain(
+            random.choice(objgraph.by_type('dict')),
+            objgraph.is_proper_module),
+     filename='chain.png')
     return connection
 
 #@memory_profile

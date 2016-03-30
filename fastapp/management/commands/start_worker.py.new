@@ -1,0 +1,128 @@
+import logging
+import sys
+from optparse import make_option
+
+from django.core.management.base import BaseCommand
+from django.conf import settings
+
+from fastapp.executors.remote import ExecutorServerThread, StaticServerThread
+from fastapp.executors.heartbeat import HeartbeatThread, HEARTBEAT_QUEUE
+from fastapp.utils import load_setting
+
+logger = logging.getLogger("fastapp.executors.remote")
+
+
+class Command(BaseCommand):
+    args = '<poll_id poll_id ...>'
+    help = 'Closes the specified poll for voting'
+
+    option_list = BaseCommand.option_list + (
+        make_option('--username',
+                    action='store',
+                    dest='username',
+                    default=None,
+                    help='Username for the worker'),
+        make_option('--password',
+                    action='store',
+                    dest='password',
+                    default=None,
+                    help='Password for the worker'),
+        make_option('--base',
+                    action='store',
+                    dest='base',
+                    default=None,
+                    help='Base for the worker'),
+        make_option('--vhost',
+                    action='store',
+                    dest='vhost',
+                    default=None,
+                    help='VHost on Queue system'),
+        )
+
+    def _get_config(self):
+        import requests
+        import os
+        try:
+            r = requests.get(os.environ['CONFIG_URL'])
+        except Exception, e:
+            print e
+            print e.msg
+            sys.exit(1)
+        # print os.environ
+        # for k, v in r.json().iteritems():
+        #     print k, v
+        return r.json()
+        #os.environ = os.environ.__dict__ + dict(r.json())
+
+    def handle(self, *args, **options):
+        threads = []
+        threads_static = []
+
+        base = options['base']
+        vhost = options['vhost']
+        username = options['username']
+
+        password = options['password']
+
+        config = self._get_config()
+        logger.info("Config from server: " + str(config))
+
+        host = config["QUEUE_HOST_ADDR"]
+        port = int(config["QUEUE_HOST_PORT"])
+
+        SENDER_PASSWORD = load_setting("FASTAPP_CORE_SENDER_PASSWORD")
+
+        FASTAPP_WORKER_THREADCOUNT = config['FASTAPP_WORKER_THREADCOUNT']
+        FASTAPP_PUBLISH_INTERVAL = config['FASTAPP_PUBLISH_INTERVAL']
+
+        logger.info("FASTAPP_WORKER_THREADCOUNT: %s" % FASTAPP_WORKER_THREADCOUNT)
+        logger.info("FASTAPP_PUBLISH_INTERVAL: %s" % FASTAPP_PUBLISH_INTERVAL)
+
+        for c in range(0, FASTAPP_WORKER_THREADCOUNT):
+            # start threads
+            from fastapp.executors.remote import CONFIGURATION_QUEUE, RPC_QUEUE
+            name = "ExecutorSrvThread-%s-%s" % (c, base)
+            thread = ExecutorServerThread(name, host, port, vhost,
+                                          queues_consume=[[RPC_QUEUE]],
+                                          topic_receiver=[[CONFIGURATION_QUEUE]],
+                                          username=username,
+                                          password=password)
+            threads.append(thread)
+            thread.daemon = True
+            thread.start()
+
+        for c in range(0, FASTAPP_WORKER_THREADCOUNT):
+            # start threads
+            from fastapp.executors.remote import STATIC_QUEUE
+            name = "StaticServerThread-%s-%s" % (c, base)
+            thread = StaticServerThread(name, host, port, vhost,
+                                        queues_consume=[[STATIC_QUEUE]],
+                                        topic_receiver=[],
+                                        username=username,
+                                        password=password)
+            threads_static.append(thread)
+            thread.daemon = True
+            thread.start()
+        logger.info('StaticServerThreads started')
+
+        kwargs = {'FASTAPP_PUBLISH_INTERVAL': FASTAPP_PUBLISH_INTERVAL}
+        thread = HeartbeatThread("HeartbeatThread-%s" % c, host, port,
+                                 load_setting("CORE_VHOST"),
+                                 queues_produce=[[HEARTBEAT_QUEUE]],
+                                 username=load_setting("CORE_SENDER_USERNAME"),
+                                 password=SENDER_PASSWORD,
+                                 additional_payload={'vhost': vhost}, ttl=3000, **kwargs)
+        thread.thread_list = threads
+        logger.info('HeartbeatThreads started')
+
+        threads.append(thread)
+        thread.daemon = True
+        thread.start()
+
+        for t in threads:
+            try:
+                logger.info("%s Thread started" % FASTAPP_WORKER_THREADCOUNT)
+                t.join(1000)
+            except KeyboardInterrupt:
+                print "Ctrl-c received."
+                sys.exit(0)

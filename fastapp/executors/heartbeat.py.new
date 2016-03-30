@@ -38,7 +38,6 @@ SETTING_QUEUE = "setting"
 PLUGIN_CONFIG_QUEUE = "pluginconfig"
 
 
-import gc, objgraph
 def inactivate():
 
     p = psutil.Process(os.getpid())
@@ -47,13 +46,6 @@ def inactivate():
     try:
         while True:
             logger.info("Inactivate Thread run")
-
-
-            #print gc.collect()
-            #objgraph.show_most_common_types(limit=10)
-            #objgraph.show_growth(limit=3)
-
-
             m = p.memory_info()
             #slug="Heartbeat %s rss" % socket.gethostname()
             #set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
@@ -274,11 +266,11 @@ class HeartbeatThread(CommunicationThread):
                 logger.info("Plugin to sync - success: "+str(success))
                 logger.info("Plugin to sync - failed: "+str(failed))
                 for plugin, config in success.items():
-                    logger.info("Send '%s' config '%s' to %s" % (plugin, config, base.name))
+                    logger.info("Send '%s' config '%s' to %s" % (plugin, config, instance.base.name))
                     distribute(PLUGIN_CONFIG_QUEUE, json.dumps({plugin: config}),
                             vhost,
-                            base_obj.name,
-                            base_obj.executor.password
+                            instance.base.name,
+                            instance.base.executor.password
                     )
 
             if data.has_key('ready_for_init') and data['ready_for_init']:
@@ -315,5 +307,6 @@ class HeartbeatThread(CommunicationThread):
     def schedule_next_message(self):
         #logger.info('Next beat in %0.1f seconds',
                     #self.PUBLISH_INTERVAL)
-        self._connection.add_timeout(settings.FASTAPP_PUBLISH_INTERVAL,
+        FASTAPP_PUBLISH_INTERVAL = self.kwargs['FASTAPP_PUBLISH_INTERVAL']
+        self._connection.add_timeout(FASTAPP_PUBLISH_INTERVAL,
                                      self.send_message)

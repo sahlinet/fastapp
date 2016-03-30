@@ -2,6 +2,7 @@ from swampdragon import route_handler
 from swampdragon.route_handler import BaseModelPublisherRouter
 from serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
 from models import Transaction, LogEntry
+from swampdragon_tokenauth.mixins import TokenAuthMixin
 
 from swampdragon.permissions import login_required
 
@@ -16,7 +17,7 @@ class PrivateBaseModelPublisherRouter(BaseModelPublisherRouter):
         super(BaseModelPublisherRouter, self).subscribe(**kwargs)
 
 
-class TransactionRouter(PrivateBaseModelPublisherRouter):
+class TransactionRouter(TokenAuthMixin, PrivateBaseModelPublisherRouter):
     serializer_class = TransactionSerializer
     model = Transaction
     route_name = 'transaction-router'

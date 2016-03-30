@@ -383,7 +383,7 @@ def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
 
 
-@profileit
+#@profileit
 def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfig={}):
         exception = None
         exception_message = None
