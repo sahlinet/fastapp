@@ -138,7 +138,7 @@ class RancherApiExecutor(BaseExecutor):
 
                     ],
                     "labels": {
-                        #"io.rancher.scheduler.affinity:host_label": "nodelabel=nodelabel",
+                        "io.rancher.scheduler.affinity:host_label": "type=worker",
                         "io.rancher.container.pull_image":  "always",
                         "io.rancher.container.dns": False
                     },
