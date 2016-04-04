@@ -1,9 +1,0 @@
-/usr/local/sbin/rabbitmqctl add_vhost philipsahli-aaaa
-/usr/local/sbin/rabbitmqctl list_users
-
-/usr/local/sbin/rabbitmqctl add_user philipsahli philipsahli
-/usr/local/sbin/rabbitmqctl set_permissions -p philipsahli-aaaa philipsahli "^philipsahli-.*" ".*" ".*"
-/usr/local/sbin/rabbitmqctl set_permissions -p philipsahli-aaaa philipsahli "^.*" ".*" ".*"
-
-for i in $(/usr/local/sbin/rabbitmqctl list_vhosts|egrep -v "List|/$|done"); do /usr/local/sbin/rabbitmqctl delete_vhost $i; done
-for i in $(/usr/local/sbin/rabbitmqctl list_users  |egrep -v "users|guest|done"); do /usr/local/sbin/rabbitmqctl delete_user $i; done
