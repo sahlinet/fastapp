@@ -13,7 +13,7 @@ setup(name='django-fastapp',
 		'https://github.com/rpalacios/django-sequence-field.git@f1bdc48c897e6cd95a3182f8253665609a87a895#egg=django_sequence_field-master'
 	],
 	install_requires=['dropbox==1.6',
-		'djangorestframework==2.4.2',
+		'djangorestframework==2.4.3',
 		'requests==2.7.0',
 		'django_extensions==1.3.5',
 		'pusher==0.8',
