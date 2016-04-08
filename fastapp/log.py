@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class LogReceiverThread(CommunicationThread):
 
     def on_message(self, ch, method, props, body):
-        logger.info("Message received")
+        logger.debug("Message received")
         try:
             data = json.loads(body)
             level = data['level']
