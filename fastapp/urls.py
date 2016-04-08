@@ -12,7 +12,7 @@ from fastapp.views.static import DjendStaticView
 from rest_framework import routers
 
 #from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet, ServerConfigViewSet
-from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet
+from fastapp.api_views import BaseAdminViewSet, BaseViewSet, BaseLogViewSet, SettingViewSet, PublicApyViewSet, ApyViewSet, BaseExportViewSet, BaseImportViewSet, TransportEndpointViewSet, TransactionViewSet
 
 from django.views.decorators.cache import never_cache
 
@@ -79,6 +79,7 @@ urlpatterns = patterns('',
     url(r'^api/base/(?P<name>[\w-]+)/apy/(?P<apy_name>[\w-]+)/execute/$', ApyViewSet.as_view({'post': 'execute', 'get': 'execute'}), name='apy-exec'),
     url(r'^api/base/(?P<name>[\w-]+)/setting/$', SettingViewSet.as_view({'get': 'list', 'post': 'create'}), name='apy-list'),
     url(r'^api/base/(?P<name>[\w-]+)/setting/(?P<pk>\d+)/$', SettingViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='apy-detail'),
+    url(r'^api/base/(?P<name>[\w-]+)/transactions/$', TransactionViewSet.as_view({'get': 'list'}), name='transaction-list'),
 
     # api-authtoken
     url(r'^api-token-auth/', 'rest_framework.authtoken.views.obtain_auth_token'),

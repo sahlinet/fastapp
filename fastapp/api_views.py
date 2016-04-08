@@ -21,8 +21,8 @@ from rest_framework.decorators import link
 from rest_framework.exceptions import APIException
 
 from fastapp.importer import import_base
-from fastapp.models import Base, Apy, Setting, TransportEndpoint
-from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer
+from fastapp.models import Base, Apy, Setting, TransportEndpoint, Transaction
+from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer, TransactionSerializer
 from fastapp.utils import check_code
 
 from django.contrib.auth import get_user_model
@@ -71,6 +71,23 @@ class TransportEndpointViewSet(viewsets.ModelViewSet):
 
     def pre_save(self, obj):
         obj.user = self.request.user
+
+class TransactionViewSet(viewsets.ModelViewSet):
+    model = Transaction
+    serializer_class = TransactionSerializer
+    renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (TokenAuthentication, SessionAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        name = self.kwargs['name']
+        get_object_or_404(Base, user=self.request.user, name=name)
+        queryset = Transaction.objects.filter(apy__base__name=name)
+	rid = self.request.GET.get('rid', None)
+	print rid
+	if rid is not None:
+		return queryset.filter(rid=rid)
+	return queryset.order_by("-modified")[:10]
 
 
 class ApyViewSet(viewsets.ModelViewSet):

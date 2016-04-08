@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint
+from fastapp.models import Base, Apy, Setting, Counter, TransportEndpoint, Transaction
 
 import logging
 logger = logging.getLogger(__name__)
@@ -11,6 +11,13 @@ class CounterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Counter
         fields = ('executed', 'failed')
+
+class TransactionSerializer(serializers.ModelSerializer):
+    counter = CounterSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ('rid', 'tin', 'tout', 'status', 'created', 'modified', 'async', )
 
 
 class ApySerializer(serializers.ModelSerializer):
