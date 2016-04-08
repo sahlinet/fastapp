@@ -280,6 +280,7 @@ class ExecutorServerThread(CommunicationThread):
                 try:
                     response_data = {}
                     response_data = _do(json.loads(body), self.functions, self.foreign_functions, self.settings, self.pluginconfig)
+		    logger.debug("RECEIVED: %s" % str(response_data))
                 except Exception, e:
                     logger.exception(e)
                 finally:
@@ -462,10 +463,12 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
 
                 # execution
                 returned = func(func)
+		logger.info("Returned is of type: %s" % type(returned))
                 if isinstance(returned, responses.Response):
                     # serialize
                     response_class = returned.__class__.__name__
                     returned = str(returned)
+                    #returned = returned
 
             except Exception, e:
                 logger.exception(e)

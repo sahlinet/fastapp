@@ -652,7 +652,7 @@ def initialize_on_storage(sender, *args, **kwargs):
     logger.info("initialize_on_storage for Base '%s'" % instance.name)
     logger.info(kwargs)
     try:
-        connection.create_folder("%s" % instance.name)
+        connection.create_folder("%s/%s" % (instance.user.username, instance.name))
     except Exception, e:
         pass
         #if "already exists" in e['body']['error']:
@@ -669,14 +669,15 @@ def synchronize_to_storage(sender, *args, **kwargs):
     instance = kwargs['instance']
     try:
         connection = Connection(instance.base.user.authprofile.access_token)
-        result = connection.put_file("%s/%s.py" % (instance.base.name,
+        result = connection.put_file("%s/%s/%s.py" % (instance.base.user.username, instance.base.name,
                                                    instance.name),
                                      instance.module)
         queryset = Apy.objects.all()
         queryset.filter(pk=instance.pk).update(rev=result['rev'])
 
         # update app.config for saving description
-        result = connection.put_file("%s/app.config" % (instance.base.name),
+        result = connection.put_file("%s/%s/app.config" % (instance.base.user.username, 
+                                     instance.base.name),
                                      instance.base.config)
     except Exception, e:
         logger.exception(e)
@@ -722,7 +723,7 @@ def base_to_storage_on_delete(sender, *args, **kwargs):
     instance = kwargs['instance']
     try:
         connection = Connection(instance.user.authprofile.access_token)
-        gevent.spawn(connection.delete_file("%s" % instance.name))
+        gevent.spawn(connection.delete_file("%s/%s" % (instance.user.username, instance.name)))
     except Exception, e:
         logger.error("error in base_to_storage_on_delete")
         logger.exception(e)
@@ -734,7 +735,9 @@ def synchronize_to_storage_on_delete(sender, *args, **kwargs):
     from utils import NotFound
     try:
         connection = Connection(instance.base.user.authprofile.access_token)
-        gevent.spawn(connection.put_file("%s/app.config" % (instance.base.name),
+        gevent.spawn(connection.put_file("%s/%s/app.config" % (
+                                         instance.base.user.username,
+                                         instance.base.name),
                                          instance.base.config))
         gevent.spawn(connection.delete_file("%s/%s.py" % (instance.base.name,
                                             instance.name)))

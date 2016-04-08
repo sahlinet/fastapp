@@ -144,6 +144,8 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             end = int(round(time.time() * 1000))
             ms=str(end-start)
 
+            logger.debug("DATA: %s" % str(response_data))
+
             logger.debug("RESPONSE-time: %sms" %  str(ms))
             logger.debug("RESPONSE-data: %s" % response_data[:120])
             data = json.loads(response_data)
@@ -180,16 +182,17 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             response_status_code = default_status_code
         else:
             if response_class:
-                response_status_code = json.loads(data['returned']).get('status_code', default_status_code)
+		try:
+                	response_status_code = json.loads(data['returned']).get('status_code', default_status_code)
+		except:
+                	response_status_code = data['returned'].get('status_code', default_status_code)
             else:
                 response_status_code = default_status_code
 
         # respond with json
         if request.GET.has_key(u'json') or request.GET.has_key('callback'):
-
-            user = channel_name_for_user(request)
-
             status = data.get("status", False)
+	    # if is json
             if status == "OK":
                 exec_model.mark_executed()
             else:
@@ -211,8 +214,8 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                     },
                 'apy_id': exec_model.id
             }
-            user = channel_name_for_user(request)
-            send_client(user, "counter", cdata)
+            #user = channel_name_for_user(request)
+            #send_client(user, "counter", cdata)
 
             if request.GET.has_key('callback'):
                 data = '%s(%s);' % (request.REQUEST['callback'], json.dumps(data))
@@ -222,16 +225,16 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
         # real response
         elif response_class:
             if response_class == u''+responses.XMLResponse.__name__:
-                content_type = json.loads(data['returned'])['content_type']
-                content = json.loads(data['returned'])['content']
+                content_type = load_json(data['returned'])['content_type']
+                content = load_json(data['returned'])['content']
             elif response_class == u''+responses.HTMLResponse.__name__:
-                content_type = json.loads(data['returned'])['content_type']
-                content = json.loads(data['returned'])['content']
+                content_type = load_json(data['returned'])['content_type']
+                content = load_json(data['returned'])['content']
             elif response_class == u''+responses.JSONResponse.__name__:
-                content_type = json.loads(data['returned'])['content_type']
-                content = json.loads(data['returned'])['content']
+                content_type = load_json(data['returned'])['content_type']
+                content = load_json(data['returned'])['content']
             elif response_class == u''+responses.RedirectResponse.__name__:
-                location = json.loads(data['returned'])['content']
+                location = load_json(data['returned'])['content']
                 return HttpResponseRedirect(location)
             else:
                 logger.warning("Wrong response")
@@ -287,6 +290,12 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
             else:
                 # execute
                 data = self._execute(request, request_data, base_model, transaction.rid)
+
+		try:
+			returned = json.loads(data['returned'])
+			data['returned'] = returned
+		except: 	
+			pass
                 transaction.tout = json.dumps(data)
                 transaction.status = FINISHED
                 transaction.save()
@@ -831,3 +840,10 @@ def login_or_sharedkey(function):
             return HttpResponseNotFound('Ups, wrong URL?')
         return HttpResponseRedirect("/admin/")
     return wrapper
+
+def load_json(s):
+	if type(s) is str:	
+		r = json.loads(s)
+	elif type(s) is dict:
+		r = s
+	return r

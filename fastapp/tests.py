@@ -261,7 +261,7 @@ class SettingTestCase(BaseTestCase):
         json_data = {u'key': u'key', 'value': 'value'}
         response = self.client1.post("/fastapp/api/base/%s/setting/" % self.base1.name, json_data)
         self.assertEqual(201, response.status_code)
-        json_data_response = {"id": 23, "key": "key", "public": False, "value": u"value"}
+        json_data_response = {"id": 22, "key": "key", "public": False, "value": u"value"}
         self.assertJSONEqual(response.content, json_data_response)
         distribute_mock.assert_called
 
