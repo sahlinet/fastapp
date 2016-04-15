@@ -16,7 +16,7 @@ from django.http import HttpResponseNotFound, HttpResponse, HttpResponseServerEr
 from django.conf import settings
 from dropbox.rest import ErrorResponse
 from django.core.cache import cache
-from django.template import Context, Template
+from django.template import Context, Template, RequestContext
 
 from fastapp.utils import totimestamp, fromtimestamp
 
@@ -36,12 +36,12 @@ logger = logging.getLogger(__name__)
 
 class DjendStaticView(ResponseUnavailableViewMixing, View):
 
-    def _render_html(self, t, **kwargs):
+    def _render_html(self, request, t, **kwargs):
         if type(t) == str:
             t = Template(t)
         else:
             t = Template(t.read())
-        c = Context(kwargs)
+        c = RequestContext(request, kwargs)
         return t.render(c)
 
 
@@ -141,11 +141,14 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
-                    cache.set(cache_key, {
-                        'f': f,
-                        'lm': totimestamp(last_modified)
-                    }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
-                    # logger.debug("%s: cache it" % static_path)
+		    print f
+		    if 'content="no-cache"' in f:
+			logger.info("Not caching because no-cache present in HTML")
+		    else:
+			cache.set(cache_key, {
+		    	   'f': f,
+			   'lm': totimestamp(last_modified)
+			    }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
             except (ErrorResponse, IOError), e:
                 logger.exception(e)
                 logger.warning("%s: not found" % static_path)
@@ -182,8 +185,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             mimetype = "image/x-icon"
         elif static_path.lower().endswith('.html'):
             mimetype = "text/html"
-            context_data = self._setup_context(base_model)
-            f = self._render_html(f, **context_data)
+            context_data = self._setup_context(request, base_model)
+            f = self._render_html(request, f, **context_data)
         elif static_path.lower().endswith('.map'):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):
@@ -199,28 +202,34 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         return self._handle_cache(static_path, request, mimetype, last_modified, f)
 
     def _handle_cache(self, static_path, request, mimetype, last_modified, file):
-        # handle browser caching
-        frmt = "%d %b %Y %H:%M:%S"
-        if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
-        if last_modified and if_modified_since:
-            if_modified_since_dt = datetime.strptime(if_modified_since, frmt)
-            last_modified = last_modified.replace(microsecond=0)
-            logger.debug("%s: checking if last_modified '%s' or smaller/equal of if_modified_since '%s'" % (static_path, last_modified, if_modified_since_dt))
-            if (last_modified <= if_modified_since_dt):
-                logger.info("%s: 304" % static_path)
-                return HttpResponseNotModified()
-        response = HttpResponse(file, content_type=mimetype)
-        if last_modified:
-            response['Cache-Control'] = "public"
-            response['Last-Modified'] = last_modified.strftime(frmt)
-        if static_path.endswith("png") or static_path.endswith("css") or static_path.endswith("js") \
-                or static_path.endswith("woff"):
-            response['Cache-Control'] = "max-age=120"
-        logger.info("%s: 200" % static_path)
+
+	if 'content="no-cache"' in file:
+		logger.info("Not caching because no-cache present in HTML")
+		response = HttpResponse(file, content_type=mimetype)
+	else:
+
+		# handle browser caching
+		frmt = "%d %b %Y %H:%M:%S"
+		if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
+		if last_modified and if_modified_since:
+		    if_modified_since_dt = datetime.strptime(if_modified_since, frmt)
+		    last_modified = last_modified.replace(microsecond=0)
+		    logger.debug("%s: checking if last_modified '%s' or smaller/equal of if_modified_since '%s'" % (static_path, last_modified, if_modified_since_dt))
+		    if (last_modified <= if_modified_since_dt):
+			logger.info("%s: 304" % static_path)
+			return HttpResponseNotModified()
+		response = HttpResponse(file, content_type=mimetype)
+		if last_modified:
+		    response['Cache-Control'] = "public"
+		    response['Last-Modified'] = last_modified.strftime(frmt)
+		if static_path.endswith("png") or static_path.endswith("css") or static_path.endswith("js") \
+			or static_path.endswith("woff"):
+		    response['Cache-Control'] = "max-age=120"
+		logger.info("%s: 200" % static_path)
         return response
 
 
-    def _setup_context(self, base_model):
+    def _setup_context(self, request, base_model):
         data = dict((s.key, s.value) for s in base_model.setting.all())
 
         data['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
@@ -228,6 +237,12 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         try:
             plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
             data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
+	    updated = request.GET.copy()
+	    query_params = {}
+	    for k, v in updated.iteritems():
+		query_params[k] = v
+
+	    data['QUERY_PARAMS'] = query_params
         except KeyError:
             pass
 
