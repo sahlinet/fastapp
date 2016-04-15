@@ -421,6 +421,7 @@ def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfi
                 func.name = model['fields']['name']
 
                 # attach GET and POST data
+                func.method = copy.deepcopy(request['method'])
                 func.GET = copy.deepcopy(request['GET'])
                 func.POST = copy.deepcopy(request['POST'])
 
