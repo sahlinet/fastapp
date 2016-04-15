@@ -1,5 +1,5 @@
 """
-needs SQLAlchemy==1.0.8
+needs SQLAlchemy==1.0.12
 PSQL >9.3
 
 ADD Quota "https://gist.github.com/javisantana/1277714"
@@ -18,6 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.schema import CreateSchema
+from sqlalchemy.orm.attributes import flag_modified
 
 from django.conf import settings
 
@@ -138,6 +139,11 @@ class DataStore(object):
 		obj_dict = DataObject(data=data_dict)
 		return self.write_obj(obj_dict)
 
+	def update(self, obj):
+		flag_modified(obj, "data")
+		self.session.commit()
+		
+
 	def all(self):
 		return self.session.query(DataObject).all()
 
@@ -149,13 +155,14 @@ class DataStore(object):
 		return self.session.commit()
 
 	def save(self, obj):
-		#self.session.add(obj)
 		return self.session.commit()
 
 	def get(self, k, v):
 		result = self.filter(k, v)
 		if len(result) > 1:
-			raise Exception("More than one row returned!")
+			raise Exception("More than one row returned! (%s)" % len(result))
+		elif len(result) < 1:
+			return None
 		return result[0]
 
 	def _execute(self, sql, result=None):
