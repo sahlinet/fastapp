@@ -60,11 +60,11 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         cache_key = "%s-%s-%s" % (base_model.user.username, base_model.name, static_path)
         cache_obj = cache.get(cache_key)
 
-        f = None
+        file = None
         if cache_obj:
-            f = cache_obj.get('f', None)
+            file = cache_obj.get('f', None)
 
-        if not f:
+        if not file:
             try:
                 logger.info("%s: not in cache" % static_path)
 
@@ -74,7 +74,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     # but from local filesystem
                     try:
                         filepath = os.path.join(REPOSITORIES_PATH, static_path)
-                        f = open(filepath, 'r')
+                        file = open(filepath, 'r')
                         size = os.path.getsize(filepath)
                         logger.debug("%s: load from local filesystem (repositories) (%s) (%s)" % (static_path, filepath, size))
                         last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
@@ -82,11 +82,11 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         #RemotePdb('127.0.0.1', 4444).set_trace()
                     except IOError, e:
                         logger.warning(e)
-                    if not f:
+                    if not file:
                         try:
                             DEV_STORAGE_DROPBOX_PATH = getattr(settings, "FASTAPP_DEV_STORAGE_DROPBOX_PATH")
                             filepath = os.path.join(DEV_STORAGE_DROPBOX_PATH, static_path)
-                            f = open(filepath, 'r')
+                            file = open(filepath, 'r')
                             size = os.path.getsize(filepath)
                             logger.debug("%s: load from local filesystem (dropbox app) (%s) (%s)" % (static_path, filepath, size))
                             last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
@@ -114,7 +114,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                     elif data['status'] == "TIMEOUT":
                         return HttpResponseServerError("Timeout")
                     elif data['status'] == "OK":
-                        f = base64.b64decode(data['file'])
+                        file = base64.b64decode(data['file'])
                         last_modified = datetime.fromtimestamp(data['LM'])
                         logger.info("%s: file received from worker with timestamp: %s" % (static_path, str(last_modified)))
                     # get from dropbox
@@ -126,8 +126,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         client = dropbox.client.DropboxClient(auth_token)
                         try:
                             # TODO: read file only when necessary
-                            f, metadata = client.get_file_and_metadata(static_path)
-                            f = f.read()
+                            file, metadata = client.get_file_and_metadata(static_path)
+                            file = file.read()
 
                             # "modified": "Tue, 19 Jul 2011 21:55:38 +0000",
                             dropbox_frmt = "%a, %d %b %Y %H:%M:%S +0000"
@@ -136,11 +136,11 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         except Exception, e:
                             logger.warning("File not found on dropbox")
                             raise e
-                    if 'content="no-cache"' in f:
+                    if 'content="no-cache"' in file:
                          logger.info("Not caching because no-cache present in HTML")
                     else:
                          cache.set(cache_key, {
-                               'f': f,
+                               'f': file,
                                'lm': totimestamp(last_modified)
                                }, int(settings.FASTAPP_STATIC_CACHE_SECONDS))
             except (ErrorResponse, IOError), e:
@@ -180,7 +180,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         elif static_path.lower().endswith('.html'):
             mimetype = "text/html"
             context_data = self._setup_context(request, base_model)
-            f = self._render_html(request, f, **context_data)
+            file = self._render_html(request, file, **context_data)
         elif static_path.lower().endswith('.map'):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):
@@ -193,7 +193,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             return HttpResponseServerError("Staticfile suffix not recognized")
         logger.info("%s: with '%s'" % (static_path, mimetype))
 
-        return self._handle_cache(static_path, request, mimetype, last_modified, f)
+        return self._handle_cache(static_path, request, mimetype, last_modified, file)
 
     def _handle_cache(self, static_path, request, mimetype, last_modified, file):
         if 'content="no-cache"' in file:
@@ -202,7 +202,10 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         else:
             # handle browser caching
             frmt = "%d %b %Y %H:%M:%S"
-            file.seek(0)
+            try:
+                file.seek(0)
+            except AttributeError:
+                pass
             if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE', None)
             if last_modified and if_modified_since:
                 if_modified_since_dt = datetime.strptime(if_modified_since, frmt)
