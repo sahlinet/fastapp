@@ -109,7 +109,6 @@ class DjendExecView(View, ResponseUnavailableViewMixing, DjendMixin):
                              'base_name': exec_model.base.name})
         get_dict = copy.deepcopy(request.GET)
         post_dict = copy.deepcopy(request.POST)
-        post_dict['body'] = copy.deepcopy(request.body)
         for key in ["json", "shared_key"]:
             if request.method == "GET":
                 if key in get_dict:
