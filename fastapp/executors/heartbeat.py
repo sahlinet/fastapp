@@ -45,7 +45,7 @@ def inactivate():
     transaction.set_autocommit(False)
     try:
         while True:
-            logger.info("Inactivate Thread run")
+            logger.debug("Inactivate Thread run")
             m = p.memory_info()
             #slug="Heartbeat %s rss" % socket.gethostname()
             #set_metric(slug, float(m.rss)/(1024*1024), expire=86400)
