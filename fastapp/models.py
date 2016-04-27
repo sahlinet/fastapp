@@ -33,8 +33,6 @@ from fastapp.utils import Connection
 from fastapp.plugins import call_plugin_func
 from fastapp.plugins import PluginRegistry
 
-from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
-
 from sequence_field.fields import SequenceField
 
 import logging
@@ -308,8 +306,6 @@ class Apy(models.Model):
 
     schedule = models.CharField(max_length=64, null=True, blank=True)
 
-    serializer_class = ApySocketSerializer
-
     def mark_executed(self):
         with transaction.atomic():
             if not hasattr(self, "counter"):
@@ -368,8 +364,6 @@ class Transaction(models.Model):
     tout = JSONField(blank=True, null=True)
     async = models.BooleanField(default=False)
 
-    serializer_class = TransactionSerializer
-
     @property
     def duration(self):
         td = self.modified - self.created
@@ -406,8 +400,6 @@ class LogEntry(models.Model):
     created = models.DateTimeField(auto_now_add=True, null=True)
     level = models.CharField(max_length=2, choices=LOG_LEVELS)
     msg = models.TextField()
-
-    serializer_class = LogEntrySerializer
 
     def level_verbose(self):
         return dict(LOG_LEVELS)[self.level]
