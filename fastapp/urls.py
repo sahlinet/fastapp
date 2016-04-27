@@ -30,7 +30,6 @@ urlpatterns = patterns('',
     url(r'dropbox_notify/?$', DropboxNotifyView.as_view()),
 
     url(r'cockpit/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/cockpit.html"))), name='cockpit'),
-    url(r'liveview/$', login_required(never_cache(CockpitView.as_view(template_name="fastapp/live.html"))), name='live'),
 
     # base
     url(r'(?P<base>[\w-]+)/index/$', login_required(DjendBaseView.as_view(template_name="fastapp/base.html"))),

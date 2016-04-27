@@ -16,7 +16,6 @@ from fastapp.utils import check_code
 from pyflakes.messages import UnusedImport, Message
 
 from fastapp.views import ResponseUnavailableViewMixing
-from swampdragon.models import SelfPublishModel
 
 from django.contrib.auth import get_user_model
 User = get_user_model()

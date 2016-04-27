@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>{% extends 'default.html' %}{% load swampdragon_tags %}{% load compress %}{% block fastapp_title %}
+<?xml version="1.0" encoding="UTF-8" ?>{% extends 'default.html' %}
+{% load compress %}{% block fastapp_title %}
 <title>Fastapp {% if FASTAPP_NAME %}: {{ FASTAPP_NAME }} {% endif %} asdf</title>{% endblock fastapp_title %}{% block main %}{% endblock %}{% block fastapp_header %}
 
 
@@ -17,14 +18,6 @@
 <!-- AngularJS -->
 <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.min.js">
 </script>
-<script type="text/javascript" src="{{ DRAGON_URL }}settings.js"></script>
-{% compress js %}
-<script type="text/javascript" src="/static/bower_components/swampdragon/dist/swampdragon.js">
-</script>
-<script type="text/javascript" src="/static/bower_components/swampdragon/dist/datamapper.js">
-</script>
-<script type="text/javascript" src="/static/bower_components/swampdragon/angular/services.js">
-</script> {% endcompress %}
 <!-- css for fastapp -->
 {% compress css %}
 <!-- Bootstrap core CSS -->

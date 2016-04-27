@@ -68,10 +68,6 @@ class CockpitView(TemplateView):
         return super(CockpitView, self).dispatch(*args, **kwargs)
 
 
-class LiveView(TemplateView):
-    pass
-
-
 class ResponseUnavailableViewMixing():
     def verify(self, request, base_model):
         if not base_model.state:

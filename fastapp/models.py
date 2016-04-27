@@ -33,7 +33,6 @@ from fastapp.utils import Connection
 from fastapp.plugins import call_plugin_func
 from fastapp.plugins import PluginRegistry
 
-from swampdragon.models import SelfPublishModel
 from fastapp.serializers import TransactionSerializer, ApySocketSerializer, LogEntrySerializer
 
 from sequence_field.fields import SequenceField
@@ -359,7 +358,7 @@ def create_random():
 
 
 
-class Transaction(SelfPublishModel, models.Model):
+class Transaction(models.Model):
     rid = models.IntegerField(primary_key=True, default=create_random)
     apy = models.ForeignKey(Apy, related_name="transactions")
     status = models.CharField(max_length=1, choices=TRANSACTION_STATE_CHOICES, default=RUNNING)
@@ -384,7 +383,6 @@ class Transaction(SelfPublishModel, models.Model):
 
     def save(self, *args, **kwargs):
         super(self.__class__, self).save(*args, **kwargs)
-        logger.info(self.action)
 
     @property
     def apy_name(self):
@@ -403,7 +401,7 @@ LOG_LEVELS = (
 )
 
 
-class LogEntry(SelfPublishModel, models.Model):
+class LogEntry(models.Model):
     transaction = models.ForeignKey(Transaction, related_name="logs")
     created = models.DateTimeField(auto_now_add=True, null=True)
     level = models.CharField(max_length=2, choices=LOG_LEVELS)

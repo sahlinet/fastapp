@@ -18,7 +18,7 @@
 
   window.app = angular.module('execApp', ['ngGrid', 'base64', 'ngResource',
       'baseServices', 'angularFileUpload', 'ngCookies',
-      'ui.bootstrap', 'xeditable', 'SwampDragonServices'
+      'ui.bootstrap', 'xeditable'
   ]);
 
 
@@ -541,87 +541,6 @@
   });
 
   //  var FooControllers = angular.module('FooControllers', []);
-
-  window.app.controller('TransactionCtrl', ['$scope', '$dragon', function(
-      $scope,
-      $dragon) {
-      $scope.channel_transactions = 'transaction';
-      $scope.channel_logs = 'logentry';
-      $scope.transactions = [];
-      $scope.logentries = [];
-
-      $scope.loading = true;
-
-      $dragon.onReady(function() {
-          console.info("onReady");
-          $dragon.subscribe('transaction-router', $scope.channel_transactions, {})
-              .then(
-                  function(
-                      response) {
-                      console.log(
-                          "subscribes for transaction");
-                      $scope.dataMapper = new DataMapper(
-                          response.data);
-                  });
-          console.log("subscribes for transaction - done");
-          $dragon.subscribe('logentry-router', $scope.channel_logs, {})
-              .then(
-                  function(
-                      response) {
-                      console.log("subscribes for logs");
-                      $scope.logsDataMapper = new DataMapper(
-                          response.data);
-                  });
-          console.log("subscribes for logs - done");
-
-          // Get initial list
-          $dragon.getList('transaction-router').then(
-              function(response) {
-
-                  console.log(response.data);
-                  angular.forEach(response.data,
-                      function(message) {
-                          message.tin_object =
-                              angular.fromJson(
-                                  message.tin);
-                          message.tout_object =
-                              angular.fromJson(
-                                  message.tout);
-                      });
-                  $scope.transactions = response.data;
-                  $scope.loading = false;
-              });
-
-      });
-
-      $dragon.onChannelMessage(function(channels, message) {
-          console.log("onChannelMessage");
-          if (indexOf.call(channels, $scope.channel_transactions) >
-              -1) {
-              message.data.tin_object = angular.fromJson(
-                  message.data.tin);
-              if (message.action == "updated") {
-                  message.data.tout_object = angular.fromJson(
-                      message.data.tout);
-              };
-              $scope.$apply(function($scope) {
-                  $scope.dataMapper.mapData($scope.transactions,
-                      message);
-              });
-          }
-
-          if (indexOf.call(channels, $scope.channel_logs) >
-              -1) {
-              $scope.$apply(function($scope) {
-                  $scope.logsDataMapper.mapData(
-                      $scope.logentries,
-                      message);
-              });
-          }
-      });
-
-
-  }]);
 
   window.app.controller('TransportEndpointCtrl', ['$scope', '$filter', '$q',
       '$http', '$timeout', 'TransportEndpoints', 'Base',
