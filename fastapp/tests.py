@@ -150,106 +150,99 @@ class ApyExecutionTestCase(BaseTestCase):
 
     def test_execute_apy_logged_in(self, call_rpc_client_mock, send_client_mock):
 
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
 
-                send_client_mock.return_value = True
-                self.client1.login(username='user1', password='pass')
-                response = self.client1.get(self.base1_apy1.get_exec_url(), HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertTrue(json.loads(response.content).has_key('status'))
+			send_client_mock.return_value = True
+			self.client1.login(username='user1', password='pass')
+			response = self.client1.get(self.base1_apy1.get_exec_url(), HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertTrue(json.loads(response.content).has_key('status'))
 
     def test_execute_apy_with_shared_key(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
-                send_client_mock.return_value = True
-                url = self.base1_apy1.get_exec_url()+"&shared_key=%s" % (self.base1.uuid)
-                response = self.client3.get(url, HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertTrue(json.loads(response.content).has_key('status'))
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
+			send_client_mock.return_value = True
+			url = self.base1_apy1.get_exec_url()+"&shared_key=%s" % (self.base1.uuid)
+			response = self.client3.get(url, HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertTrue(json.loads(response.content).has_key('status'))
 
 
     @skip("Skipped because of RawPostDataException")
     def test_execute_apy_logged_in_with_post(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
-                send_client_mock.return_value = True
-                self.client_csrf.login(username='user1', password='pass')
-                response = self.client_csrf.post(self.base1_apy1.get_exec_url(), data={'a': 'b'}, HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertTrue(json.loads(response.content).has_key('status'))
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
+			send_client_mock.return_value = True
+			self.client_csrf.login(username='user1', password='pass')
+			response = self.client_csrf.post(self.base1_apy1.get_exec_url(), data={'a': 'b'}, HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertTrue(json.loads(response.content).has_key('status'))
 
     def test_receive_json_when_querystring_json(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
-                send_client_mock.return_value = True
-                self.client_csrf.login(username='user1', password='pass')
-                response = self.client_csrf.get(self.base1_apy1.get_exec_url(),  HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertTrue(json.loads(response.content).has_key('status'))
-                self.assertEqual(response['Content-Type'], "application/json")
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': [{u'_encoding': u'utf-8', u'_mutable': False}, True], u'response_class': None, 'time_ms': '668', 'id': u'send_mail'})
+			send_client_mock.return_value = True
+			self.client_csrf.login(username='user1', password='pass')
+			response = self.client_csrf.get(self.base1_apy1.get_exec_url(),  HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertTrue(json.loads(response.content).has_key('status'))
+			self.assertEqual(response['Content-Type'], "application/json")
 
     def test_receive_xml_when_response_is_XMLResponse(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': u'{"content": "<xml></xml>", "class": "XMLResponse", "content_type": "application/xml"}', u'response_class': u'XMLResponse', 'time_ms': '74', 'id': u'contenttype_test_receive'})
-                send_client_mock.return_value = True
-                self.client_csrf.login(username='user1', password='pass')
-                response = self.client_csrf.get(self.base1_apy1.get_exec_url().replace("json=", ""), HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertEqual(response['Content-Type'], "application/xml")
-                from xml.dom import minidom
-                assert minidom.parseString(response.content)
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': u'{"content": "<xml></xml>", "class": "XMLResponse", "content_type": "application/xml"}', u'response_class': u'XMLResponse', 'time_ms': '74', 'id': u'contenttype_test_receive'})
+			send_client_mock.return_value = True
+			self.client_csrf.login(username='user1', password='pass')
+			response = self.client_csrf.get(self.base1_apy1.get_exec_url().replace("json=", ""), HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertEqual(response['Content-Type'], "application/xml")
+			from xml.dom import minidom
+			assert minidom.parseString(response.content)
 
     def test_receive_json_when_response_is_JSONResponse(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'id': u'contenttype_test_receive'})
-                send_client_mock.return_value = True
-                self.client_csrf.login(username='user1', password='pass')
-                response = self.client_csrf.get(self.base1_apy1.get_exec_url().replace("json=", ""), HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                self.assertEqual(response['Content-Type'], "application/json")
-                assert json.loads(u''+response.content).has_key('aaa')
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = json.dumps({u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'id': u'contenttype_test_receive'})
+			send_client_mock.return_value = True
+			self.client_csrf.login(username='user1', password='pass')
+			response = self.client_csrf.get(self.base1_apy1.get_exec_url().replace("json=", ""), HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			self.assertEqual(response['Content-Type'], "application/json")
+			assert json.loads(u''+response.content).has_key('aaa')
 
     def test_execute_async(self, call_rpc_client_mock, send_client_mock):
-        with patch.object(SelfPublishModel, '_publish', return_value=None) as mock_method:
-            with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
-                call_rpc_client_mock.return_value = True
-                send_client_mock.return_value = True
-                self.client1.login(username='user1', password='pass')
-                from urllib2 import urlparse
+		with patch.object(ResponseUnavailableViewMixing, 'verify', return_value=None) as mock_method:
+			call_rpc_client_mock.return_value = True
+			send_client_mock.return_value = True
+			self.client1.login(username='user1', password='pass')
+			from urllib2 import urlparse
 
-                # get redirect
-                response = self.client1.get(self.base1_apy1.get_exec_url()+"&async")
-                self.assertEqual(301, response.status_code)
-                queries = urlparse.urlparse(response['Location'])[4]
-                rid = int(urlparse.parse_qs(queries)['rid'][0])
-                transaction = Transaction.objects.get(pk=rid)
+			# get redirect
+			response = self.client1.get(self.base1_apy1.get_exec_url()+"&async")
+			self.assertEqual(301, response.status_code)
+			queries = urlparse.urlparse(response['Location'])[4]
+			rid = int(urlparse.parse_qs(queries)['rid'][0])
+			transaction = Transaction.objects.get(pk=rid)
 
-                # get state (RUNNING)
-                response = self.client1.get(self.base1_apy1.get_exec_url()+"&rid=%s" % rid, HTTP_ACCEPT='application/xml')
-                self.assertEqual(200, response.status_code)
-                tout = {u'status': u'RUNNING', "url": "/fastapp/base/base1/exec/base1_apy1/?json=&rid="+str(rid), 'rid': rid, 'id': u'base1_apy1'}
-                self.assertEqual(json.loads(response.content)['rid'], tout['rid'])
+			# get state (RUNNING)
+			response = self.client1.get(self.base1_apy1.get_exec_url()+"&rid=%s" % rid, HTTP_ACCEPT='application/xml')
+			self.assertEqual(200, response.status_code)
+			tout = {u'status': u'RUNNING', "url": "/fastapp/base/base1/exec/base1_apy1/?json=&rid="+str(rid), 'rid': rid, 'id': u'base1_apy1'}
+			self.assertEqual(json.loads(response.content)['rid'], tout['rid'])
 
-                # mock creation of response
-                tout = {u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'rid': rid, 'id': u'base1_apy1'}
-                transaction.tout = tout
-                transaction.save()
-                self.assertEqual(transaction.apy, self.base1_apy1)
+			# mock creation of response
+			tout = {u'status': u'OK', u'exception': None, u'returned': u'{"content": "{\\"aaa\\": \\"aaa\\"}", "class": "XMLResponse", "content_type": "application/json"}', u'response_class': u'JSONResponse', 'time_ms': '74', 'rid': rid, 'id': u'base1_apy1'}
+			transaction.tout = tout
+			transaction.save()
+			self.assertEqual(transaction.apy, self.base1_apy1)
 
-                # get response
-                response = self.client1.get(self.base1_apy1.get_exec_url()+"&rid=%s" % rid)
-                self.assertEqual(200, response.status_code)
+			# get response
+			response = self.client1.get(self.base1_apy1.get_exec_url()+"&rid=%s" % rid)
+			self.assertEqual(200, response.status_code)
 
-                # check transaction duration
-                transaction = Transaction.objects.get(pk=rid)
-                self.assertEqual(int, type(transaction.duration))
+			# check transaction duration
+			transaction = Transaction.objects.get(pk=rid)
+			self.assertEqual(int, type(transaction.duration))
 
 #    def test_apy_has_counter_instance(self):
 #        self.assertTrue(len(self.base1_apy1.counter) is 1)
