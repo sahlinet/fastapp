@@ -47,7 +47,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
 
     def get(self, request, **kwargs):
         static_path = "%s/%s/%s" % (kwargs['base'], "static", kwargs['name'])
-        logger.info("%s GET" % static_path)
+        logger.debug("%s GET" % static_path)
 
         base_model = Base.objects.get(name=kwargs['base'])
 
