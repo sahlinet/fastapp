@@ -325,7 +325,7 @@ class ExecutorServerThread(CommunicationThread):
                                             ),
                                          body=response_data_json)
                     ch.basic_ack(delivery_tag=method.delivery_tag)
-                logger.info("Response sent %s (%s)" % (self.name,
+                logger.debug("Response sent %s (%s)" % (self.name,
                                                        str(props.reply_to)))
         except Exception, e:
             logger.exception(e)
@@ -384,7 +384,7 @@ def error(tid, msg):
     log_to_queue(tid, logging.ERROR, msg)
 
 
-@profileit
+#@profileit
 def _do(data, functions=None, foreign_functions=None, settings=None, pluginconfig={}):
         exception = None
         exception_message = None
