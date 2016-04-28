@@ -91,7 +91,7 @@ class RancherApiExecutor(BaseExecutor):
 
             env = {
                 'RABBITMQ_HOST': settings.WORKER_RABBITMQ_HOST,
-                'RABBITMQ_PORT': settings.WORKER_RABBITMQ_PORT,
+                'RABBITMQ_PORT': int(settings.WORKER_RABBITMQ_PORT),
                 'FASTAPP_WORKER_THREADCOUNT': settings.FASTAPP_WORKER_THREADCOUNT,
                 'FASTAPP_PUBLISH_INTERVAL': settings.FASTAPP_PUBLISH_INTERVAL,
                 'FASTAPP_CORE_SENDER_PASSWORD': settings.FASTAPP_CORE_SENDER_PASSWORD,
