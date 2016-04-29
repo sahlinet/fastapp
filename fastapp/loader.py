@@ -3,6 +3,8 @@ import errno
 import io
 import os
 import warnings
+import json
+import base64
 
 from django.template import TemplateDoesNotExist
 from django.template.loader import BaseLoader
@@ -16,6 +18,8 @@ from django.conf import settings
 
 from fastapp.models import Base
 from fastapp.views.static import DjendStaticView
+from fastapp.executors.remote import get_static
+from fastapp.queue import generate_vhost_configuration
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +39,8 @@ class FastappBaseLoader(BaseLoader):
                 base_model = Base.objects.get(name=base)
                 f, template_name = self.get_file(template_name, short_name, base_model)
                 return f, template_name
-            #except ErrorResponse, e:
-            #    logging.warning("get_file_content error response %s" % str(e.__dict__))
-            #    if e.__dict__['status'] == 404:
-            #        raise TemplateDoesNotExist(short_template_name)
             except Exception, e:
                 logger.exception("Could not load template")
-                
-                #raise TemplateDoesNotExist(short_name)
         raise TemplateDoesNotExist()
         
 
@@ -56,7 +54,7 @@ class RemoteWorkerLoader(FastappBaseLoader):
   def get_file(self, template_name, short_name, base_model):
         logger.info("%s: load from module in worker" % template_name)
         response_data = get_static(
-            json.dumps({"base_name": base_model.name, "path": template_name}),
+            json.dumps({"base_name": base_model.name, "path": short_name}),
             generate_vhost_configuration(
                 base_model.user.username,
                 base_model.name
@@ -65,7 +63,18 @@ class RemoteWorkerLoader(FastappBaseLoader):
             base_model.executor.password
             )
         data = json.loads(response_data)
-        return data, template_name
+        if data['status'] == "ERROR":
+            logger.error("%s: ERROR response from worker" % template_name)
+            raise TemplateDoesNotExist()
+        elif data['status'] == "TIMEOUT":
+            raise TemplateDoesNotExist()
+        elif data['status'] == "OK":
+            file = base64.b64decode(data['file'])
+            logger.info("%s: file received from worker" % template_name)
+        elif data['status'] == "NOT_FOUND":
+            raise TemplateDoesNotExist()
+
+        return file, template_name
 
       
 class DropboxAppFolderLoader(FastappBaseLoader):
@@ -75,6 +84,8 @@ class DropboxAppFolderLoader(FastappBaseLoader):
         logging.info("get_file_content %s" % template_name)
         f = connection.get_file_content(base+"/"+template_name)
         logging.info("get_file_content %s done" % template_name)
+        data = json.loads(response_data)
+
         return f, template_name
 
       
