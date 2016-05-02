@@ -76,9 +76,9 @@ class RemoteWorkerLoader(FastappBaseLoader):
 
         return file, template_name
 
-      
+
 class DropboxAppFolderLoader(FastappBaseLoader):
-  
+
   def get_file(self, template_name, short_name, base_model):
         connection = Connection(base_model.user.authprofile.access_token)
         logging.info("get_file_content %s" % template_name)
@@ -88,22 +88,21 @@ class DropboxAppFolderLoader(FastappBaseLoader):
 
         return f, template_name
 
-      
+
 class DevLocalRepositoryPathLoader(FastappBaseLoader):
-  
+
   def get_file(self, template_name, short_name, base_model):
         REPOSITORIES_PATH = getattr(settings, "FASTAPP_REPOSITORIES_PATH", None)
-        logger.debug("in DevLocalRepositoryPathLoader")
-        try:
-          filepath = os.path.join(REPOSITORIES_PATH, os.path.join(base_model.name, short_name))
-          file = open(filepath, 'r')
-          #size = os.path.getsize(filepath)
-          logger.debug("%s: load from local filesystem (repositories) (%s)" % (template_name, filepath))
-          #last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
-        except Exception, e:
-          logger.exception("Could not load template")
-          raise TemplateDoesNotExist()
-        
-        return file.read(), template_name
-  
-
+        if REPOSITORIES_PATH:
+            logger.debug("in DevLocalRepositoryPathLoader")
+            try:
+              filepath = os.path.join(REPOSITORIES_PATH, os.path.join(base_model.name, short_name))
+              file = open(filepath, 'r')
+              #size = os.path.getsize(filepath)
+              logger.debug("%s: load from local filesystem (repositories) (%s)" % (template_name, filepath))
+              #last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
+            except Exception, e:
+              logger.exception("Could not load template")
+              raise TemplateDoesNotExist()
+            return file.read(), template_name
+        raise TemplateDoesNotExist()
