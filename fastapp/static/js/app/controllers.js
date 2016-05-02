@@ -557,10 +557,8 @@
   		 */
 
           $scope.transport = function(transport, base) {
-              console.log(transport);
-              console.log(base);
               Base.transport({
-                  baseId: window.active_base_id
+                  name: window.active_base
               }, transport);
 
           };
