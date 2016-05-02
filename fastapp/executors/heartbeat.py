@@ -9,6 +9,7 @@ import pytz
 from datetime import datetime, timedelta
 
 from django.core.urlresolvers import reverse
+from django.core.exceptions import MultipleObjectsReturned
 from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 from django.core import serializers
@@ -214,9 +215,12 @@ class HeartbeatThread(CommunicationThread):
             #logger.info(data['ready_for_init'], data['in_sync'])
 
             # verify and warn for incomplete threads
-            base_obj = Base.objects.get(name=base)
+            try:
+                base_obj = Base.objects.get(name=base)
+            except MultipleObjectsReturned, e:
+                logger.error("Lookup for '%s' returned more than one result" % base)
+                raise e
             for thread in data['threads']['list']:
-                #logger.debug(thread)
                 try:
                     thread_obj, created = Thread.objects.get_or_create(name=thread['name'], parent=process)
                     if thread['connected']:
