@@ -132,6 +132,7 @@ class ApyViewSet(viewsets.ModelViewSet):
             raise APIException(response_data)
 
     def execute(self, request, name, apy_name):
+        print request.GET
         apy_obj = get_object_or_404(Apy, base__user=self.request.user,
                                      base__name=name,
                                      name=apy_name
@@ -287,7 +288,6 @@ class BaseViewSet(viewsets.ModelViewSet):
             logger.info("%s success" % s)
             return self.retrieve(request, name=name)
         else:
-            print r.status_code
             logger.error("%s failed with returncode %s" % (s, r.status_code))
             raise Exception("%s failed" % s)
 
