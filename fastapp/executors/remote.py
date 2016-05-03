@@ -596,7 +596,7 @@ class StaticServerThread(CommunicationThread):
                     f = None
                     full_path = None
                     for p in sys.path:
-                        logger.info("Checking in path '%s'" % p)
+                        logger.debug("Checking in path '%s'" % p)
                         if base_name in p:
                             logger.info(p+" found")
                             full_path = os.path.join(p,
@@ -620,7 +620,7 @@ class StaticServerThread(CommunicationThread):
                                 if f:
                                     f.close()
                     if not f:
-                        logger.warning("%s not found" % full_path)
+                        #logger.warning("%s not found" % full_path)
                         rc = "NOT_FOUND"
 
                 except Exception, e:

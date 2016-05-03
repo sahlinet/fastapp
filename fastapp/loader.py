@@ -40,7 +40,7 @@ class FastappBaseLoader(BaseLoader):
                 f, template_name = self.get_file(template_name, short_name, base_model)
                 return f, template_name
             except Exception, e:
-                logger.exception("Could not load template")
+                pass
         raise TemplateDoesNotExist()
         
 
@@ -73,7 +73,6 @@ class RemoteWorkerLoader(FastappBaseLoader):
             logger.info("%s: file received from worker" % template_name)
         elif data['status'] == "NOT_FOUND":
             raise TemplateDoesNotExist()
-
         return file, template_name
 
 
@@ -96,13 +95,12 @@ class DevLocalRepositoryPathLoader(FastappBaseLoader):
         if REPOSITORIES_PATH:
             logger.debug("in DevLocalRepositoryPathLoader")
             try:
-              filepath = os.path.join(REPOSITORIES_PATH, os.path.join(base_model.name, short_name))
-              file = open(filepath, 'r')
-              #size = os.path.getsize(filepath)
-              logger.debug("%s: load from local filesystem (repositories) (%s)" % (template_name, filepath))
-              #last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
+                filepath = os.path.join(REPOSITORIES_PATH, os.path.join(base_model.name, short_name))
+                file = open(filepath, 'r')
+                #size = os.path.getsize(filepath)
+                logger.debug("%s: load from local filesystem (repositories) (%s)" % (template_name, filepath))
+                #last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
             except Exception, e:
-              logger.exception("Could not load template")
-              raise TemplateDoesNotExist()
+                raise TemplateDoesNotExist()
             return file.read(), template_name
         raise TemplateDoesNotExist()
