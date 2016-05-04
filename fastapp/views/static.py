@@ -126,15 +126,16 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         client = dropbox.client.DropboxClient(auth_token)
                         try:
                             # TODO: read file only when necessary
-                            file, metadata = client.get_file_and_metadata(static_path)
+                            dropbox_path = os.path.join(base_model.user.username, static_path)
+                            file, metadata = client.get_file_and_metadata(dropbox_path)
                             file = file.read()
 
                             # "modified": "Tue, 19 Jul 2011 21:55:38 +0000",
                             dropbox_frmt = "%a, %d %b %Y %H:%M:%S +0000"
                             last_modified = datetime.strptime(metadata['modified'], dropbox_frmt)
-                            logger.info("%s: file loaded from dropbox (lm: %s)" % (static_path, last_modified))
+                            logger.info("%s: file loaded from dropbox (lm: %s)" % (dropbox_path, last_modified))
                         except Exception, e:
-                            logger.warning("File not found on dropbox")
+                            logger.warning("File '%s'not found on dropbox" % dropbox_path)
                             raise e
                     if 'content="no-cache"' in file:
                          logger.info("Not caching because no-cache present in HTML")
