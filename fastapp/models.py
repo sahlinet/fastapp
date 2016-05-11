@@ -63,6 +63,7 @@ class Base(models.Model):
                                default=index_template)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='bases')
     public = models.BooleanField(default=False)
+    static_public = models.BooleanField(default=False)
 
     foreign_apys = models.ManyToManyField("Apy", related_name="foreign_base")
 
@@ -302,6 +303,7 @@ class Apy(models.Model):
     base = models.ForeignKey(Base, related_name="apys", blank=True, null=True)
     description = models.CharField(max_length=1024, blank=True, null=True)
     public = models.BooleanField(default=False)
+    everyone = models.BooleanField(default=False)
     rev = models.CharField(max_length=32, blank=True, null=True)
 
     schedule = models.CharField(max_length=64, null=True, blank=True)

@@ -7,8 +7,6 @@ window.app.directive('codemirror', function() {
     },
     template: '{{module}}',
     link: function(scope, elem, attrs) {
-      console.log(scope);
-      console.log(scope.module);
       var myCodeMirror = CodeMirror(function(elt) {
           elem.parent().replaceWith(elt);
         }, {
@@ -27,7 +25,6 @@ window.app.directive('codemirror', function() {
           showCursorWhenSelecting: true
       });
       myCodeMirror.on("blur", function(cm, cmChangeObject){
-          console.log(scope.apy);
           scope.$apply(function() {
             scope.apy.module = myCodeMirror.getValue();
           });

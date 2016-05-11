@@ -52,7 +52,7 @@ Wrapper for loading templates from the filesystem.
 class RemoteWorkerLoader(FastappBaseLoader):
 
   def get_file(self, template_name, short_name, base_model):
-        logger.info("%s: load from module in worker" % template_name)
+        logger.debug("%s: load from module in worker" % template_name)
         response_data = get_static(
             json.dumps({"base_name": base_model.name, "path": short_name}),
             generate_vhost_configuration(

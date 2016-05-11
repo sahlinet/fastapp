@@ -25,6 +25,8 @@ from fastapp.models import Base, Apy, Setting, TransportEndpoint, Transaction
 from fastapp.api_serializers import PublicApySerializer, ApySerializer, BaseSerializer, SettingSerializer, TransportEndpointSerializer, TransactionSerializer
 from fastapp.utils import check_code
 
+from fastapp.api_auth import EveryoneAuthentication
+
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -84,7 +86,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
         get_object_or_404(Base, user=self.request.user, name=name)
         queryset = Transaction.objects.filter(apy__base__name=name)
 	rid = self.request.GET.get('rid', None)
-	print rid
 	if rid is not None:
 		return queryset.filter(rid=rid)
 	return queryset.order_by("-modified")[:10]
@@ -131,20 +132,6 @@ class ApyViewSet(viewsets.ModelViewSet):
             }
             raise APIException(response_data)
 
-    def execute(self, request, name, apy_name):
-        print request.GET
-        apy_obj = get_object_or_404(Apy, base__user=self.request.user,
-                                     base__name=name,
-                                     name=apy_name
-        )
-        from fastapp.views import DjendExecView
-        kwargs = {
-            'base': name,
-            'id': apy_obj.id
-        }
-        return DjendExecView.as_view()(self.request, **kwargs)
-        #return reverse('exec', args=[name, apy_name])
-
     def clone(self, request, name, pk):
         base = get_object_or_404(Base, name=name,
                         user=User.objects.get(username=request.user.username))
@@ -162,6 +149,37 @@ class ApyViewSet(viewsets.ModelViewSet):
         self.kwargs['pk'] = self.object.id
         return self.retrieve(request, new_pk=cloned_exec.id)
 
+class ApyPublicExecutionViewSet(viewsets.ModelViewSet):
+    model = Apy
+    serializer_class = ApySerializer
+    renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (EveryoneAuthentication,)
+
+    def execute(self, request, username, name, apy_name):
+        apy_obj = get_object_or_404(Apy, base__user__username=username, name=apy_name, base__name=name)
+        from fastapp.views import DjendExecView
+        kwargs = {
+            'base': name,
+            'id': apy_obj.id
+        }
+        return DjendExecView.as_view()(self.request, **kwargs)
+
+
+class ApyExecutionViewSet(viewsets.ModelViewSet):
+    model = Apy
+    serializer_class = ApySerializer
+    renderer_classes = [JSONRenderer, JSONPRenderer]
+    authentication_classes = (TokenAuthentication, SessionAuthentication,)
+
+    def execute(self, request, name, apy_name):
+        apy_obj = get_object_or_404(Apy, base__user=self.request.user, name=apy_name, base__name=name)
+        from fastapp.views import DjendExecView
+        kwargs = {
+            'base': name,
+            'id': apy_obj.id
+        }
+        return DjendExecView.as_view()(self.request, **kwargs)
+        #return reverse('exec', args=[name, apy_name])
 
 class PublicApyViewSet(ApyViewSet):
     serializer_class = PublicApySerializer

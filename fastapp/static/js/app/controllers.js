@@ -144,10 +144,9 @@
           };
 
           $scope.updatePublicity = function(base) {
-              console.info(base);
-              console.info(base.public);
               $.post("/fastapp/" + base.name + "/sync/", {
-                  public: base.public
+                  public: base.public,
+                  static_public: base.static_public
               });
           };
 

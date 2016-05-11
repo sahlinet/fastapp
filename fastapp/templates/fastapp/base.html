@@ -92,6 +92,8 @@
             {% verbatim %}
             <p>Public: </p>
             <a href="#" editable-checkbox="base.public" e-title="Published?" onaftersave="updatePublicity(base)">{{ base.public && "Public" || "Private" }}</a>
+            <p>Static Public: </p>
+            <a href="#" editable-checkbox="base.static_public" e-title="Published?" onaftersave="updatePublicity(base)">{{ base.static_public && "Public" || "Private" }}</a>
             {% endverbatim %}
         </div>
 
@@ -235,6 +237,12 @@
                                         <input type="checkbox" ng-model="apy.public"> Be public
                                     </label>
                                 </div>
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" ng-model="apy.everyone">Everyone 
+                                    </label>
+                                </div>
+
 
                                 <div class="checkbox">
                                     <label>

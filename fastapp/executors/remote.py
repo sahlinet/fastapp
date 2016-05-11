@@ -588,7 +588,7 @@ class StaticServerThread(CommunicationThread):
         try:
             # logger.debug(method.routing_key)
             if method.routing_key == STATIC_QUEUE:
-                logger.info("Static-Request %s received in %s" % (body['path'], self.name))
+                logger.debug("Static-Request %s received in %s" % (body['path'], self.name))
                 try:
                     path = body['path']
                     response_data = {}
@@ -598,11 +598,11 @@ class StaticServerThread(CommunicationThread):
                     for p in sys.path:
                         logger.debug("Checking in path '%s'" % p)
                         if base_name in p:
-                            logger.info(p+" found")
+                            logger.debug(p+" found")
                             full_path = os.path.join(p,
                                          path.replace(base_name+"/", "")
                                          )
-                            logger.info("%s:  found" % full_path)
+                            logger.debug("%s:  found" % full_path)
                             try:
                                 f = open(full_path, 'r')
                                 last_modified = os.stat(full_path).st_mtime
@@ -638,6 +638,6 @@ class StaticServerThread(CommunicationThread):
                     #logger.info("message published: %s" % str(publish_result))
                     #logger.info("ack message")
                     ch.basic_ack(delivery_tag=method.delivery_tag)
-                    logger.info("Static-Request %s response in %s (%s)" % (body['path'], self.name, rc))
+                    logger.debug("Static-Request %s response in %s (%s)" % (body['path'], self.name, rc))
         except Exception, e:
             logger.exception(e)

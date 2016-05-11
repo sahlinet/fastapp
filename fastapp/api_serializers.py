@@ -32,7 +32,7 @@ class ApySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Apy
-        fields = ('id', 'name', 'module', 'counter', 'description', 'public', 'schedule')
+        fields = ('id', 'name', 'module', 'counter', 'description', 'public', 'schedule', 'everyone')
 
     def save_object(self, obj, **kwargs):
         logger.debug("save_and_sync")
@@ -93,7 +93,7 @@ class BaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Base
         fields = ('id', 'name', 'state', 'uuid',
-                  'executors', 'content', 'foreign_apys', 'public')
+                  'executors', 'content', 'foreign_apys', 'public', 'static_public',)
 
     def save_object(self, obj, **kwargs):
         super(BaseSerializer, self).save_object(obj, **kwargs)

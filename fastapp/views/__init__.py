@@ -466,6 +466,7 @@ class DjendBaseSaveView(View):
         base = get_object_or_404(Base, name=kwargs['base'], user=User.objects.get(username=request.user.username))
         content = request.POST.get('content', None)
         public = request.POST.get('public', None)
+        static_public = request.POST.get('static_public', None)
 
         # exec
         if request.POST.has_key('exec_name'):
@@ -485,6 +486,7 @@ class DjendBaseSaveView(View):
             logger.info("Save base")
             if content: base.content = content
             if public: base.public = public
+            if static_public: base.static_public = static_public
             base.save()
             # save in database
             #info(channel_name_for_user(request), "Base index '%s' saved" % base.name)
@@ -808,17 +810,20 @@ def login_or_sharedkey(function):
         if user.is_authenticated():
             return function(request, *args, **kwargs)
 
-        # if base is public
         base_name = kwargs.get('base')
         base_obj = get_object_or_404(Base, name=base_name)
+
+        # static_public
+        if "static" in request.path_info and base_obj.static_public:
+            return function(request, *args, **kwargs)
+
+        # if base is public
         if base_obj.public:
            return function(request, *args, **kwargs)
 
         # if shared key in query string
-        if request.GET.has_key('shared_key'):
+        elif request.GET.has_key('shared_key'):
             shared_key = request.GET.get('shared_key', None)
-            #logger.info(base_obj.uuid)
-            #logger.info(shared_key)
             if base_obj.uuid==shared_key or base_obj.public:
                 request.session['shared_key'] = shared_key
                 return function(request, *args, **kwargs)
@@ -832,9 +837,13 @@ def login_or_sharedkey(function):
         #    get_object_or_404(Base, name=base_name, uuid=shared_key)
         #    return function(request, *args, **kwargs)
         # don't redirect when access a exec withoud secret key
-        if kwargs.has_key('id'):
-            return HttpResponseNotFound('Ups, wrong URL?')
-        return HttpResponseRedirect("/admin/")
+        elif kwargs.has_key('id'):
+            if Apy.objects.get(base=base_obj, id=kwargs['id']).everyone:
+                return function(request, *args, **kwargs)
+            else:
+                return HttpResponseNotFound('Ups, wrong URL?')
+        # TODO: should redirect to a nice login page
+        return HttpResponseRedirect("/")
     return wrapper
 
 def load_json(s):
