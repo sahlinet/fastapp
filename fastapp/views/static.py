@@ -232,7 +232,7 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         try:
             logger.debug("Setup datastore for context starting")
             plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
-            data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
+            data['datastore'] = PsqlDataStore(schema=base_model.name, keep=False, **plugin_settings)
             logger.debug("Setup datastore for context done")
             logger.debug("Datastore-Size: %s" % data['datastore'].count())
         except KeyError, e:
