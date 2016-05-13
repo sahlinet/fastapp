@@ -147,6 +147,9 @@ class DataStore(object):
 	def all(self):
 		return self.session.query(DataObject).all()
 
+	def count(self):
+		return self.session.query(DataObject).count()
+
 	def filter(self, k, v):
 		return self.session.query(DataObject).filter(text("data->>'"+k+"' = '"+v+"';")).all()
 

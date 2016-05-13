@@ -78,8 +78,6 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
                         size = os.path.getsize(filepath)
                         logger.debug("%s: load from local filesystem (repositories) (%s) (%s)" % (static_path, filepath, size))
                         last_modified = datetime.fromtimestamp(os.stat(filepath).st_mtime)
-                        #from remote_pdb import RemotePdb
-                        #RemotePdb('127.0.0.1', 4444).set_trace()
                     except IOError, e:
                         logger.warning(e)
                     if not file:
@@ -232,10 +230,13 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
         data['FASTAPP_STATIC_URL'] = "/%s/%s/static/" % ("fastapp", base_model.name)
 
         try:
+            logger.debug("Setup datastore for context starting")
             plugin_settings = settings.FASTAPP_PLUGINS_CONFIG['fastapp.plugins.datastore']
             data['datastore'] = PsqlDataStore(schema=base_model.name, **plugin_settings)
-        except KeyError:
-            pass
+            logger.debug("Setup datastore for context done")
+            logger.debug("Datastore-Size: %s" % data['datastore'].count())
+        except KeyError, e:
+            logger.error("Setup datastore for context failed")
         updated = request.GET.copy()
         query_params = {}
         for k, v in updated.iteritems():
