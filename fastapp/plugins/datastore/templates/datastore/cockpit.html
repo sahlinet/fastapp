@@ -2,8 +2,9 @@
    <div>
      <h3>{{ k }}</h3>
     {% ifequal k "CONNECTIONS" %}
-      <pre>{{ v.0 }}</pre>
-      GOTIT
+      {% for cnx in v %}
+      <pre>{{ cnx }}</pre>
+      {% endfor %}
     {% else %}
       <pre>{{ v }}</pre>
     {% endifequal %}

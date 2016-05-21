@@ -241,9 +241,11 @@ class DataStorePlugin(Plugin):
                 SELECT *, pg_tablespace_size(spcname) FROM pg_tablespace
             ) t;"""
         CONNECTIONS = "SELECT * FROM pg_stat_activity;"
+        CONNECTIONS_COUNT = "SELECT count(*) FROM pg_stat_activity;"
 
         return {
             'SCHEMAS': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(SCHEMAS)],
             'TABLESPACES': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(TABLESPACES)][0],
             'CONNECTIONS': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(CONNECTIONS)],
+            'CONNECTIONS_COUNT': [row for row in PsqlDataStore(keep=False, **plugin_settings)._execute(CONNECTIONS_COUNT)]
         }
