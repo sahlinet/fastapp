@@ -23,7 +23,7 @@ class RabbitMQPlugin(Plugin):
 		settings.TEMPLATE_DIRS = settings.TEMPLATE_DIRS + (template_path,)
 		cls.api = RabbitmqAdmin.factory("HTTP_API")
 
-	def cockpit_context_deactivated(self):
+	def cockpit_context(self):
 		data = {}
 		data['vhosts'] = self.api.get_vhosts()
 		from urllib import quote_plus
