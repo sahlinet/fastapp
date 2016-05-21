@@ -180,6 +180,8 @@ class DjendStaticView(ResponseUnavailableViewMixing, View):
             mimetype = "text/html"
             context_data = self._setup_context(request, base_model)
             file = self._render_html(request, file, **context_data)
+            context_data['datastore'] = None
+            context_data = None
         elif static_path.lower().endswith('.map'):
             mimetype = "application/json"
         elif static_path.lower().endswith('.gif'):
