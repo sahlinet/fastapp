@@ -17,8 +17,8 @@ db_settings = {"store": {
     }
 }
 
-#@unittest.skipIf(hasattr(os.environ, "CIRCLECI"), "Running on CI")
-@unittest.skip
+#@unittest.skip
+@unittest.skipIf(hasattr(os.environ, "CIRCLECI"), "Running on CI")
 class TestStringMethods(TestCase):
 
     @override_settings(DATABASES=db_settings)
@@ -82,13 +82,13 @@ class TestStringMethods(TestCase):
     @override_settings(DATABASES=db_settings)
     def test_update_json_with_api(self):
         result = self.datastore.get("function", "setUp")
-	result.data['function'] = "newFunction"
+        result.data['function'] = "newFunction"
 
         # update
         self.datastore.update(result)
 
-	# force reload on attr access
-	self.datastore.session.expire(result)
+        # force reload on attr access
+        self.datastore.session.expire(result)
         self.assertEqual("newFunction", result.data['function'])
 
 
