@@ -19,6 +19,7 @@ from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.pool import NullPool
 
 from django.conf import settings
 
@@ -60,7 +61,7 @@ class DataStore(object):
         DataObject.__table__.schema = self.schema
 
         # create session with engine
-        self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True)
+        self.engine = create_engine(self.__class__.ENGINE % kwargs, echo=True, poolclass=NullPool)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
