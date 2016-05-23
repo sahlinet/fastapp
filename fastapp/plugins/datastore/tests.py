@@ -17,8 +17,8 @@ db_settings = {"store": {
     }
 }
 
-#@unittest.skip
-@unittest.skipIf(hasattr(os.environ, "CIRCLECI"), "Running on CI")
+@unittest.skip
+#@unittest.skipIf(hasattr(os.environ, "CIRCLECI"), "Running on CI")
 class TestStringMethods(TestCase):
 
     @override_settings(DATABASES=db_settings)
